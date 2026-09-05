@@ -1305,17 +1305,17 @@
 	.account-form {
 		display: flex;
 		flex-direction: column;
-		gap: 0.4rem;
+		gap: 0.375rem;
 	}
 
 	.account-form + .account-form {
 		margin-top: 1.25rem;
 		padding-top: 1.25rem;
-		border-top: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+		border-top: 1px solid var(--color-line);
 	}
 
 	.account-form .field {
-		font-size: 0.8rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 	}
 
