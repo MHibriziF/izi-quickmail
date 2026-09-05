@@ -1,78 +1,68 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 	import { MAX_SCHEDULE_DAYS } from '$lib/constants';
+	import {
+		detectTimeZone,
+		fromLocalInputValue,
+		toLocalInputValue,
+		zonedHour,
+		zonedWeekday
+	} from '$lib/timezone';
 
 	let {
 		open = $bindable(false),
+		timeZone = null,
 		onpick
 	}: {
 		open: boolean;
+		/** The saved preference; falls back to whatever this browser reports. */
+		timeZone?: string | null;
 		onpick: (isoTime: string) => void;
 	} = $props();
 
-	/** Local-time helpers — the picker works in the reader's own day, not UTC. */
-	function at(date: Date, hour: number): Date {
-		const copy = new Date(date);
-		copy.setHours(hour, 0, 0, 0);
-		return copy;
-	}
+	const zone = $derived(timeZone || detectTimeZone());
 
-	function addDays(days: number): Date {
-		const date = new Date();
-		date.setDate(date.getDate() + days);
-		return date;
-	}
-
-	/** Days until the next Monday; 7 if today is already Monday. */
+	/** Days until the next Monday in that zone; 7 if it is already Monday. */
 	function daysUntilMonday(): number {
-		const today = new Date().getDay();
-		return (8 - today) % 7 || 7;
+		return (8 - zonedWeekday(zone)) % 7 || 7;
 	}
 
 	const presets = $derived.by(() => {
-		const now = new Date();
+		const now = Date.now();
 		const options: Array<{ label: string; when: Date }> = [];
+		// Only worth offering while there is still a useful gap.
+		const later = (label: string, when: Date) => {
+			if (when.getTime() - now > 60 * 60 * 1000) options.push({ label, when });
+		};
 
-		// Only offer later today while there is still a useful gap.
-		const thisAfternoon = at(now, 13);
-		if (thisAfternoon.getTime() - now.getTime() > 60 * 60 * 1000) {
-			options.push({ label: 'This afternoon', when: thisAfternoon });
-		}
-
-		const thisEvening = at(now, 18);
-		if (thisEvening.getTime() - now.getTime() > 60 * 60 * 1000) {
-			options.push({ label: 'This evening', when: thisEvening });
-		}
-
-		options.push({ label: 'Tomorrow morning', when: at(addDays(1), 8) });
-		options.push({ label: 'Tomorrow afternoon', when: at(addDays(1), 13) });
-		options.push({ label: 'Monday morning', when: at(addDays(daysUntilMonday()), 8) });
+		later('This afternoon', zonedHour(zone, 0, 13));
+		later('This evening', zonedHour(zone, 0, 18));
+		options.push({ label: 'Tomorrow morning', when: zonedHour(zone, 1, 8) });
+		options.push({ label: 'Tomorrow afternoon', when: zonedHour(zone, 1, 13) });
+		options.push({ label: 'Monday morning', when: zonedHour(zone, daysUntilMonday(), 8) });
 
 		return options;
 	});
 
-	const dayFormat = new Intl.DateTimeFormat(undefined, {
-		weekday: 'short',
-		day: 'numeric',
-		month: 'short',
-		hour: 'numeric',
-		minute: '2-digit'
-	});
+	const dayFormat = $derived(
+		new Intl.DateTimeFormat(undefined, {
+			weekday: 'short',
+			day: 'numeric',
+			month: 'short',
+			hour: 'numeric',
+			minute: '2-digit',
+			timeZone: zone
+		})
+	);
 
 	let custom = $state('');
 	let error = $state('');
 
-	const pad = (n: number) => String(n).padStart(2, '0');
-	const localInputValue = (date: Date) =>
-		`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-
-	/** Resend will not hold a message longer than this, so the field stops there. */
+	const customMin = $derived(toLocalInputValue(new Date(Date.now() + 60_000), zone));
+	/** The provider will not hold a message longer than this. */
 	const customMax = $derived(
-		localInputValue(new Date(Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000))
+		toLocalInputValue(new Date(Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000), zone)
 	);
-
-	/** `datetime-local` wants local time with no zone, trimmed to minutes. */
-	const customMin = $derived(localInputValue(new Date(Date.now() + 60_000)));
 
 	function choose(when: Date) {
 		onpick(when.toISOString());
@@ -83,8 +73,10 @@
 		event.preventDefault();
 		error = '';
 
-		const when = new Date(custom);
-		if (Number.isNaN(when.getTime())) {
+		// Read as wall time in the chosen zone, which is what the field shows —
+		// not as the browser's local time.
+		const when = fromLocalInputValue(custom, zone);
+		if (!when) {
 			error = 'Pick a date and time';
 			return;
 		}
@@ -132,6 +124,7 @@
 
 		<form class="custom" onsubmit={chooseCustom}>
 			<label class="field-title" for="custom-time">Or pick a date and time</label>
+			<p class="zone">Times in {zone.replace('_', ' ')}</p>
 			<input
 				id="custom-time"
 				class="text-input"
@@ -250,6 +243,12 @@
 	.schedule-btn {
 		margin-top: 0.25rem;
 		justify-content: center;
+	}
+
+	.zone {
+		margin: 0;
+		font-size: 0.75rem;
+		color: var(--color-muted);
 	}
 
 	.error {
