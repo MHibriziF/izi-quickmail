@@ -9,6 +9,7 @@
 	import TwoFactorPanel from '$lib/components/TwoFactorPanel.svelte';
 	import RecoveryEmailPanel from '$lib/components/RecoveryEmailPanel.svelte';
 	import CleanupPanel from '$lib/components/CleanupPanel.svelte';
+	import TimeZonePanel from '$lib/components/TimeZonePanel.svelte';
 	import InstallApp from '$lib/components/InstallApp.svelte';
 	import {
 		readThemePreference,
@@ -468,6 +469,8 @@
 	/>
 
 	<RecoveryEmailPanel email={data.recovery.email} pending={data.recovery.pending} />
+
+	<TimeZonePanel timeZone={data.timeZone} />
 
 	<CleanupPanel retentionDays={data.cleanup.trashRetentionDays} />
 
