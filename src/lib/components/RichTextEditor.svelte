@@ -20,6 +20,26 @@
 
 	let editor = $state<HTMLDivElement | null>(null);
 
+	/**
+	 * Seed the editable div from `html`.
+	 *
+	 * A contenteditable is not a controlled input: the binding only ever ran
+	 * editor -> html, so anything set from outside (opening a draft, quoting a
+	 * message) was dropped on the floor.
+	 *
+	 * The guard matters as much as the write. Assigning innerHTML on every change
+	 * would also fire for the user's own keystrokes and drop the caret back to the
+	 * start of the message. After `handleInput`, `html` already equals innerHTML,
+	 * so comparing them skips exactly those updates and writes only genuinely
+	 * external ones.
+	 */
+	$effect(() => {
+		const incoming = html;
+		if (editor && incoming !== editor.innerHTML) {
+			editor.innerHTML = incoming;
+		}
+	});
+
 	function exec(command: string, value?: string) {
 		editor?.focus();
 		document.execCommand(command, false, value);
