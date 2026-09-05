@@ -6,6 +6,7 @@
 	import Check from '$lib/components/Check.svelte';
 	import AddressField from '$lib/components/AddressField.svelte';
 	import DesktopNotifications from '$lib/components/DesktopNotifications.svelte';
+	import TwoFactorPanel from '$lib/components/TwoFactorPanel.svelte';
 	import InstallApp from '$lib/components/InstallApp.svelte';
 	import {
 		readThemePreference,
@@ -458,6 +459,11 @@
 			{#if passwordSaved}<p class="saved">Password changed</p>{/if}
 		</form>
 	</section>
+
+	<TwoFactorPanel
+		enabled={data.twoFactor.enabled}
+		backupCodesRemaining={data.twoFactor.backupCodesRemaining}
+	/>
 
 	<section class="surface-lg card">
 		<h2><Icon name="contrast-2-line" size={18} /> Appearance</h2>
