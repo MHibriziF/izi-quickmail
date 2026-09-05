@@ -5,6 +5,7 @@
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import AttachmentPicker from '$lib/components/AttachmentPicker.svelte';
 	import RecipientField from '$lib/components/RecipientField.svelte';
+	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
 	import { requestSkipViewTransition } from '$lib/app-chrome';
 	import { APP_NAME } from '$lib/constants';
@@ -32,6 +33,7 @@
 	let subject = $state(draft?.subject ?? '');
 	let html = $state(draft?.body_html ?? '');
 	let attachments = $state<OutboundAttachmentInput[]>([]);
+	let scheduleOpen = $state(false);
 	let showCopies = $state(Boolean(draft?.cc_addr || draft?.bcc_addr));
 	let error = $state('');
 	let sending = $state(false);
@@ -95,8 +97,13 @@
 		window.location.href = '/drafts';
 	}
 
-	async function submit(event: SubmitEvent) {
+	function submit(event: SubmitEvent) {
 		event.preventDefault();
+		void deliver(null);
+	}
+
+	/** Send now, or hand the provider a time to hold it until. */
+	async function deliver(scheduledAt: string | null) {
 		if (isHtmlEmpty(html)) {
 			error = 'Write a message';
 			return;
@@ -118,7 +125,8 @@
 					subject,
 					html,
 					text: htmlToPlainText(html),
-					attachments
+					attachments,
+					scheduledAt: scheduledAt ?? undefined
 				})
 			});
 			const body = await res.json();
@@ -154,9 +162,20 @@
 			<h1 class="page-title">{draftId ? 'Draft' : 'New message'}</h1>
 			{#if savedAt}<span class="saved">Saved {savedAt}</span>{/if}
 		</div>
-		<button type="submit" class="btn-primary" disabled={sending}>
-			{sending ? 'Sending…' : 'Send'}
-		</button>
+		<div class="send-split">
+			<button type="submit" class="btn-primary send-main" disabled={sending}>
+				{sending ? 'Sending…' : 'Send'}
+			</button>
+			<button
+				type="button"
+				class="btn-primary send-more"
+				disabled={sending}
+				aria-label="Schedule send"
+				onclick={() => (scheduleOpen = true)}
+			>
+				<Icon name="arrow-down-s-line" size={15} />
+			</button>
+		</div>
 	</header>
 
 	<header class="compose-header">
@@ -183,10 +202,21 @@
 					<Icon name="delete-bin-line" size={15} />
 				</button>
 			{/if}
-			<button type="submit" class="btn-primary" disabled={sending}>
-				<Icon name="send-plane-2-fill" size={16} />
-				{sending ? 'Sending…' : 'Send'}
-			</button>
+			<div class="send-split">
+				<button type="submit" class="btn-primary send-main" disabled={sending}>
+					<Icon name="send-plane-2-fill" size={16} />
+					{sending ? 'Sending…' : 'Send'}
+				</button>
+				<button
+					type="button"
+					class="btn-primary send-more"
+					disabled={sending}
+					aria-label="Schedule send"
+					onclick={() => (scheduleOpen = true)}
+				>
+					<Icon name="arrow-down-s-line" size={16} />
+				</button>
+			</div>
 		</div>
 	</header>
 
@@ -289,7 +319,29 @@
 	</div>
 </form>
 
+<SchedulePicker bind:open={scheduleOpen} onpick={(iso) => deliver(iso)} />
+
 <style>
+	/* One control, two actions — the caret is joined to Send rather than
+	   floating beside it, so it reads as a menu on that button. */
+	.send-split {
+		display: inline-flex;
+		align-items: stretch;
+		gap: 1px;
+	}
+
+	.send-main {
+		border-top-right-radius: 0;
+		border-bottom-right-radius: 0;
+	}
+
+	.send-more {
+		padding-left: 0.5rem;
+		padding-right: 0.5rem;
+		border-top-left-radius: 0;
+		border-bottom-left-radius: 0;
+	}
+
 	.compose-page {
 		width: 100%;
 	}
