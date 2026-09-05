@@ -2,7 +2,8 @@ import type { D1Database } from '@cloudflare/workers-types';
 import type { MailAddress, User } from '$lib/types';
 import { APP_NAME } from '$lib/constants';
 import { listAddressesForUser } from './domains';
-import { escapeHtml, sendOutboundEmail } from './send-mail';
+import { sendOutboundEmail } from './send-mail';
+import { renderEmailHtml, renderEmailText, type EmailContent } from './email-template';
 import type { EmailProvider } from './email-provider';
 
 export type SecurityEvent =
@@ -51,23 +52,15 @@ async function senderFor(db: D1Database, userId: string): Promise<MailAddress | 
 	return addresses.find((address) => address.is_default) ?? addresses[0] ?? null;
 }
 
-function body(event: SecurityEvent, mailbox: string): { text: string; html: string } {
-	const { line } = COPY[event];
-	const text = [
-		line,
-		'',
-		`Mailbox: ${mailbox}`,
-		`When: ${new Date().toUTCString()}`,
-		'',
-		"If this was you, nothing else is needed. If it was not, reset your password and turn off two-factor recovery codes immediately."
-	].join('\n');
-
-	const html = `<p>${escapeHtml(line)}</p>
-<p><strong>Mailbox:</strong> ${escapeHtml(mailbox)}<br>
-<strong>When:</strong> ${escapeHtml(new Date().toUTCString())}</p>
-<p>If this was you, nothing else is needed. If it was not, reset your password immediately.</p>`;
-
-	return { text, html };
+function noticeContent(event: SecurityEvent, mailbox: string): EmailContent {
+	return {
+		title: COPY[event].subject,
+		lead: COPY[event].line,
+		details: [
+			{ label: 'Mailbox', value: mailbox },
+			{ label: 'When', value: new Date().toUTCString() }
+		]
+	};
 }
 
 /**
@@ -100,14 +93,14 @@ export async function notifySecurityEvent(
 		const from = await senderFor(db, user.id);
 		if (!from) return;
 
-		const { text, html } = body(event, user.email);
+		const content = noticeContent(event, user.email);
 		await sendOutboundEmail(provider, {
 			from,
 			senderName: APP_NAME,
 			to,
 			subject: `${APP_NAME}: ${COPY[event].subject}`,
-			text,
-			html
+			text: renderEmailText(content),
+			html: renderEmailHtml(content)
 		});
 	} catch {
 		// Deliberately swallowed — see the doc comment.
@@ -126,28 +119,22 @@ export async function sendPasswordResetLink(
 	const from = await senderFor(db, user.id);
 	if (!from) throw new Error('No sending address is configured');
 
-	const text = [
-		`Use this link to set a new password for ${user.email}:`,
-		'',
-		link,
-		'',
-		`The link expires in ${ttlMinutes} minutes and works once.`,
-		'',
-		'If you did not ask for this, ignore this email — your password has not changed.'
-	].join('\n');
-
-	const html = `<p>Use this link to set a new password for ${escapeHtml(user.email)}:</p>
-<p><a href="${escapeHtml(link)}">Set a new password</a></p>
-<p>The link expires in ${ttlMinutes} minutes and works once.</p>
-<p>If you did not ask for this, ignore this email — your password has not changed.</p>`;
+	const content = {
+		title: 'Reset your password',
+		lead: `Use the button below to set a new password for ${user.email}. You will still be asked for your authenticator code when you sign in.`,
+		details: [{ label: 'Expires', value: `${ttlMinutes} minutes from now` }],
+		action: { label: 'Set a new password', href: link },
+		footer:
+			'The link works once. If you did not ask for this, ignore this email — your password has not changed.'
+	} satisfies EmailContent;
 
 	await sendOutboundEmail(provider, {
 		from,
 		senderName: APP_NAME,
 		to,
 		subject: `${APP_NAME}: reset your password`,
-		text,
-		html
+		text: renderEmailText(content),
+		html: renderEmailHtml(content)
 	});
 }
 
@@ -162,24 +149,20 @@ export async function sendRecoveryVerification(
 	const from = await senderFor(db, user.id);
 	if (!from) throw new Error('No sending address is configured');
 
-	const text = [
-		`Confirm this address as the recovery address for ${user.email}:`,
-		'',
-		link,
-		'',
-		'Until you do, it cannot be used to reset the password.'
-	].join('\n');
-
-	const html = `<p>Confirm this address as the recovery address for ${escapeHtml(user.email)}:</p>
-<p><a href="${escapeHtml(link)}">Confirm recovery address</a></p>
-<p>Until you do, it cannot be used to reset the password.</p>`;
+	const content = {
+		title: 'Confirm your recovery address',
+		lead: `Confirm this address as the recovery address for ${user.email}. Until you do, it cannot be used to reset the password.`,
+		action: { label: 'Confirm recovery address', href: link },
+		footer:
+			'If you did not ask for this, ignore this email — nothing changes until the link is used.'
+	} satisfies EmailContent;
 
 	await sendOutboundEmail(provider, {
 		from,
 		senderName: APP_NAME,
 		to,
 		subject: `${APP_NAME}: confirm your recovery address`,
-		text,
-		html
+		text: renderEmailText(content),
+		html: renderEmailHtml(content)
 	});
 }
