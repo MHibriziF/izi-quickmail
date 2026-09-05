@@ -9,6 +9,8 @@ import {
 } from '$lib/server/auth';
 import { SESSION_DAYS } from '$lib/server/constants';
 import { verifyPassword } from '$lib/server/crypto';
+import { getEmailProvider } from '$lib/server/context';
+import { notifySecurityEvent } from '$lib/server/security-notice';
 
 /**
  * The signed-in user editing their own account: display name and password.
@@ -65,6 +67,8 @@ export const PATCH: RequestHandler = async ({ request, cookies, locals, platform
 			const renewed = await startSession(db, user);
 			cookies.set(SESSION_COOKIE, renewed.token, sessionCookieOptions(SESSION_DAYS * 24 * 60 * 60));
 			user = renewed.user;
+
+			await notifySecurityEvent(db, getEmailProvider(platform), user, 'password-changed');
 		}
 
 		return json({ ok: true, user, apiTokensRevoked: wantsPassword });

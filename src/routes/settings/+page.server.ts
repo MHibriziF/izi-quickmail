@@ -3,6 +3,7 @@ import { listApiTokens } from '$lib/server/api-tokens';
 import { getEmailSignature } from '$lib/server/email-signature';
 import { readVapidConfiguration } from '$lib/server/push-notifications';
 import { getTwoFactorStatus } from '$lib/server/two-factor';
+import { getRecoveryStatus } from '$lib/server/account-recovery';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	const db = platform?.env.DB;
@@ -13,6 +14,10 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		locals.user && db
 			? await getTwoFactorStatus(db, locals.user.id)
 			: { enabled: false, enabledAt: null, backupCodesRemaining: 0 };
+	const recovery =
+		locals.user && db
+			? await getRecoveryStatus(db, locals.user.id)
+			: { email: null, pending: null, verifiedAt: null };
 
 	return {
 		domains: locals.domains,
@@ -24,6 +29,7 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 			publicKey: vapid?.publicKey ?? null
 		},
 		twoFactor,
+		recovery,
 		isAdmin: locals.user?.is_admin ?? false
 	};
 };

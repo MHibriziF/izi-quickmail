@@ -2,6 +2,8 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { getUserByEmail } from '$lib/server/auth';
 import { verifyPassword } from '$lib/server/crypto';
 import { APP_NAME } from '$lib/constants';
+import { getEmailProvider } from '$lib/server/context';
+import { notifySecurityEvent } from '$lib/server/security-notice';
 import {
 	confirmEnrollment,
 	disableTwoFactor,
@@ -59,6 +61,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 					return json({ error: 'Enter the 6-digit code' }, { status: 400 });
 				}
 				const backupCodes = await confirmEnrollment(db, locals.user.id, body.code);
+				await notifySecurityEvent(db, getEmailProvider(platform), locals.user, 'two-factor-enabled');
 				return json({ ok: true, backupCodes });
 			}
 
@@ -69,7 +72,14 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 				if (!(await passwordOk())) {
 					return json({ error: 'That password is incorrect' }, { status: 403 });
 				}
-				return json({ ok: true, backupCodes: await issueBackupCodes(db, locals.user.id) });
+				const reissued = await issueBackupCodes(db, locals.user.id);
+				await notifySecurityEvent(
+					db,
+					getEmailProvider(platform),
+					locals.user,
+					'backup-codes-reissued'
+				);
+				return json({ ok: true, backupCodes: reissued });
 			}
 
 			case 'disable': {
@@ -77,6 +87,12 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 					return json({ error: 'That password is incorrect' }, { status: 403 });
 				}
 				await disableTwoFactor(db, locals.user.id);
+				await notifySecurityEvent(
+					db,
+					getEmailProvider(platform),
+					locals.user,
+					'two-factor-disabled'
+				);
 				return json({ ok: true });
 			}
 

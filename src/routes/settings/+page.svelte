@@ -7,6 +7,7 @@
 	import AddressField from '$lib/components/AddressField.svelte';
 	import DesktopNotifications from '$lib/components/DesktopNotifications.svelte';
 	import TwoFactorPanel from '$lib/components/TwoFactorPanel.svelte';
+	import RecoveryEmailPanel from '$lib/components/RecoveryEmailPanel.svelte';
 	import InstallApp from '$lib/components/InstallApp.svelte';
 	import {
 		readThemePreference,
@@ -464,6 +465,8 @@
 		enabled={data.twoFactor.enabled}
 		backupCodesRemaining={data.twoFactor.backupCodesRemaining}
 	/>
+
+	<RecoveryEmailPanel email={data.recovery.email} pending={data.recovery.pending} />
 
 	<section class="surface-lg card">
 		<h2><Icon name="contrast-2-line" size={18} /> Appearance</h2>
