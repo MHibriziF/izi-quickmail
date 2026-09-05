@@ -1,17 +1,21 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	import type { DeliveryStatus } from '$lib/types';
+	import type { MailStatus } from '$lib/types';
 
 	let {
 		status,
 		detail = null
 	}: {
-		status: DeliveryStatus | null;
+		status: MailStatus | null;
 		detail?: string | null;
 	} = $props();
 
-	// Resend reports these over the webhook; before that a message is just queued.
-	const meta: Record<DeliveryStatus, { label: string; icon: string; tone: string }> = {
+	// Resend reports most of these over the webhook; before that a message is
+	// just queued. `scheduled` and `draft` never come from a webhook — they are
+	// states the mailbox itself holds the message in.
+	const meta: Record<MailStatus, { label: string; icon: string; tone: string }> = {
+		draft: { label: 'Draft', icon: 'draft-line', tone: 'neutral' },
+		scheduled: { label: 'Scheduled', icon: 'calendar-schedule-line', tone: 'warn' },
 		queued: { label: 'Sending', icon: 'time-line', tone: 'neutral' },
 		sent: { label: 'Sent', icon: 'check-line', tone: 'neutral' },
 		delivered: { label: 'Delivered', icon: 'check-double-line', tone: 'good' },
