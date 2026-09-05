@@ -26,8 +26,11 @@ export type DeliveryStatus =
 	| 'complained'
 	| 'failed';
 
-/** What the `emails.status` column can hold — delivery state, or an unsent draft. */
-export type MailStatus = DeliveryStatus | 'draft';
+/**
+ * What the `emails.status` column can hold: a delivery state, an unsent draft,
+ * or a message the provider is holding until its `scheduled_at`.
+ */
+export type MailStatus = DeliveryStatus | 'draft' | 'scheduled';
 
 export type Domain = {
 	id: string;
@@ -106,6 +109,7 @@ export type EmailRow = {
 	provider_id: string | null;
 	status: MailStatus | null;
 	status_at: string | null;
+	scheduled_at: string | null;
 	status_detail: string | null;
 	is_read: number;
 	is_starred: number;
@@ -127,7 +131,7 @@ export type EmailSummary = {
 	has_attachments: boolean;
 	domain_id: string | null;
 	address_id: string | null;
-	status: DeliveryStatus | null;
+	status: MailStatus | null;
 	created_at: string;
 };
 
@@ -158,7 +162,7 @@ export type ThreadSummary = {
 	/** Which registered address the newest message arrived on, when known. */
 	address_id: string | null;
 	/** Delivery state of the newest message, when we sent it. */
-	status: DeliveryStatus | null;
+	status: MailStatus | null;
 	created_at: string;
 };
 
@@ -191,7 +195,7 @@ export type ThreadMessage = {
 	body_html: string | null;
 	message_id: string | null;
 	references_header: string | null;
-	status: DeliveryStatus | null;
+	status: MailStatus | null;
 	status_detail: string | null;
 	is_read: boolean;
 	is_starred: boolean;
