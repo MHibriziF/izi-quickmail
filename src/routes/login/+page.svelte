@@ -6,6 +6,8 @@
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');
+	let needsCode = $state(false);
+	let code = $state('');
 	let loading = $state(false);
 
 	async function submit(event: SubmitEvent) {
@@ -17,10 +19,17 @@
 			const res = await fetch('/api/auth/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ email, password })
+				body: JSON.stringify({ email, password, code: needsCode ? code : undefined })
 			});
 			const data = await res.json();
 			if (!res.ok) {
+				// The password was right — the form just grows a second field.
+				if (data.requiresTwoFactor) {
+					needsCode = true;
+					code = '';
+					error = data.error ?? '';
+					return;
+				}
 				error = data.error ?? 'Login failed';
 				return;
 			}
@@ -66,12 +75,33 @@
 				/>
 			</div>
 
+			{#if needsCode}
+				<div>
+					<label for="code" class="text-sm text-[var(--color-text-secondary)]">
+						Authenticator code
+					</label>
+					<!-- svelte-ignore a11y_autofocus -->
+					<input
+						id="code"
+						type="text"
+						bind:value={code}
+						required
+						autofocus
+						inputmode="numeric"
+						autocomplete="one-time-code"
+						placeholder="123456"
+						class="auth-input"
+					/>
+					<p class="hint">Or enter one of your recovery codes.</p>
+				</div>
+			{/if}
+
 			{#if error}
 				<p class="text-sm text-[var(--color-text-secondary)]">{error}</p>
 			{/if}
 
 			<button type="submit" disabled={loading} class="btn-primary mt-2 w-full py-2.5">
-				{loading ? 'Signing in…' : 'Continue'}
+				{loading ? 'Signing in…' : needsCode ? 'Verify' : 'Continue'}
 			</button>
 		</form>
 	</div>
@@ -83,6 +113,12 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
+	}
+
+	.hint {
+		margin-top: 0.375rem;
+		font-size: 0.75rem;
+		color: var(--color-muted);
 	}
 
 	.brand-icon {
