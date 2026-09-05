@@ -46,6 +46,7 @@ export async function insertEmail(
 		addressId?: string | null;
 		providerId?: string | null;
 		status?: MailStatus | null;
+		scheduledAt?: string | null;
 		isRead?: boolean;
 		/** Disable fallback grouping when this message must start a conversation. */
 		subjectMatch?: boolean;
@@ -77,8 +78,8 @@ export async function insertEmail(
 				id, user_id, direction, from_addr, to_addr, cc_addr, bcc_addr, subject,
 				body_text, body_html, message_id, in_reply_to, references_header,
 				reply_to_email_id, thread_id, thread_key,
-				domain_id, address_id, provider_id, status, status_at, is_read
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)`
+				domain_id, address_id, provider_id, status, status_at, scheduled_at, is_read
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?)`
 		)
 		.bind(
 			id,
@@ -101,6 +102,7 @@ export async function insertEmail(
 			input.addressId ?? null,
 			input.providerId ?? null,
 			input.status ?? null,
+			input.scheduledAt ?? null,
 			input.isRead ? 1 : 0
 		)
 		.run();

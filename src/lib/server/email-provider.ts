@@ -15,6 +15,8 @@ export type ProviderDomain = {
 export type EmailProvider = {
 	kind: EmailProviderKind;
 	send(input: OutboundMailInput): Promise<OutboundMailResult>;
+	/** Recall a message the provider is still holding. */
+	cancelScheduled?(providerId: string): Promise<void>;
 	listDomains(): Promise<ProviderDomain[]>;
 	getDomain(id: string): Promise<ProviderDomain>;
 };

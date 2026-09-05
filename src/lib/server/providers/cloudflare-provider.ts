@@ -37,6 +37,16 @@ export function createCloudflareProvider(
 	return {
 		kind: 'cloudflare',
 		async send(input: OutboundMailInput): Promise<OutboundMailResult> {
+			// Cloudflare Email Service has no hold-until. Sending immediately would
+			// be worse than refusing — the message would leave at the wrong time.
+			if (input.scheduledAt) {
+				throw new ProviderError(
+					400,
+					'unsupported',
+					'Scheduled send needs the Resend provider.'
+				);
+			}
+
 			try {
 				const response = await email.send({
 					to: input.to,

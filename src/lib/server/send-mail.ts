@@ -15,6 +15,8 @@ export type OutboundMailInput = {
 	headers?: Record<string, string>;
 	attachments?: OutboundAttachmentInput[];
 	idempotencyKey?: string;
+	/** ISO 8601. The provider holds the message until then. */
+	scheduledAt?: string | null;
 };
 
 export type OutboundMailResult = {

@@ -152,6 +152,16 @@ export function createResendClient(apiKey: string) {
 			});
 		},
 
+		/**
+		 * POST /emails/:id/cancel — only works while a scheduled message is still
+		 * held. Once it has gone out, Resend refuses, which is the honest answer.
+		 */
+		async cancelScheduled(id: string): Promise<void> {
+			await request<{ id: string }>(`/emails/${encodeURIComponent(id)}/cancel`, {
+				method: 'POST'
+			});
+		},
+
 		/** GET /domains — used by onboarding to show what this key can reach. */
 		async listDomains(): Promise<ResendDomain[]> {
 			const result = await request<ListResponse<ResendDomain>>('/domains?limit=100');

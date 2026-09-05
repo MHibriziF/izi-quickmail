@@ -32,6 +32,8 @@ export type ComposeInput = {
 	attachments?: OutboundAttachmentInput[];
 	/** Disable subject fallback for messages that intentionally start a thread. */
 	subjectMatch?: boolean;
+	/** ISO 8601. Held by the provider until then. */
+	scheduledAt?: string | null;
 };
 
 /**
@@ -143,6 +145,7 @@ export async function sendAndStore(
 		html: html ?? undefined,
 		inReplyTo: input.inReplyTo,
 		references: input.references,
+		scheduledAt: input.scheduledAt ?? null,
 		attachments
 	});
 
@@ -162,7 +165,10 @@ export async function sendAndStore(
 		domainId: from.domain_id,
 		addressId: from.id,
 		providerId,
-		status: initialOutboundStatus(provider.kind),
+		// A held message is not queued for delivery yet, so it gets its own state
+		// rather than looking like mail that is already on its way.
+		status: input.scheduledAt ? 'scheduled' : initialOutboundStatus(provider.kind),
+		scheduledAt: input.scheduledAt ?? null,
 		isRead: true,
 		subjectMatch: input.subjectMatch
 	});
