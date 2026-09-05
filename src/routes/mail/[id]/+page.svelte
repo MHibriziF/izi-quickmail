@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, invalidate, invalidateAll } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import AttachmentPicker from '$lib/components/AttachmentPicker.svelte';
@@ -11,6 +11,13 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	// Opening a thread marks it read server-side, but the sidebar's unread badge
+	// comes from the root layout load, which SvelteKit has no reason to re-run on
+	// this navigation. Refresh just the counts, and only when something changed.
+	$effect(() => {
+		if (data.markedRead) void invalidate('app:counts');
+	});
 
 	let replyHtml = $state('');
 	let replyAttachments = $state<OutboundAttachmentInput[]>([]);

@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ params, locals, platform }) => {
 	}
 
 	// Opening any message opens its whole conversation.
-	await markThreadRead(platform.env.DB, locals.user.id, email);
+	const newlyRead = await markThreadRead(platform.env.DB, locals.user.id, email);
 	const [messages, addresses] = await Promise.all([
 		listThreadMessages(platform.env.DB, locals.user.id, email),
 		listAddressesForUser(platform.env.DB, locals.user.id)
@@ -31,6 +31,8 @@ export const load: PageServerLoad = async ({ params, locals, platform }) => {
 		/** The message that was linked to — expanded first when the page opens. */
 		focusId: email.id,
 		trashed: Boolean(email.deleted_at),
+		/** Opening this thread cleared unread messages, so the badges are stale. */
+		markedRead: newlyRead > 0,
 		subject: displaySubject(messages[0]?.subject ?? email.subject),
 		replyFrom: replyIdentity?.address ?? null,
 		replyFromName: replyIdentity?.label?.trim() || null,
