@@ -393,9 +393,10 @@
 		</p>
 
 		<form class="account-form" onsubmit={saveAccountName}>
-			<label class="field" for="account-name">Display name</label>
+			<label class="field-title" for="account-name">Display name</label>
 			<input
 				id="account-name"
+				class="text-input"
 				type="text"
 				bind:value={accountName}
 				maxlength={MAX_USER_NAME_LENGTH}
@@ -414,18 +415,20 @@
 		</form>
 
 		<form class="account-form" onsubmit={changePassword}>
-			<label class="field" for="current-password">Current password</label>
+			<label class="field-title" for="current-password">Current password</label>
 			<input
 				id="current-password"
+				class="text-input"
 				type="password"
 				bind:value={currentPassword}
 				autocomplete="current-password"
 				required
 			/>
 
-			<label class="field" for="new-password">New password</label>
+			<label class="field-title" for="new-password">New password</label>
 			<input
 				id="new-password"
+				class="text-input"
 				type="password"
 				bind:value={newPassword}
 				minlength={MIN_PASSWORD_LENGTH}
@@ -433,9 +436,10 @@
 				required
 			/>
 
-			<label class="field" for="confirm-password">Confirm new password</label>
+			<label class="field-title" for="confirm-password">Confirm new password</label>
 			<input
 				id="confirm-password"
+				class="text-input"
 				type="password"
 				bind:value={confirmPassword}
 				minlength={MIN_PASSWORD_LENGTH}
@@ -1312,15 +1316,6 @@
 		margin-top: 1.25rem;
 		padding-top: 1.25rem;
 		border-top: 1px solid var(--color-line);
-	}
-
-	.account-form .field {
-		font-size: 0.8125rem;
-		font-weight: 600;
-	}
-
-	.account-form input {
-		width: 100%;
 	}
 
 	.account-actions {
