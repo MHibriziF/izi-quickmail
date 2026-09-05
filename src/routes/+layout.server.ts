@@ -11,8 +11,13 @@ const EMPTY_COUNTS: MailboxCounts = {
 	trash: 0
 };
 
-export const load: LayoutServerLoad = async ({ locals, platform }) => {
+export const load: LayoutServerLoad = async ({ locals, platform, depends }) => {
 	const db = platform?.env.DB;
+
+	// Reading a thread changes these, but that happens in another route's load,
+	// which gives SvelteKit no reason to re-run this one. Naming the dependency
+	// lets those routes refresh the badges without a full invalidateAll().
+	depends('app:counts');
 
 	// The sidebar shows these on every page, so they load with the shell.
 	const counts =
