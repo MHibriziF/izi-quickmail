@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
 	import StackHeader from '$lib/components/StackHeader.svelte';
 	import Check from '$lib/components/Check.svelte';
@@ -13,7 +14,7 @@
 		type ThemePreference
 	} from '$lib/theme';
 	import { MAX_EMAIL_SIGNATURE_LENGTH } from '$lib/email-signature';
-	import { APP_NAME } from '$lib/constants';
+	import { APP_NAME, MAX_USER_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '$lib/constants';
 	import type { ApiTokenSummary, MailAddress } from '$lib/types';
 	import type { PageData } from './$types';
 
@@ -28,6 +29,89 @@
 	function chooseTheme(next: ThemePreference) {
 		theme = next;
 		setThemePreference(next);
+	}
+
+	// `data.user` comes from the root layout load, so it is the live account row.
+	let accountName = $state(untrack(() => data.user?.name ?? ''));
+	let accountBusy = $state(false);
+	let accountError = $state('');
+	let accountSaved = $state(false);
+
+	async function saveAccountName(event: SubmitEvent) {
+		event.preventDefault();
+		accountBusy = true;
+		accountError = '';
+		accountSaved = false;
+
+		try {
+			const res = await fetch('/api/settings/account', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name: accountName })
+			});
+			const body = await res.json();
+			if (!res.ok) {
+				accountError = body.error ?? 'Could not save your name';
+				return;
+			}
+
+			accountName = body.user.name;
+			accountSaved = true;
+			// The sidebar and header read the name from layout data.
+			await invalidateAll();
+		} catch {
+			accountError = 'Network error';
+		} finally {
+			accountBusy = false;
+		}
+	}
+
+	let currentPassword = $state('');
+	let newPassword = $state('');
+	let confirmPassword = $state('');
+	let passwordBusy = $state(false);
+	let passwordError = $state('');
+	let passwordSaved = $state(false);
+
+	async function changePassword(event: SubmitEvent) {
+		event.preventDefault();
+		passwordError = '';
+		passwordSaved = false;
+
+		if (newPassword !== confirmPassword) {
+			passwordError = 'New passwords do not match';
+			return;
+		}
+		if (newPassword.length < MIN_PASSWORD_LENGTH) {
+			passwordError = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+			return;
+		}
+
+		passwordBusy = true;
+
+		try {
+			const res = await fetch('/api/settings/account', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ currentPassword, newPassword })
+			});
+			const body = await res.json();
+			if (!res.ok) {
+				passwordError = body.error ?? 'Could not change your password';
+				return;
+			}
+
+			currentPassword = '';
+			newPassword = '';
+			confirmPassword = '';
+			passwordSaved = true;
+			// Rotation revoked the old API keys, so drop them from the list.
+			await invalidateAll();
+		} catch {
+			passwordError = 'Network error';
+		} finally {
+			passwordBusy = false;
+		}
 	}
 
 	let signature = $state(untrack(() => data.signature));
@@ -300,6 +384,76 @@
 
 <div class="settings-page">
 	<StackHeader title="Settings" back={false} />
+
+	<section class="surface-lg card">
+		<h2><Icon name="user-line" size={18} /> Account</h2>
+		<p class="card-hint">
+			Signed in as {data.user?.email}. This is your login identity — mailboxes have their own
+			display names.
+		</p>
+
+		<form class="account-form" onsubmit={saveAccountName}>
+			<label class="field" for="account-name">Display name</label>
+			<input
+				id="account-name"
+				type="text"
+				bind:value={accountName}
+				maxlength={MAX_USER_NAME_LENGTH}
+				autocomplete="name"
+				required
+			/>
+
+			<div class="account-actions">
+				<button type="submit" class="btn-primary" disabled={accountBusy}>
+					{accountBusy ? 'Saving…' : 'Save name'}
+				</button>
+			</div>
+
+			{#if accountError}<p class="error">{accountError}</p>{/if}
+			{#if accountSaved}<p class="saved">Saved</p>{/if}
+		</form>
+
+		<form class="account-form" onsubmit={changePassword}>
+			<label class="field" for="current-password">Current password</label>
+			<input
+				id="current-password"
+				type="password"
+				bind:value={currentPassword}
+				autocomplete="current-password"
+				required
+			/>
+
+			<label class="field" for="new-password">New password</label>
+			<input
+				id="new-password"
+				type="password"
+				bind:value={newPassword}
+				minlength={MIN_PASSWORD_LENGTH}
+				autocomplete="new-password"
+				required
+			/>
+
+			<label class="field" for="confirm-password">Confirm new password</label>
+			<input
+				id="confirm-password"
+				type="password"
+				bind:value={confirmPassword}
+				minlength={MIN_PASSWORD_LENGTH}
+				autocomplete="new-password"
+				required
+			/>
+
+			<div class="account-actions">
+				<span class="card-hint">Signs out other devices and revokes your API keys.</span>
+				<button type="submit" class="btn-primary" disabled={passwordBusy}>
+					{passwordBusy ? 'Changing…' : 'Change password'}
+				</button>
+			</div>
+
+			{#if passwordError}<p class="error">{passwordError}</p>{/if}
+			{#if passwordSaved}<p class="saved">Password changed</p>{/if}
+		</form>
+	</section>
 
 	<section class="surface-lg card">
 		<h2><Icon name="contrast-2-line" size={18} /> Appearance</h2>
@@ -1146,5 +1300,40 @@
 		.theme-options {
 			gap: 0.5rem;
 		}
+	}
+
+	.account-form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.account-form + .account-form {
+		margin-top: 1.25rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+	}
+
+	.account-form .field {
+		font-size: 0.8rem;
+		font-weight: 600;
+	}
+
+	.account-form input {
+		width: 100%;
+	}
+
+	.account-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+
+	.account-actions .card-hint {
+		margin: 0;
+		margin-right: auto;
 	}
 </style>
