@@ -197,6 +197,7 @@ export type ThreadMessage = {
 	references_header: string | null;
 	status: MailStatus | null;
 	status_detail: string | null;
+	scheduled_at: string | null;
 	is_read: boolean;
 	is_starred: boolean;
 	deleted_at: string | null;

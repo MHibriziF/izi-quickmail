@@ -19,6 +19,31 @@
 		if (data.markedRead) void invalidate('app:counts');
 	});
 
+	// A message the provider is still holding. Recalling it turns it back into a
+	// draft, so the writing survives the schedule being cancelled.
+	const scheduled = $derived(data.messages.find((message) => message.status === 'scheduled'));
+	let cancelling = $state(false);
+	let cancelError = $state('');
+
+	async function cancelSchedule() {
+		if (!scheduled) return;
+		cancelling = true;
+		cancelError = '';
+		try {
+			const res = await fetch(`/api/mail/${scheduled.id}/cancel-schedule`, { method: 'POST' });
+			const body = await res.json();
+			if (!res.ok) {
+				cancelError = body.error ?? 'Could not recall that message';
+				return;
+			}
+			window.location.href = `/compose?draft=${body.draftId}`;
+		} catch {
+			cancelError = 'Network error';
+		} finally {
+			cancelling = false;
+		}
+	}
+
 	let replyHtml = $state('');
 	let replyAttachments = $state<OutboundAttachmentInput[]>([]);
 	let replyOpen = $state(false);
@@ -268,7 +293,29 @@
 		</div>
 	</header>
 
-	<article class="surface-lg mail-card">
+	{#if scheduled}
+	<div class="scheduled-bar">
+		<Icon name="calendar-schedule-line" size={16} />
+		<span class="scheduled-text">
+			Scheduled to send
+			{#if scheduled.scheduled_at}
+				{new Intl.DateTimeFormat(undefined, {
+					weekday: 'short',
+					day: 'numeric',
+					month: 'short',
+					hour: 'numeric',
+					minute: '2-digit'
+				}).format(new Date(scheduled.scheduled_at))}
+			{/if}
+		</span>
+		<button type="button" class="btn-ghost" disabled={cancelling} onclick={cancelSchedule}>
+			{cancelling ? 'Recalling…' : 'Cancel send'}
+		</button>
+	</div>
+	{#if cancelError}<p class="scheduled-error">{cancelError}</p>{/if}
+{/if}
+
+<article class="surface-lg mail-card">
 		<div class="subject-row">
 			<h1>{data.subject}</h1>
 			{#if messages.length > 1}
@@ -394,6 +441,28 @@
 </div>
 
 <style>
+	.scheduled-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		margin-bottom: 0.75rem;
+		padding: 0.625rem 0.875rem;
+		border-radius: 0.75rem;
+		font-size: 0.8125rem;
+		color: var(--tone-warn-fg);
+		background: var(--tone-warn-bg);
+	}
+
+	.scheduled-text {
+		margin-right: auto;
+	}
+
+	.scheduled-error {
+		margin: 0 0 0.75rem;
+		font-size: 0.8125rem;
+		color: var(--color-danger);
+	}
+
 	.mail-toolbar {
 		display: flex;
 		align-items: center;
