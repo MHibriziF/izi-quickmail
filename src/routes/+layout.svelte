@@ -19,6 +19,7 @@
 		registerAppServiceWorker
 	} from '$lib/app-chrome';
 	import { setupMobileViewTransitions } from '$lib/view-transitions';
+	import MailboxLiveSync from '$lib/components/MailboxLiveSync.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: import('svelte').Snippet; data: LayoutData } = $props();
@@ -103,6 +104,7 @@
 </svelte:head>
 
 {#if showShell}
+	<MailboxLiveSync />
 	<div
 		class="app-shell"
 		data-collapsed={collapsed}
