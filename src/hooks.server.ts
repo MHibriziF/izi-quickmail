@@ -8,6 +8,12 @@ import { listAddressesForUser, listDomains } from '$lib/server/domains';
 const PUBLIC_PREFIXES = [
 	'/login',
 	'/setup',
+	// Account recovery is reached precisely when the user cannot sign in, and
+	// the confirmation link is clicked from another inbox. Each of these carries
+	// its own single-use token; the path being public grants nothing on its own.
+	'/forgot',
+	'/reset',
+	'/account/recovery',
 	'/api/auth',
 	'/api/setup',
 	'/api/webhooks',
