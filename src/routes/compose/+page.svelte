@@ -4,6 +4,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import AttachmentPicker from '$lib/components/AttachmentPicker.svelte';
+	import RecipientField from '$lib/components/RecipientField.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
 	import { requestSkipViewTransition } from '$lib/app-chrome';
 	import { APP_NAME } from '$lib/constants';
@@ -215,37 +216,22 @@
 			{/if}
 		</div>
 
-		<div class="field-row">
-			<span class="field-label">To</span>
-			<input
-				id="to"
-				type="text"
-				inputmode="email"
-				autocomplete="email"
-				bind:value={to}
-				required
-				placeholder="recipient@example.com"
-				class="field-input"
-			/>
-			<button
-				type="button"
-				class="copies-toggle"
-				onclick={() => (showCopies = !showCopies)}
-				aria-expanded={showCopies}
-			>
-				Cc/Bcc
-			</button>
-		</div>
+		<RecipientField id="to" label="To" bind:value={to} placeholder="recipient@example.com" required>
+			{#snippet trailing()}
+				<button
+					type="button"
+					class="copies-toggle"
+					onclick={() => (showCopies = !showCopies)}
+					aria-expanded={showCopies}
+				>
+					Cc/Bcc
+				</button>
+			{/snippet}
+		</RecipientField>
 
 		{#if showCopies}
-			<div class="field-row">
-				<span class="field-label">Cc</span>
-				<input type="text" bind:value={cc} placeholder="Comma separated" class="field-input" />
-			</div>
-			<div class="field-row">
-				<span class="field-label">Bcc</span>
-				<input type="text" bind:value={bcc} placeholder="Comma separated" class="field-input" />
-			</div>
+			<RecipientField id="cc" label="Cc" bind:value={cc} placeholder="Space to add" />
+			<RecipientField id="bcc" label="Bcc" bind:value={bcc} placeholder="Space to add" />
 		{/if}
 
 		<div class="field-row">
