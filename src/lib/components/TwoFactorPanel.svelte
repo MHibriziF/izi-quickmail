@@ -218,6 +218,31 @@
 </section>
 
 <style>
+	/* `.surface-lg` is global but carries no padding — all of it lives in
+	   `.card`, which is scoped per page/component. Same story for the classes
+	   below: page- or component-scoped everywhere in this codebase rather than
+	   global, so they are redeclared here the way DesktopNotifications does. */
+	.card {
+		margin-top: 1.5rem;
+		padding: 1.5rem;
+	}
+
+	.card h2 {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.9375rem;
+		font-weight: 600;
+	}
+
+	@media (max-width: 900px) {
+		.card {
+			margin-top: 1rem;
+			padding: 1.25rem 1rem;
+			box-shadow: none;
+		}
+	}
+
 	/* .card-hint, .error, .field-title and .text-input are all page- or
 	   component-scoped elsewhere in this codebase rather than global, so they
 	   are redeclared here the same way AddressField and the setup page do. */
