@@ -4,6 +4,7 @@ import { getEmailSignature } from '$lib/server/email-signature';
 import { readVapidConfiguration } from '$lib/server/push-notifications';
 import { getTwoFactorStatus } from '$lib/server/two-factor';
 import { getRecoveryStatus } from '$lib/server/account-recovery';
+import { getCleanupSettings } from '$lib/server/cleanup';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	const db = platform?.env.DB;
@@ -18,6 +19,10 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		locals.user && db
 			? await getRecoveryStatus(db, locals.user.id)
 			: { email: null, pending: null, verifiedAt: null };
+	const cleanup =
+		locals.user && db
+			? await getCleanupSettings(db, locals.user.id)
+			: { trashRetentionDays: 0 };
 
 	return {
 		domains: locals.domains,
@@ -30,6 +35,7 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		},
 		twoFactor,
 		recovery,
+		cleanup,
 		isAdmin: locals.user?.is_admin ?? false
 	};
 };

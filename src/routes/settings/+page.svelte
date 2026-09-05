@@ -8,6 +8,7 @@
 	import DesktopNotifications from '$lib/components/DesktopNotifications.svelte';
 	import TwoFactorPanel from '$lib/components/TwoFactorPanel.svelte';
 	import RecoveryEmailPanel from '$lib/components/RecoveryEmailPanel.svelte';
+	import CleanupPanel from '$lib/components/CleanupPanel.svelte';
 	import InstallApp from '$lib/components/InstallApp.svelte';
 	import {
 		readThemePreference,
@@ -467,6 +468,8 @@
 	/>
 
 	<RecoveryEmailPanel email={data.recovery.email} pending={data.recovery.pending} />
+
+	<CleanupPanel retentionDays={data.cleanup.trashRetentionDays} />
 
 	<section class="surface-lg card">
 		<h2><Icon name="contrast-2-line" size={18} /> Appearance</h2>
