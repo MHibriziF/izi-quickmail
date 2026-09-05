@@ -1,4 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
+import { MAX_SCHEDULE_DAYS } from '$lib/constants';
 import {
 	describeProviderError,
 	getEmailProvider,
@@ -90,6 +91,12 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		}
 		if (when.getTime() <= Date.now()) {
 			return json({ error: 'Pick a time in the future' }, { status: 400 });
+		}
+		if (when.getTime() > Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000) {
+			return json(
+				{ error: `Scheduled send only reaches ${MAX_SCHEDULE_DAYS} days ahead` },
+				{ status: 400 }
+			);
 		}
 		scheduledAt = when.toISOString();
 	}

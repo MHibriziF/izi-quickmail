@@ -13,3 +13,5 @@ export const MAILBOX_PAGE_SIZE = 25;
 export const MAX_USER_NAME_LENGTH = 80;
 /** Shortest password `setUserPassword` will accept. */
 export const MIN_PASSWORD_LENGTH = 8;
+/** Resend refuses a `scheduled_at` further out than this, so neither do we. */
+export const MAX_SCHEDULE_DAYS = 30;

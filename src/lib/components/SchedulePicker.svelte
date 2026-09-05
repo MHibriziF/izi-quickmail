@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { MAX_SCHEDULE_DAYS } from '$lib/constants';
 
 	let {
 		open = $bindable(false),
@@ -61,12 +62,17 @@
 	let custom = $state('');
 	let error = $state('');
 
+	const pad = (n: number) => String(n).padStart(2, '0');
+	const localInputValue = (date: Date) =>
+		`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+
+	/** Resend will not hold a message longer than this, so the field stops there. */
+	const customMax = $derived(
+		localInputValue(new Date(Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000))
+	);
+
 	/** `datetime-local` wants local time with no zone, trimmed to minutes. */
-	const customMin = $derived.by(() => {
-		const soon = new Date(Date.now() + 60_000);
-		const pad = (n: number) => String(n).padStart(2, '0');
-		return `${soon.getFullYear()}-${pad(soon.getMonth() + 1)}-${pad(soon.getDate())}T${pad(soon.getHours())}:${pad(soon.getMinutes())}`;
-	});
+	const customMin = $derived(localInputValue(new Date(Date.now() + 60_000)));
 
 	function choose(when: Date) {
 		onpick(when.toISOString());
@@ -84,6 +90,10 @@
 		}
 		if (when.getTime() <= Date.now()) {
 			error = 'Pick a time in the future';
+			return;
+		}
+		if (when.getTime() > Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000) {
+			error = `Scheduled send only reaches ${MAX_SCHEDULE_DAYS} days ahead`;
 			return;
 		}
 
@@ -128,6 +138,7 @@
 				type="datetime-local"
 				bind:value={custom}
 				min={customMin}
+				max={customMax}
 			/>
 			{#if error}<p class="error">{error}</p>{/if}
 			<button type="submit" class="btn-primary schedule-btn">Schedule</button>
