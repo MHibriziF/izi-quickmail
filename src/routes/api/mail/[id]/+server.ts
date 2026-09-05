@@ -1,4 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
+import { parseScheduledAt } from '$lib/server/schedule';
 import {
 	describeProviderError,
 	getEmailProvider,
@@ -17,6 +18,7 @@ import { buildReferences, displaySubject } from '$lib/server/threads';
 import type { OutboundAttachmentInput } from '$lib/types';
 
 type ReplyBody = {
+	scheduledAt?: string;
 	fromAddressId?: string;
 	text?: string;
 	html?: string;
@@ -109,6 +111,9 @@ export const POST: RequestHandler = async ({ params, request, locals, platform }
 		return json({ error: 'Message body is required' }, { status: 400 });
 	}
 
+	const schedule = parseScheduledAt(body.scheduledAt);
+	if (schedule.error) return json({ error: schedule.error }, { status: 400 });
+
 	const subject = /^re:/i.test(original.subject) ? original.subject : `Re: ${original.subject}`;
 	// Replying to our own message continues the conversation with its recipient.
 	const to = original.direction === 'inbound' ? original.from_addr : original.to_addr;
@@ -137,7 +142,8 @@ export const POST: RequestHandler = async ({ params, request, locals, platform }
 				// when they answer — keeps the conversation together.
 				references: buildReferences(original.references_header, original.message_id),
 				replyToEmailId: original.id,
-				attachments: body.attachments
+				attachments: body.attachments,
+				scheduledAt: schedule.iso
 			}
 		);
 

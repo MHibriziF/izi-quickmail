@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { MAX_SCHEDULE_DAYS } from '$lib/constants';
+import { parseScheduledAt } from '$lib/server/schedule';
 import {
 	describeProviderError,
 	getEmailProvider,
@@ -81,25 +81,8 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		return json({ error: 'To, subject, and message are required' }, { status: 400 });
 	}
 
-	// A time in the past would be sent straight away, which is never what the
-	// person picking a date meant.
-	let scheduledAt: string | undefined;
-	if (body.scheduledAt) {
-		const when = new Date(body.scheduledAt);
-		if (Number.isNaN(when.getTime())) {
-			return json({ error: 'That send time is not a valid date' }, { status: 400 });
-		}
-		if (when.getTime() <= Date.now()) {
-			return json({ error: 'Pick a time in the future' }, { status: 400 });
-		}
-		if (when.getTime() > Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000) {
-			return json(
-				{ error: `Scheduled send only reaches ${MAX_SCHEDULE_DAYS} days ahead` },
-				{ status: 400 }
-			);
-		}
-		scheduledAt = when.toISOString();
-	}
+	const schedule = parseScheduledAt(body.scheduledAt);
+	if (schedule.error) return json({ error: schedule.error }, { status: 400 });
 
 	try {
 		const provider = getEmailProvider(platform);
@@ -116,7 +99,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 				text: body.text,
 				html: body.html,
 				attachments: body.attachments,
-				scheduledAt: scheduledAt ?? null
+				scheduledAt: schedule.iso
 			}
 		);
 
