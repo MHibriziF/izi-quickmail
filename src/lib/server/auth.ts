@@ -2,6 +2,7 @@ import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import { SESSION_COOKIE, SESSION_DAYS } from './constants';
 import { createSessionToken, hashPassword, hashToken, verifyPassword } from './crypto';
 import { MAX_USER_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '$lib/constants';
+import { isTwoFactorEnabled, verifyChallenge } from './two-factor';
 import type { User } from '$lib/types';
 
 type UserRow = {
@@ -97,17 +98,17 @@ export async function bootstrapAdmin(
 	return createUser(db, { ...input, isAdmin: true });
 }
 
-export async function login(
+/**
+ * Issues a session for an already-authenticated user.
+ *
+ * Separate from `login` so paths that have their own proof of identity — the
+ * first-run setup, and re-signing a tab after its own password change — do not
+ * get asked for a second factor they have already satisfied.
+ */
+export async function startSession(
 	db: D1Database,
-	email: string,
-	password: string
-): Promise<{ user: User; token: string } | null> {
-	const user = await getUserByEmail(db, email);
-	if (!user) return null;
-
-	const valid = await verifyPassword(password, user.password_hash);
-	if (!valid) return null;
-
+	user: User
+): Promise<{ user: User; token: string }> {
 	const token = createSessionToken();
 	const token_hash = await hashToken(token);
 	const sessionId = crypto.randomUUID();
@@ -118,8 +119,41 @@ export async function login(
 		.bind(sessionId, user.id, token_hash, expiresAt)
 		.run();
 
+	return { user, token };
+}
+
+export type LoginResult =
+	| { ok: true; user: User; token: string }
+	| { ok: false; reason: 'invalid' | 'totp_required' | 'totp_invalid' };
+
+/**
+ * Password first, then the second factor if the account has one.
+ *
+ * No session exists until both pass, so a correct password on its own buys an
+ * attacker nothing.
+ */
+export async function login(
+	db: D1Database,
+	email: string,
+	password: string,
+	code?: string
+): Promise<LoginResult> {
+	const user = await getUserByEmail(db, email);
+	if (!user) return { ok: false, reason: 'invalid' };
+
+	const valid = await verifyPassword(password, user.password_hash);
+	if (!valid) return { ok: false, reason: 'invalid' };
+
 	const { password_hash: _, ...safeUser } = user;
-	return { user: safeUser, token };
+
+	if (await isTwoFactorEnabled(db, safeUser.id)) {
+		if (!code?.trim()) return { ok: false, reason: 'totp_required' };
+		if (!(await verifyChallenge(db, safeUser.id, code))) {
+			return { ok: false, reason: 'totp_invalid' };
+		}
+	}
+
+	return { ok: true, ...(await startSession(db, safeUser)) };
 }
 
 export async function logout(db: D1Database, token: string): Promise<void> {

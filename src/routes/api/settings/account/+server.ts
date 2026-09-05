@@ -1,7 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import {
 	getUserByEmail,
-	login,
+	startSession,
 	sessionCookieOptions,
 	setUserName,
 	setUserPassword,
@@ -62,15 +62,9 @@ export const PATCH: RequestHandler = async ({ request, cookies, locals, platform
 			// authorised this request — so mint a fresh one and keep the tab signed in.
 			await setUserPassword(db, user.id, body.newPassword);
 
-			const renewed = await login(db, user.email, body.newPassword);
-			if (renewed) {
-				cookies.set(
-					SESSION_COOKIE,
-					renewed.token,
-					sessionCookieOptions(SESSION_DAYS * 24 * 60 * 60)
-				);
-				user = renewed.user;
-			}
+			const renewed = await startSession(db, user);
+			cookies.set(SESSION_COOKIE, renewed.token, sessionCookieOptions(SESSION_DAYS * 24 * 60 * 60));
+			user = renewed.user;
 		}
 
 		return json({ ok: true, user, apiTokensRevoked: wantsPassword });

@@ -6,13 +6,24 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	const db = platform?.env.DB;
 	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
 
-	const body = (await request.json()) as { email?: string; password?: string };
+	const body = (await request.json()) as { email?: string; password?: string; code?: string };
 	if (!body.email || !body.password) {
 		return json({ error: 'Email and password are required' }, { status: 400 });
 	}
 
-	const result = await login(db, body.email, body.password);
-	if (!result) {
+	const result = await login(db, body.email, body.password, body.code);
+	if (!result.ok) {
+		// The prompt itself is not an error: the password was right, the form just
+		// needs a second field now.
+		if (result.reason === 'totp_required') {
+			return json({ requiresTwoFactor: true }, { status: 401 });
+		}
+		if (result.reason === 'totp_invalid') {
+			return json(
+				{ requiresTwoFactor: true, error: 'That code did not match. Try the next one.' },
+				{ status: 401 }
+			);
+		}
 		return json({ error: 'Invalid email or password' }, { status: 401 });
 	}
 
