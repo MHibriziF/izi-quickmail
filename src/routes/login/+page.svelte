@@ -104,6 +104,10 @@
 				{loading ? 'Signing in…' : needsCode ? 'Verify' : 'Continue'}
 			</button>
 		</form>
+
+		{#if !needsCode}
+			<a href="/forgot" class="forgot">Forgot password?</a>
+		{/if}
 	</div>
 </div>
 
@@ -113,6 +117,18 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
+	}
+
+	.forgot {
+		display: block;
+		margin-top: 1.25rem;
+		font-size: 0.8125rem;
+		text-align: center;
+		color: var(--color-text-secondary);
+	}
+
+	.forgot:hover {
+		color: var(--color-text);
 	}
 
 	.hint {
