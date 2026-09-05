@@ -19,6 +19,7 @@ type SendMailBody = {
 	text?: string;
 	html?: string;
 	attachments?: OutboundAttachmentInput[];
+	scheduledAt?: string;
 };
 
 function mailboxView(url: URL): MailboxView {
@@ -79,6 +80,20 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		return json({ error: 'To, subject, and message are required' }, { status: 400 });
 	}
 
+	// A time in the past would be sent straight away, which is never what the
+	// person picking a date meant.
+	let scheduledAt: string | undefined;
+	if (body.scheduledAt) {
+		const when = new Date(body.scheduledAt);
+		if (Number.isNaN(when.getTime())) {
+			return json({ error: 'That send time is not a valid date' }, { status: 400 });
+		}
+		if (when.getTime() <= Date.now()) {
+			return json({ error: 'Pick a time in the future' }, { status: 400 });
+		}
+		scheduledAt = when.toISOString();
+	}
+
 	try {
 		const provider = getEmailProvider(platform);
 		const { emailId } = await sendAndStore(
@@ -93,7 +108,8 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 				subject: body.subject,
 				text: body.text,
 				html: body.html,
-				attachments: body.attachments
+				attachments: body.attachments,
+				scheduledAt: scheduledAt ?? null
 			}
 		);
 
