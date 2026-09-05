@@ -4,6 +4,7 @@
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import AttachmentPicker from '$lib/components/AttachmentPicker.svelte';
 	import ThreadMessage from '$lib/components/ThreadMessage.svelte';
+	import SendButton from '$lib/components/SendButton.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
 	import { hasInAppHistory, requestSkipViewTransition } from '$lib/app-chrome';
 	import { APP_NAME } from '$lib/constants';
@@ -189,8 +190,13 @@
 	}
 
 	/** Replies continue from the newest message, so the chain stays intact. */
-	async function sendReply(event: SubmitEvent) {
+	function sendReply(event: SubmitEvent) {
 		event.preventDefault();
+		void deliverReply(null);
+	}
+
+	/** Send the reply now, or hand the provider a time to hold it until. */
+	async function deliverReply(scheduledAt: string | null) {
 		if (!latest || isHtmlEmpty(replyHtml)) return;
 
 		sending = true;
@@ -203,7 +209,8 @@
 				body: JSON.stringify({
 					html: replyHtml,
 					text: htmlToPlainText(replyHtml),
-					attachments: replyAttachments
+					attachments: replyAttachments,
+					scheduledAt: scheduledAt ?? undefined
 				})
 			});
 			const body = await res.json();
@@ -421,10 +428,7 @@
 					<button type="button" class="btn-ghost" onclick={() => (replyOpen = false)}>
 						Cancel
 					</button>
-					<button type="submit" class="btn-primary" disabled={sending}>
-						<Icon name="send-plane-2-fill" size={16} />
-						{sending ? 'Sending…' : 'Send'}
-					</button>
+					<SendButton {sending} showIcon timeZone={data.timeZone} onsend={deliverReply} />
 				</div>
 			</div>
 

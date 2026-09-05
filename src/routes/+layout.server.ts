@@ -37,8 +37,17 @@ export const load: LayoutServerLoad = async ({ locals, platform, depends }) => {
 			? await getMailboxCounts(db, locals.user.id, locals.activeDomainId)
 			: EMPTY_COUNTS;
 
+	const timezoneRow =
+		db && locals.user
+			? await db
+					.prepare('SELECT timezone FROM users WHERE id = ?')
+					.bind(locals.user.id)
+					.first<{ timezone: string | null }>()
+			: null;
+
 	return {
 		user: locals.user,
+		timeZone: timezoneRow?.timezone ?? null,
 		domains: locals.domains,
 		addresses: locals.addresses,
 		activeDomainId: locals.activeDomainId,
