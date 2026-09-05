@@ -47,6 +47,8 @@ export async function insertEmail(
 		providerId?: string | null;
 		status?: MailStatus | null;
 		isRead?: boolean;
+		/** Disable fallback grouping when this message must start a conversation. */
+		subjectMatch?: boolean;
 	}
 ): Promise<string> {
 	const id = crypto.randomUUID();
@@ -57,6 +59,7 @@ export async function insertEmail(
 	// view never has to guess.
 	const threadId = await resolveThreadId(db, input.userId, {
 		emailId: id,
+		direction: input.direction,
 		subject: input.subject,
 		from: input.from,
 		to: input.to,
@@ -65,7 +68,7 @@ export async function insertEmail(
 		references: input.references,
 		replyToEmailId: input.replyToEmailId,
 		domainId: input.domainId,
-		subjectMatch: input.status !== 'draft'
+		subjectMatch: input.subjectMatch ?? input.status !== 'draft'
 	});
 
 	await db
