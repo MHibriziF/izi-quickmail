@@ -126,6 +126,7 @@ export async function sendOutboundEmail(
 		references,
 		...(Object.keys(headers).length ? { headers } : {}),
 		attachments: input.attachments,
+		scheduledAt: input.scheduledAt ?? null,
 		idempotencyKey: input.idempotencyKey ?? crypto.randomUUID()
 	});
 }
