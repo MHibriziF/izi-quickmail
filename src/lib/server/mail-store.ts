@@ -789,18 +789,22 @@ export async function listThreadMessages(
 }
 
 /** Opening a conversation clears the unread state on all of its messages. */
+/** Returns how many messages actually changed, so callers can skip a refresh. */
 export async function markThreadRead(
 	db: D1Database,
 	userId: string,
 	email: EmailRow
-): Promise<void> {
-	await db
+): Promise<number> {
+	const result = await db
 		.prepare(
 			`UPDATE emails SET is_read = 1
-			 WHERE user_id = ? AND COALESCE(thread_id, id) = ? AND deleted_at IS NULL`
+			 WHERE user_id = ? AND COALESCE(thread_id, id) = ? AND deleted_at IS NULL
+			   AND is_read = 0`
 		)
 		.bind(userId, email.thread_id ?? email.id)
 		.run();
+
+	return result.meta.changes ?? 0;
 }
 
 function truncate(value: string | null): string | null {
