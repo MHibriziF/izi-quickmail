@@ -1,6 +1,7 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import { SESSION_COOKIE, SESSION_DAYS } from './constants';
 import { createSessionToken, hashPassword, hashToken, verifyPassword } from './crypto';
+import { MAX_USER_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '$lib/constants';
 import type { User } from '$lib/types';
 
 type UserRow = {
@@ -131,8 +132,8 @@ export async function setUserPassword(
 	userId: string,
 	password: string
 ): Promise<void> {
-	if (password.length < 8) {
-		throw new Error('Password must be at least 8 characters');
+	if (password.length < MIN_PASSWORD_LENGTH) {
+		throw new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
 	}
 
 	const password_hash = await hashPassword(password);
@@ -150,6 +151,30 @@ export async function setUserPassword(
 		db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId),
 		db.prepare('DELETE FROM api_tokens WHERE user_id = ?').bind(userId)
 	]);
+}
+
+/** Rename a login identity. Mail identities carry their own display names. */
+export async function setUserName(db: D1Database, userId: string, name: string): Promise<User> {
+	const trimmed = name.trim();
+	if (!trimmed) {
+		throw new Error('Name cannot be empty');
+	}
+	if (trimmed.length > MAX_USER_NAME_LENGTH) {
+		throw new Error(`Name must be ${MAX_USER_NAME_LENGTH} characters or fewer`);
+	}
+
+	const result = await db
+		.prepare('UPDATE users SET name = ? WHERE id = ?')
+		.bind(trimmed, userId)
+		.run();
+
+	if ((result.meta.changes ?? 0) === 0) {
+		throw new Error('User not found');
+	}
+
+	const user = await getUserById(db, userId);
+	if (!user) throw new Error('User not found');
+	return user;
 }
 
 /**

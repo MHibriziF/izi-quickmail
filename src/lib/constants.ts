@@ -9,3 +9,7 @@ export const MAX_ATTACHMENTS_PER_EMAIL = 5;
 export const MAX_TOTAL_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 /** Rows per page in the mailbox list. */
 export const MAILBOX_PAGE_SIZE = 25;
+/** Longest display name on a login identity. */
+export const MAX_USER_NAME_LENGTH = 80;
+/** Shortest password `setUserPassword` will accept. */
+export const MIN_PASSWORD_LENGTH = 8;
