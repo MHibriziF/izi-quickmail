@@ -1,5 +1,6 @@
 import type { D1Database } from '@cloudflare/workers-types';
 import { splitStatements } from './migrate-sql';
+import { MIGRATIONS } from './migrations.generated';
 
 /**
  * Applies pending D1 migrations from inside the Worker.
@@ -14,13 +15,6 @@ import { splitStatements } from './migrate-sql';
  * sees the work as done.
  */
 
-/** Every file in `migrations/`, inlined at build time. */
-const FILES = import.meta.glob('/migrations/*.sql', {
-	query: '?raw',
-	import: 'default',
-	eager: true
-}) as Record<string, string>;
-
 const CREATE_TRACKING_TABLE = `CREATE TABLE IF NOT EXISTS d1_migrations(
 		id         INTEGER PRIMARY KEY AUTOINCREMENT,
 		name       TEXT UNIQUE,
@@ -29,11 +23,15 @@ const CREATE_TRACKING_TABLE = `CREATE TABLE IF NOT EXISTS d1_migrations(
 
 export type Migration = { name: string; sql: string };
 
-/** Migrations in the order wrangler would apply them: by filename. */
+/**
+ * Migrations in the order wrangler would apply them: by filename.
+ *
+ * Read from a generated module rather than `import.meta.glob`, because
+ * `src/worker.ts` is bundled by wrangler's esbuild and never sees Vite's
+ * transforms — the glob survived as a literal call there and threw on upload.
+ */
 export function listMigrations(): Migration[] {
-	return Object.entries(FILES)
-		.map(([path, sql]) => ({ name: path.split('/').pop() ?? path, sql }))
-		.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+	return [...MIGRATIONS].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
 
 async function appliedNames(db: D1Database): Promise<Set<string>> {
