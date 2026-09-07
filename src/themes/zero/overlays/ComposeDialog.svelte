@@ -5,6 +5,7 @@
 	import RecipientField from '$lib/components/RecipientField.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
+	import { describeMailError, sendMessage } from '$lib/mail/client';
 	import type { MailAddress, OutboundAttachmentInput } from '$lib/types';
 	import Icon from '../icons/Icon.svelte';
 	import ComposerActions from './ComposerActions.svelte';
@@ -128,31 +129,22 @@
 		sending = true;
 		error = '';
 		try {
-			const response = await fetch('/api/mail', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					draftId: activeDraft ?? undefined,
-					fromAddressId,
-					to,
-					cc: cc.trim() || undefined,
-					bcc: bcc.trim() || undefined,
-					subject,
-					html,
-					text: htmlToPlainText(html),
-					attachments,
-					scheduledAt: scheduledAt ?? undefined
-				})
+			await sendMessage({
+				draftId: activeDraft,
+				fromAddressId,
+				to,
+				cc,
+				bcc,
+				subject,
+				html,
+				text: htmlToPlainText(html),
+				attachments,
+				scheduledAt
 			});
-			const body = (await response.json()) as { error?: string };
-			if (!response.ok) {
-				error = body.error ?? t('compose.failedToSend');
-				return;
-			}
 			await invalidateAll();
 			onClose();
-		} catch {
-			error = t('common.networkError');
+		} catch (failure) {
+			error = describeMailError(failure, t('common.networkError'));
 		} finally {
 			sending = false;
 		}

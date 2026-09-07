@@ -6,6 +6,14 @@
 	import ThreadMessage from '$lib/components/ThreadMessage.svelte';
 	import SendButton from '$lib/components/SendButton.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
+	import {
+		cancelScheduledSend,
+		deleteMessage,
+		describeMailError,
+		forwardMessage,
+		patchThread,
+		sendReply
+	} from '$lib/mail/client';
 	import { hasInAppHistory, requestSkipViewTransition } from '$lib/app-chrome';
 	import { APP_NAME } from '$lib/constants';
 	import type { OutboundAttachmentInput } from '$lib/types';
@@ -31,15 +39,10 @@
 		cancelling = true;
 		cancelError = '';
 		try {
-			const res = await fetch(`/api/mail/${scheduled.id}/cancel-schedule`, { method: 'POST' });
-			const body = await res.json();
-			if (!res.ok) {
-				cancelError = body.error ?? 'Could not recall that message';
-				return;
-			}
-			window.location.href = `/compose?draft=${body.draftId}`;
-		} catch {
-			cancelError = 'Network error';
+			const draftId = await cancelScheduledSend(scheduled.id);
+			window.location.href = `/compose?draft=${draftId}`;
+		} catch (failure) {
+			cancelError = describeMailError(failure, 'Network error');
 		} finally {
 			cancelling = false;
 		}
@@ -103,11 +106,7 @@
 	/** Flags apply to the conversation, not to the message that opened it. */
 	async function patch(body: Record<string, boolean>) {
 		if (!latest) return;
-		await fetch(`/api/mail/${latest.id}`, {
-			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(body)
-		});
+		await patchThread(latest.id, body);
 	}
 
 	async function toggleStar() {
@@ -146,7 +145,7 @@
 
 	async function destroy() {
 		if (!latest) return;
-		await fetch(`/api/mail/${latest.id}`, { method: 'DELETE' });
+		await deleteMessage(latest.id);
 		goto('/trash');
 	}
 
@@ -172,41 +171,32 @@
 		error = '';
 
 		try {
-			const res = await fetch(`/api/mail/${latest.id}/forward`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					to: forwardTo,
-					html: isHtmlEmpty(forwardHtml) ? undefined : forwardHtml,
-					text: isHtmlEmpty(forwardHtml) ? undefined : htmlToPlainText(forwardHtml),
-					includeAttachments
-				})
+			await forwardMessage(latest.id, {
+				to: forwardTo,
+				html: isHtmlEmpty(forwardHtml) ? undefined : forwardHtml,
+				text: isHtmlEmpty(forwardHtml) ? undefined : htmlToPlainText(forwardHtml),
+				includeAttachments
 			});
-			const body = await res.json();
-			if (!res.ok) {
-				error = body.error ?? 'Failed to forward';
-				return;
-			}
 
 			forwardTo = '';
 			forwardHtml = '';
 			forwardOpen = false;
 			// The forward is our own message now, so the mailbox has changed.
 			await invalidateAll();
-		} catch {
-			error = 'Network error';
+		} catch (failure) {
+			error = describeMailError(failure, 'Network error');
 		} finally {
 			sending = false;
 		}
 	}
 
 	/** Replies continue from the newest message, so the chain stays intact. */
-	function sendReply(event: SubmitEvent) {
+	function submitReply(event: SubmitEvent) {
 		event.preventDefault();
 		void deliverReply(null);
 	}
 
-	/** Send the reply now, or hand the provider a time to hold it until. */
+	/** Send the reply now, or leave it in the outbox until `scheduledAt`. */
 	async function deliverReply(scheduledAt: string | null) {
 		if (!latest || isHtmlEmpty(replyHtml)) return;
 
@@ -214,29 +204,20 @@
 		error = '';
 
 		try {
-			const res = await fetch(`/api/mail/${latest.id}`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					html: replyHtml,
-					text: htmlToPlainText(replyHtml),
-					attachments: replyAttachments,
-					scheduledAt: scheduledAt ?? undefined
-				})
+			await sendReply(latest.id, {
+				html: replyHtml,
+				text: htmlToPlainText(replyHtml),
+				attachments: replyAttachments,
+				scheduledAt
 			});
-			const body = await res.json();
-			if (!res.ok) {
-				error = body.error ?? 'Failed to send';
-				return;
-			}
 
 			replyHtml = '';
 			replyAttachments = [];
 			replyOpen = false;
 			// The sent reply is now part of this conversation.
 			await invalidateAll();
-		} catch {
-			error = 'Network error';
+		} catch (failure) {
+			error = describeMailError(failure, 'Network error');
 		} finally {
 			sending = false;
 		}
@@ -423,7 +404,7 @@
 			{/if}
 		</form>
 	{:else if replyOpen}
-		<form class="reply-section" onsubmit={sendReply}>
+		<form class="reply-section" onsubmit={submitReply}>
 			<p class="reply-to">
 				Replying to
 				<strong>

@@ -7,6 +7,7 @@
 	import RecipientField from '$lib/components/RecipientField.svelte';
 	import SendButton from '$lib/components/SendButton.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
+	import { describeMailError, sendMessage } from '$lib/mail/client';
 	import { requestSkipViewTransition } from '$lib/app-chrome';
 	import { APP_NAME } from '$lib/constants';
 	import type { OutboundAttachmentInput } from '$lib/types';
@@ -101,7 +102,7 @@
 		void deliver(null);
 	}
 
-	/** Send now, or hand the provider a time to hold it until. */
+	/** Send now, or leave it in the outbox until `scheduledAt`. */
 	async function deliver(scheduledAt: string | null) {
 		if (isHtmlEmpty(html)) {
 			error = 'Write a message';
@@ -112,30 +113,21 @@
 		error = '';
 
 		try {
-			const res = await fetch('/api/mail', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					draftId: draftId ?? undefined,
-					fromAddressId,
-					to,
-					cc: cc.trim() || undefined,
-					bcc: bcc.trim() || undefined,
-					subject,
-					html,
-					text: htmlToPlainText(html),
-					attachments,
-					scheduledAt: scheduledAt ?? undefined
-				})
+			await sendMessage({
+				draftId,
+				fromAddressId,
+				to,
+				cc,
+				bcc,
+				subject,
+				html,
+				text: htmlToPlainText(html),
+				attachments,
+				scheduledAt
 			});
-			const body = await res.json();
-			if (!res.ok) {
-				error = body.error ?? 'Failed to send';
-				return;
-			}
 			window.location.href = '/sent';
-		} catch {
-			error = 'Network error';
+		} catch (failure) {
+			error = describeMailError(failure, 'Network error');
 		} finally {
 			sending = false;
 		}

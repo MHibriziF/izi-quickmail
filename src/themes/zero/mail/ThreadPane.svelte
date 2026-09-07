@@ -8,7 +8,13 @@
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
 	import { formatMailDate, formatMailTime, shouldShowSeparateTime } from '$lib/utils/date';
 	import { attachmentHref } from '$lib/utils/attachments';
-	import { runMailAction } from '$lib/mail/client';
+	import {
+		cancelScheduledSend,
+		describeMailError,
+		forwardMessage,
+		runMailAction,
+		sendReply
+	} from '$lib/mail/client';
 	import { MAIL_CHANGED_MESSAGE } from '$lib/mail/sync';
 	import { initials, parseAddressList, type AddressPart } from '$lib/mail/folders';
 	import { t } from '$lib/i18n';
@@ -151,17 +157,10 @@
 		cancelling = true;
 		cancelError = '';
 		try {
-			const response = await fetch(`/api/mail/${scheduled.id}/cancel-schedule`, {
-				method: 'POST'
-			});
-			const body = (await response.json()) as { error?: string; draftId?: string };
-			if (!response.ok) {
-				cancelError = body.error ?? t('thread.couldNotRecall');
-				return;
-			}
-			window.location.href = `/compose?draft=${body.draftId}`;
-		} catch {
-			cancelError = t('common.networkError');
+			const draftId = await cancelScheduledSend(scheduled.id);
+			window.location.href = `/compose?draft=${draftId}`;
+		} catch (failure) {
+			cancelError = describeMailError(failure, t('common.networkError'));
 		} finally {
 			cancelling = false;
 		}
@@ -342,7 +341,7 @@
 		) {
 			if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && replyOpen) {
 				event.preventDefault();
-				void sendReply();
+				void submitComposer();
 			}
 			return;
 		}
@@ -358,7 +357,7 @@
 	 * `scheduledAt` only reaches the reply path — a forward goes through the
 	 * forward endpoints, which have no send time to give.
 	 */
-	async function sendReply(scheduledAt: string | null = null) {
+	async function submitComposer(scheduledAt: string | null = null) {
 		const message = replyTarget ?? latest;
 		if (!message || (!forwarding && isHtmlEmpty(replyHtml))) return;
 		if (forwarding && !replyTo.trim()) {
@@ -369,53 +368,35 @@
 		sendError = '';
 		try {
 			if (forwarding) {
-				const endpoint =
-					replyMode === 'forwardAll' && thread
-						? `/api/mail/thread/${encodeURIComponent(thread.threadId)}/forward`
-						: `/api/mail/${encodeURIComponent(message.id)}/forward`;
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						to: replyTo,
-						cc: replyCc.trim() || undefined,
-						bcc: replyBcc.trim() || undefined,
-						html: isHtmlEmpty(replyHtml) ? undefined : replyHtml,
-						text: isHtmlEmpty(replyHtml) ? undefined : htmlToPlainText(replyHtml),
-						includeAttachments: includeOriginalAttachments
-					})
+				await forwardMessage(message.id, {
+					to: replyTo,
+					cc: replyCc,
+					bcc: replyBcc,
+					html: isHtmlEmpty(replyHtml) ? undefined : replyHtml,
+					text: isHtmlEmpty(replyHtml) ? undefined : htmlToPlainText(replyHtml),
+					includeAttachments: includeOriginalAttachments,
+					threadId: replyMode === 'forwardAll' ? (thread?.threadId ?? null) : null
 				});
-				if (!response.ok) {
-					const body = (await response.json()) as { error?: string };
-					sendError = body.error ?? t('thread.couldNotForward');
-					return;
-				}
 			} else {
-				const response = await fetch(`/api/mail/${message.id}`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						to: replyTo,
-						cc: replyCc.trim() || undefined,
-						bcc: replyBcc.trim() || undefined,
-						html: replyHtml,
-						text: htmlToPlainText(replyHtml),
-						attachments,
-						scheduledAt: scheduledAt ?? undefined
-					})
+				await sendReply(message.id, {
+					to: replyTo,
+					cc: replyCc,
+					bcc: replyBcc,
+					html: replyHtml,
+					text: htmlToPlainText(replyHtml),
+					attachments,
+					scheduledAt
 				});
-				if (!response.ok) {
-					const body = (await response.json()) as { error?: string };
-					sendError = body.error ?? t('thread.couldNotSendReply');
-					return;
-				}
 			}
 			replyOpen = false;
 			replyHtml = '';
 			attachments = [];
 			await invalidateAll();
-		} catch {
-			sendError = t('common.networkError');
+		} catch (failure) {
+			sendError = describeMailError(
+				failure,
+				forwarding ? t('thread.couldNotForward') : t('common.networkError')
+			);
 		} finally {
 			sending = false;
 		}
@@ -707,7 +688,7 @@
 					class="z-reply"
 					onsubmit={(event) => {
 						event.preventDefault();
-						void sendReply();
+						void submitComposer();
 					}}
 				>
 					{#if forwarding}
@@ -765,7 +746,7 @@
 						allowNewAttachments={!forwarding}
 						originalAttachmentCount={forwardedAttachmentCount}
 						timeZone={($page.data.timeZone as string | null | undefined) ?? null}
-						onschedule={forwarding ? undefined : (iso) => void sendReply(iso)}
+						onschedule={forwarding ? undefined : (iso) => void submitComposer(iso)}
 					/>
 				</form>
 			{/if}

@@ -1,16 +1,59 @@
+import type { OutboundAttachmentInput } from '$lib/types';
+
+/**
+ * Every write a shell makes to the mailbox, in one place.
+ *
+ * Both shells render their own composer and thread pane, so before this
+ * existed each built its own request body by hand — which is exactly how
+ * scheduled send ended up working in Classic and silently missing from Zero.
+ * A field added here reaches both.
+ */
+
+/**
+ * The server answered, and said no.
+ *
+ * Distinguished from a network failure so a shell can show what the server
+ * actually said rather than a generic "network error" for a rejected send.
+ */
+export class MailRequestError extends Error {
+	readonly status: number;
+
+	constructor(status: number, message: string) {
+		super(message);
+		this.name = 'MailRequestError';
+		this.status = status;
+	}
+}
+
+/** The message to show a person: the server's own words, else `fallback`. */
+export function describeMailError(error: unknown, fallback: string): string {
+	return error instanceof MailRequestError ? error.message : fallback;
+}
+
+async function post<T = unknown>(url: string, body: unknown, fallback: string): Promise<T> {
+	const response = await fetch(url, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body)
+	});
+
+	const payload = (await response.json().catch(() => ({}))) as { error?: string } & T;
+	if (!response.ok) {
+		throw new MailRequestError(response.status, payload.error ?? fallback);
+	}
+
+	return payload;
+}
+
 export async function runMailAction(
 	action: string,
 	ids: string[] = []
-): Promise<{ ok: boolean; affected?: number; error?: string }> {
-	const response = await fetch('/api/mail/actions', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ action, ids })
-	});
-	const body = (await response.json()) as { ok?: boolean; affected?: number; error?: string };
-	if (!response.ok) {
-		throw new Error(body.error ?? 'Could not update mail');
-	}
+): Promise<{ ok: boolean; affected?: number }> {
+	const body = await post<{ affected?: number }>(
+		'/api/mail/actions',
+		{ action, ids },
+		'Could not update mail'
+	);
 	return { ok: true, affected: body.affected };
 }
 
@@ -21,7 +64,128 @@ export async function patchThread(id: string, flags: Record<string, boolean>): P
 		body: JSON.stringify(flags)
 	});
 	if (!response.ok) {
-		const body = (await response.json()) as { error?: string };
-		throw new Error(body.error ?? 'Could not update this conversation');
+		const body = (await response.json().catch(() => ({}))) as { error?: string };
+		throw new MailRequestError(
+			response.status,
+			body.error ?? 'Could not update this conversation'
+		);
 	}
+}
+
+/** Permanently removes a message. Only reachable from the trash. */
+export async function deleteMessage(messageId: string): Promise<void> {
+	const response = await fetch(`/api/mail/${encodeURIComponent(messageId)}`, {
+		method: 'DELETE'
+	});
+	if (!response.ok) {
+		const body = (await response.json().catch(() => ({}))) as { error?: string };
+		throw new MailRequestError(response.status, body.error ?? 'Could not delete that message');
+	}
+}
+
+export type SendMessageInput = {
+	/** Set when the composer was editing a draft — it is removed once sent. */
+	draftId?: string | null;
+	fromAddressId?: string;
+	to: string;
+	cc?: string;
+	bcc?: string;
+	subject: string;
+	html: string;
+	text: string;
+	attachments?: OutboundAttachmentInput[];
+	/** ISO 8601. Stored unsent and delivered by the cron sweep. */
+	scheduledAt?: string | null;
+};
+
+export async function sendMessage(input: SendMessageInput): Promise<{ id?: string }> {
+	return post<{ id?: string }>(
+		'/api/mail',
+		{
+			draftId: input.draftId ?? undefined,
+			fromAddressId: input.fromAddressId,
+			to: input.to,
+			cc: input.cc?.trim() || undefined,
+			bcc: input.bcc?.trim() || undefined,
+			subject: input.subject,
+			html: input.html,
+			text: input.text,
+			attachments: input.attachments,
+			scheduledAt: input.scheduledAt ?? undefined
+		},
+		'Failed to send'
+	);
+}
+
+export type SendReplyInput = {
+	/** Only the shells that expose the fields send these. */
+	to?: string;
+	cc?: string;
+	bcc?: string;
+	html: string;
+	text: string;
+	attachments?: OutboundAttachmentInput[];
+	scheduledAt?: string | null;
+};
+
+/** Replies continue from `messageId`, so the conversation chain stays intact. */
+export async function sendReply(messageId: string, input: SendReplyInput): Promise<void> {
+	await post(
+		`/api/mail/${encodeURIComponent(messageId)}`,
+		{
+			to: input.to?.trim() || undefined,
+			cc: input.cc?.trim() || undefined,
+			bcc: input.bcc?.trim() || undefined,
+			html: input.html,
+			text: input.text,
+			attachments: input.attachments,
+			scheduledAt: input.scheduledAt ?? undefined
+		},
+		'Failed to send'
+	);
+}
+
+export type ForwardInput = {
+	to: string;
+	cc?: string;
+	bcc?: string;
+	html?: string;
+	text?: string;
+	includeAttachments?: boolean;
+	/** Set to forward the whole conversation instead of the one message. */
+	threadId?: string | null;
+};
+
+export async function forwardMessage(messageId: string, input: ForwardInput): Promise<void> {
+	const url = input.threadId
+		? `/api/mail/thread/${encodeURIComponent(input.threadId)}/forward`
+		: `/api/mail/${encodeURIComponent(messageId)}/forward`;
+
+	await post(
+		url,
+		{
+			to: input.to,
+			cc: input.cc?.trim() || undefined,
+			bcc: input.bcc?.trim() || undefined,
+			html: input.html,
+			text: input.text,
+			includeAttachments: input.includeAttachments
+		},
+		'Failed to forward'
+	);
+}
+
+/**
+ * Takes a waiting message back out of the outbox.
+ *
+ * Returns the id it became, so the caller can reopen it as a draft — the
+ * writing is not thrown away with the schedule.
+ */
+export async function cancelScheduledSend(messageId: string): Promise<string | undefined> {
+	const body = await post<{ draftId?: string }>(
+		`/api/mail/${encodeURIComponent(messageId)}/cancel-schedule`,
+		{},
+		'Could not recall that message'
+	);
+	return body.draftId;
 }

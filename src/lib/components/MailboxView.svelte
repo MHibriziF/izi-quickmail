@@ -9,6 +9,7 @@
 	import SwipeRow from './SwipeRow.svelte';
 	import PullToRefresh from './PullToRefresh.svelte';
 	import { formatRelativeDate } from '$lib/utils/date';
+	import { patchThread, runMailAction } from '$lib/mail/client';
 	import { haptic, isPrimaryTab } from '$lib/app-chrome';
 	import type {
 		MailAddress,
@@ -133,11 +134,7 @@
 		if (busy) return;
 		busy = true;
 		try {
-			await fetch('/api/mail/actions', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ action, ids })
-			});
+			await runMailAction(action, ids);
 			selected = [];
 			await invalidateAll();
 		} finally {
@@ -197,11 +194,7 @@
 			row.thread_id === thread.thread_id ? { ...row, is_starred: isStarred } : row
 		);
 
-		await fetch(`/api/mail/${thread.latest_id}`, {
-			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ isStarred })
-		});
+		await patchThread(thread.latest_id, { isStarred });
 		await invalidateAll();
 	}
 
