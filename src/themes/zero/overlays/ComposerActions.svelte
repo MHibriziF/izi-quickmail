@@ -4,6 +4,7 @@
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import type { OutboundAttachmentInput } from '$lib/types';
 	import Icon from '../icons/Icon.svelte';
+	import SchedulePicker from '$lib/components/SchedulePicker.svelte';
 	import { t } from '$lib/i18n';
 
 	let {
@@ -13,6 +14,9 @@
 		error = '',
 		allowNewAttachments = true,
 		originalAttachmentCount = 0,
+		/** Omit to hide the schedule control — forwarding does not offer one. */
+		onschedule,
+		timeZone = null,
 		extra
 	}: {
 		sending?: boolean;
@@ -21,8 +25,12 @@
 		error?: string;
 		allowNewAttachments?: boolean;
 		originalAttachmentCount?: number;
+		onschedule?: (isoTime: string) => void;
+		timeZone?: string | null;
 		extra?: import('svelte').Snippet;
 	} = $props();
+
+	let scheduleOpen = $state(false);
 
 	let input = $state<HTMLInputElement | null>(null);
 	let attachError = $state('');
@@ -78,13 +86,27 @@
 </script>
 
 <div class="z-composer-foot">
-	<button type="submit" class="z-send" disabled={sending}>
+	<button type="submit" class="z-send" class:z-send-split={onschedule} disabled={sending}>
 		<span>{sending ? t('common.sending') : t('common.send')}</span>
 		<span class="z-send-kbd">
 			<span>{isMac ? '⌘' : 'Ctrl'}</span>
 			<Icon name="CurvedArrow" size={14} />
 		</span>
 	</button>
+	{#if onschedule}
+		<!-- Joined to Send so it reads as a menu on that button, the way the
+		     Classic shell's split send does. -->
+		<button
+			type="button"
+			class="z-send z-send-more"
+			disabled={sending}
+			aria-label={t('compose.scheduleSend')}
+			onclick={() => (scheduleOpen = true)}
+		>
+			<Icon name="ChevronDown" size={14} />
+		</button>
+		<SchedulePicker bind:open={scheduleOpen} {timeZone} onpick={(iso) => onschedule(iso)} />
+	{/if}
 	{#if allowNewAttachments}
 		<button type="button" class="z-add" onclick={() => input?.click()}>
 			<AttachmentIcon name="attachment-2" size={12} />
@@ -128,3 +150,18 @@
 		<p class="z-composer-error">{attachError || error}</p>
 	{/if}
 </div>
+
+<style>
+	.z-send-split {
+		border-top-right-radius: 0;
+		border-bottom-right-radius: 0;
+	}
+
+	.z-send-more {
+		margin-left: 1px;
+		padding-left: 0.5rem;
+		padding-right: 0.5rem;
+		border-top-left-radius: 0;
+		border-bottom-left-radius: 0;
+	}
+</style>

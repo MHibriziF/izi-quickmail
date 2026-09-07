@@ -129,6 +129,43 @@
 	});
 
 	const latest = $derived(thread?.messages[thread.messages.length - 1] ?? null);
+
+	// A message still waiting in the outbox. Recalling it turns it back into a
+	// draft, so the writing survives the schedule being cancelled.
+	const scheduled = $derived(
+		thread?.messages.find((message) => message.status === 'scheduled') ?? null
+	);
+	let cancelling = $state(false);
+	let cancelError = $state('');
+
+	const scheduledFormat = new Intl.DateTimeFormat(undefined, {
+		weekday: 'short',
+		day: 'numeric',
+		month: 'short',
+		hour: 'numeric',
+		minute: '2-digit'
+	});
+
+	async function cancelSchedule() {
+		if (!scheduled) return;
+		cancelling = true;
+		cancelError = '';
+		try {
+			const response = await fetch(`/api/mail/${scheduled.id}/cancel-schedule`, {
+				method: 'POST'
+			});
+			const body = (await response.json()) as { error?: string; draftId?: string };
+			if (!response.ok) {
+				cancelError = body.error ?? t('thread.couldNotRecall');
+				return;
+			}
+			window.location.href = `/compose?draft=${body.draftId}`;
+		} catch {
+			cancelError = t('common.networkError');
+		} finally {
+			cancelling = false;
+		}
+	}
 	const starred = $derived(thread?.messages.some((message) => message.is_starred) ?? false);
 	const people = $derived(thread ? threadPeople(thread.messages, selfEmails) : []);
 	const forwarding = $derived(replyMode === 'forward' || replyMode === 'forwardAll');
@@ -317,7 +354,11 @@
 		}
 	}
 
-	async function sendReply() {
+	/**
+	 * `scheduledAt` only reaches the reply path — a forward goes through the
+	 * forward endpoints, which have no send time to give.
+	 */
+	async function sendReply(scheduledAt: string | null = null) {
 		const message = replyTarget ?? latest;
 		if (!message || (!forwarding && isHtmlEmpty(replyHtml))) return;
 		if (forwarding && !replyTo.trim()) {
@@ -359,7 +400,8 @@
 						bcc: replyBcc.trim() || undefined,
 						html: replyHtml,
 						text: htmlToPlainText(replyHtml),
-						attachments
+						attachments,
+						scheduledAt: scheduledAt ?? undefined
 					})
 				});
 				if (!response.ok) {
@@ -511,6 +553,28 @@
 					</div>
 				{/if}
 			</div>
+
+			{#if scheduled}
+				<div class="z-scheduled">
+					<Icon name="Clock" size={14} />
+					<span class="z-scheduled-text">
+						{scheduled.scheduled_at
+							? t('thread.scheduledFor', {
+									when: scheduledFormat.format(new Date(scheduled.scheduled_at))
+								})
+							: t('thread.scheduled')}
+					</span>
+					<button
+						type="button"
+						class="z-ghost-btn"
+						disabled={cancelling}
+						onclick={cancelSchedule}
+					>
+						{cancelling ? t('common.saving') : t('thread.recall')}
+					</button>
+				</div>
+				{#if cancelError}<p class="z-composer-error">{cancelError}</p>{/if}
+			{/if}
 
 			{#each thread.messages as message, index (message.id)}
 				{@const last = index === thread.messages.length - 1}
@@ -700,6 +764,8 @@
 						error={sendError}
 						allowNewAttachments={!forwarding}
 						originalAttachmentCount={forwardedAttachmentCount}
+						timeZone={($page.data.timeZone as string | null | undefined) ?? null}
+						onschedule={forwarding ? undefined : (iso) => void sendReply(iso)}
 					/>
 				</form>
 			{/if}

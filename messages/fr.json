@@ -272,7 +272,8 @@
 		"ccColon": "Cc :",
 		"bccColon": "Cci :",
 		"subjectColon": "Objet :",
-		"fromColon": "De :"
+		"fromColon": "De :",
+		"scheduleSend": "Envoi programmé"
 	},
 	"thread": {
 		"close": "Fermer",
@@ -311,7 +312,11 @@
 		"replyAllLabel": "Répondre à tous",
 		"replyingTo": "Réponse à",
 		"notePlaceholder": "Ajouter une note…",
-		"replyPlaceholder": "Répondre…"
+		"replyPlaceholder": "Répondre…",
+		"scheduledFor": "Envoi programmé {when}",
+		"scheduled": "Envoi programmé",
+		"recall": "Annuler l’envoi",
+		"couldNotRecall": "Impossible d’annuler l’envoi de ce message"
 	},
 	"search": {
 		"title": "Recherche",

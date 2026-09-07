@@ -272,7 +272,8 @@
 		"ccColon": "Cc:",
 		"bccColon": "Cco:",
 		"subjectColon": "Asunto:",
-		"fromColon": "De:"
+		"fromColon": "De:",
+		"scheduleSend": "Programar envío"
 	},
 	"thread": {
 		"close": "Cerrar",
@@ -311,7 +312,11 @@
 		"replyAllLabel": "Responder a todos",
 		"replyingTo": "Respondiendo a",
 		"notePlaceholder": "Añadir una nota…",
-		"replyPlaceholder": "Responder…"
+		"replyPlaceholder": "Responder…",
+		"scheduledFor": "Envío programado para {when}",
+		"scheduled": "Envío programado",
+		"recall": "Cancelar envío",
+		"couldNotRecall": "No se pudo cancelar el envío de ese mensaje"
 	},
 	"search": {
 		"title": "Buscar",

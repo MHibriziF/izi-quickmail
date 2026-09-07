@@ -272,7 +272,8 @@
 		"ccColon": "Cc:",
 		"bccColon": "Bcc:",
 		"subjectColon": "Subject:",
-		"fromColon": "From:"
+		"fromColon": "From:",
+		"scheduleSend": "Schedule send"
 	},
 	"thread": {
 		"close": "Close",
@@ -311,7 +312,11 @@
 		"replyAllLabel": "Reply All",
 		"replyingTo": "Replying to",
 		"notePlaceholder": "Add a note…",
-		"replyPlaceholder": "Reply…"
+		"replyPlaceholder": "Reply…",
+		"scheduledFor": "Scheduled to send {when}",
+		"scheduled": "Scheduled to send",
+		"recall": "Recall",
+		"couldNotRecall": "Could not recall that message"
 	},
 	"search": {
 		"title": "Search",

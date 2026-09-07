@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
@@ -112,8 +113,13 @@
 		}
 	}
 
-	async function send(event: SubmitEvent) {
+	function send(event: SubmitEvent) {
 		event.preventDefault();
+		return deliver(null);
+	}
+
+	/** Send now, or hand the message to the outbox for `scheduledAt`. */
+	async function deliver(scheduledAt: string | null) {
 		if (isHtmlEmpty(html)) {
 			error = t('compose.writeMessage');
 			return;
@@ -133,7 +139,8 @@
 					subject,
 					html,
 					text: htmlToPlainText(html),
-					attachments
+					attachments,
+					scheduledAt: scheduledAt ?? undefined
 				})
 			});
 			const body = (await response.json()) as { error?: string };
@@ -227,7 +234,13 @@
 				<RichTextEditor bind:html embedded minHeight={200} placeholder={t('compose.writeMessagePlaceholder')} />
 			</div>
 
-			<ComposerActions bind:attachments sending={sending} error={error}>
+			<ComposerActions
+				bind:attachments
+				sending={sending}
+				error={error}
+				timeZone={($page.data.timeZone as string | null | undefined) ?? null}
+				onschedule={(iso) => void deliver(iso)}
+			>
 				{#snippet extra()}
 					<button
 						type="button"

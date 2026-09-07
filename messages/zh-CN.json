@@ -272,7 +272,8 @@
 		"ccColon": "抄送：",
 		"bccColon": "密送：",
 		"subjectColon": "主题：",
-		"fromColon": "发件人："
+		"fromColon": "发件人：",
+		"scheduleSend": "定时发送"
 	},
 	"thread": {
 		"close": "关闭",
@@ -311,7 +312,11 @@
 		"replyAllLabel": "全部回复",
 		"replyingTo": "正在回复",
 		"notePlaceholder": "添加备注…",
-		"replyPlaceholder": "回复…"
+		"replyPlaceholder": "回复…",
+		"scheduledFor": "将于 {when} 发送",
+		"scheduled": "已设定发送时间",
+		"recall": "撤回",
+		"couldNotRecall": "无法撤回该邮件"
 	},
 	"search": {
 		"title": "搜索",
