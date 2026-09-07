@@ -13,6 +13,9 @@ const config = {
 				persist: { path: '.wrangler/state/v3' }
 			}
 		}),
+		alias: {
+			$themes: 'src/themes'
+		},
 		// Vite's unbundled worker fails in the browser. Production registration
 		// lives in registerAppServiceWorker().
 		serviceWorker: {

@@ -2,8 +2,10 @@ import { redirect, type Handle } from '@sveltejs/kit';
 import { authorizeApiRequest } from '$lib/server/api-access';
 import { getUserByApiToken, readBearerToken } from '$lib/server/api-tokens';
 import { countUsers, getUserFromSession, readSessionToken } from '$lib/server/auth';
-import { DOMAIN_COOKIE } from '$lib/server/constants';
+import { DOMAIN_COOKIE, UI_THEME_COOKIE, UI_THEME_COOKIE_MAX_AGE } from '$lib/server/constants';
 import { listAddressesForUser, listDomains } from '$lib/server/domains';
+import { getUserUiTheme } from '$lib/server/ui-theme';
+import { BUILTIN_THEME_IDS, DEFAULT_UI_THEME, parseThemeId } from '$lib/ui-theme/ids';
 
 const PUBLIC_PREFIXES = [
 	'/login',
@@ -31,6 +33,23 @@ function jsonError(error: string, status: number): Response {
 	});
 }
 
+/**
+ * Serves the page with the shell already named on `<html>`.
+ *
+ * Stamping it server-side is what stops the wrong shell being painted and then
+ * replaced once the client works out which theme this user chose.
+ */
+function render(
+	event: Parameters<Handle>[0]['event'],
+	resolve: Parameters<Handle>[0]['resolve']
+): ReturnType<Handle> {
+	const uiTheme = event.locals.uiTheme || DEFAULT_UI_THEME;
+	return resolve(event, {
+		transformPageChunk: ({ html }) =>
+			html.replace('<html lang="en">', `<html lang="en" data-ui-theme="${uiTheme}">`)
+	});
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
 	const db = event.platform?.env.DB;
 	event.locals.user = null;
@@ -40,6 +59,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.domains = [];
 	event.locals.addresses = [];
 	event.locals.activeDomainId = null;
+	event.locals.uiTheme = parseThemeId(event.cookies.get(UI_THEME_COOKIE), BUILTIN_THEME_IDS);
 
 	const { pathname } = event.url;
 
@@ -64,7 +84,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	// Webhooks authenticate with a signature, not a session.
 	if (pathname.startsWith('/api/webhooks/')) {
-		return resolve(event);
+		return render(event, resolve);
 	}
 
 	if (db && event.locals.user) {
@@ -86,7 +106,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (pathname.startsWith('/api/')) {
 		if (isPublicPath(pathname)) {
-			return resolve(event);
+			return render(event, resolve);
 		}
 		if (!event.locals.user || !event.locals.authMethod) {
 			return jsonError('Unauthorized', 401);
@@ -102,7 +122,20 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return jsonError(access.error, access.status);
 		}
 
-		return resolve(event);
+		return render(event, resolve);
+	}
+
+	if (db && event.locals.user) {
+		const storedTheme = await getUserUiTheme(db, event.locals.user.id);
+		event.locals.uiTheme = storedTheme;
+		if (event.cookies.get(UI_THEME_COOKIE) !== storedTheme) {
+			event.cookies.set(UI_THEME_COOKIE, storedTheme, {
+				path: '/',
+				maxAge: UI_THEME_COOKIE_MAX_AGE,
+				sameSite: 'lax',
+				httpOnly: false
+			});
+		}
 	}
 
 	const needsSetup = db ? (await countUsers(db)) === 0 : false;
@@ -122,18 +155,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 		if (!needsSetup && !event.locals.user) {
 			throw redirect(303, '/login');
 		}
-		return resolve(event);
+		return render(event, resolve);
 	}
 
 	if (pathname === '/login') {
 		if (event.locals.user) {
 			throw redirect(303, '/inbox');
 		}
-		return resolve(event);
+		return render(event, resolve);
 	}
 
 	if (isPublicPath(pathname)) {
-		return resolve(event);
+		return render(event, resolve);
 	}
 
 	if (!event.locals.user) {
@@ -156,5 +189,5 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(303, '/inbox');
 	}
 
-	return resolve(event);
+	return render(event, resolve);
 };

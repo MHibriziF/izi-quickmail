@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +15,14 @@ import {
 } from './app-chrome';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
+
+/** Every theme's shell — an invariant about the chrome has to hold in all of them. */
+function themeShells(): string[] {
+	return readdirSync(join(root, 'src/themes'), { withFileTypes: true })
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => `src/themes/${entry.name}/Shell.svelte`)
+		.filter((file) => existsSync(join(root, file)));
+}
 
 test('treats mailbox roots as list screens', () => {
 	assert.equal(isMailboxPath('/inbox'), true);
@@ -112,9 +120,14 @@ test('stacked swipe wrapper does not become a phone column on desktop', () => {
 });
 
 test('compose is not a centred reading column on desktop', () => {
-	const source = readFileSync(join(root, 'src/routes/+layout.svelte'), 'utf8');
-	assert.match(source, /const NARROW = \['\/mail', '\/settings'\]/);
-	assert.doesNotMatch(source, /NARROW = \[[^\]]*\/compose/);
+	const shells = themeShells();
+	assert.ok(shells.length > 0, 'expected at least one theme shell');
+
+	for (const file of shells) {
+		const source = readFileSync(join(root, file), 'utf8');
+		assert.match(source, /const NARROW = \['\/mail', '\/settings'\]/, file);
+		assert.doesNotMatch(source, /NARROW = \[[^\]]*\/compose/, file);
+	}
 });
 
 test('composer fill layout is phone-only', () => {

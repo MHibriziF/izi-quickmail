@@ -1,0 +1,40 @@
+import { theme as classic } from '$themes/classic/index';
+import { parseThemeId } from './ids';
+import type { ThemeModule } from './types';
+
+const builtins: ThemeModule[] = [classic];
+
+/**
+ * Anything else dropped into `src/themes/*` is picked up too, so a deployment
+ * can carry its own shell without editing this file.
+ */
+const discovered = import.meta.glob('../../themes/*/index.ts', { eager: true }) as Record<
+	string,
+	{ theme?: ThemeModule }
+>;
+
+function extraThemes(): ThemeModule[] {
+	const extras: ThemeModule[] = [];
+	for (const [path, mod] of Object.entries(discovered)) {
+		const candidate = mod.theme;
+		if (!candidate?.id || builtins.some((theme) => theme.id === candidate.id)) continue;
+		if (path.includes('/classic/')) continue;
+		extras.push(candidate);
+	}
+	return extras;
+}
+
+export const themes: ThemeModule[] = [...builtins, ...extraThemes()];
+
+export function listThemeIds(): string[] {
+	return themes.map((theme) => theme.id);
+}
+
+export function listThemes(): { id: string; name: string }[] {
+	return themes.map((theme) => ({ id: theme.id, name: theme.name }));
+}
+
+export function getTheme(id: string | null | undefined): ThemeModule {
+	const resolved = parseThemeId(id, listThemeIds());
+	return themes.find((theme) => theme.id === resolved) ?? classic;
+}

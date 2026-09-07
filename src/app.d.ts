@@ -41,6 +41,8 @@ declare global {
 			addresses: MailAddress[];
 			/** Active domain filter, or null for the combined inbox. */
 			activeDomainId: string | null;
+			/** Which shell to render — the user's saved choice, else the cookie. */
+			uiTheme: string;
 		}
 	}
 }
