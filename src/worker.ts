@@ -1,9 +1,11 @@
-import type { ExecutionContext } from '@cloudflare/workers-types';
+import type { ExecutionContext, ScheduledController } from '@cloudflare/workers-types';
 import {
 	handleCloudflareInbound,
 	type CloudflareInboundEnv,
 	type CloudflareInboundMessage
 } from './lib/server/cloudflare-inbound';
+import { getEmailProvider } from './lib/server/context';
+import { runDueScheduledSends } from './lib/server/scheduled-send';
 // Renamed from `_worker.js` by `scripts/wrap-cloudflare-worker.mjs` after `vite build`.
 // @ts-expect-error file is created at build time
 import sveltekit from '../.svelte-kit/cloudflare/_sveltekit.js';
@@ -16,7 +18,8 @@ const svelteApp = sveltekit as SvelteKitWorker;
 
 /**
  * SvelteKit's generated Worker is fetch-only. This wrapper keeps HTTP on
- * SvelteKit and adds Cloudflare Email Service's `email()` handler.
+ * SvelteKit and adds the handlers it cannot express: Cloudflare Email
+ * Service's `email()` and the cron trigger that sends scheduled mail.
  */
 export default {
 	fetch(request: Request, env: Env, ctx: ExecutionContext) {
@@ -42,5 +45,32 @@ export default {
 		};
 
 		await handleCloudflareInbound(message, inboundEnv);
+	},
+
+	/**
+	 * Cron trigger — see `triggers.crons` in wrangler.jsonc.
+	 *
+	 * Scheduled mail waits in D1 rather than at the provider, so this is what
+	 * actually delivers it. Failures are swallowed: a trigger that throws is
+	 * retried by the platform, and every message has already been counted
+	 * against its own attempt limit.
+	 */
+	async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+		ctx.waitUntil(
+			(async () => {
+				try {
+					const provider = getEmailProvider({ env, ctx });
+					const { sent, failed } = await runDueScheduledSends(
+						{ DB: env.DB, ATTACHMENTS: env.ATTACHMENTS },
+						provider
+					);
+					if (sent || failed) {
+						console.log(`scheduled send: ${sent} sent, ${failed} failed`);
+					}
+				} catch (error) {
+					console.error('scheduled send sweep failed', error);
+				}
+			})()
+		);
 	}
 };

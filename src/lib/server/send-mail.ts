@@ -15,8 +15,6 @@ export type OutboundMailInput = {
 	headers?: Record<string, string>;
 	attachments?: OutboundAttachmentInput[];
 	idempotencyKey?: string;
-	/** ISO 8601. The provider holds the message until then. */
-	scheduledAt?: string | null;
 };
 
 export type OutboundMailResult = {
@@ -62,6 +60,23 @@ export function validateSubject(subject: string): string | null {
 	return null;
 }
 
+/**
+ * The checks a message must pass before it is worth storing or sending.
+ *
+ * Scheduled mail runs these when it is composed rather than when the cron
+ * picks it up, so a bad subject or a missing recipient is reported to the
+ * sender there and then instead of failing silently hours later.
+ */
+export function validateOutboundMail(input: {
+	subject: string;
+	to: string | string[] | undefined | null;
+}): string | null {
+	const subjectError = validateSubject(input.subject);
+	if (subjectError) return subjectError;
+	if (parseRecipients(input.to).length === 0) return 'At least one valid recipient is required';
+	return null;
+}
+
 /** Split a comma-separated recipient field into addresses the provider will accept. */
 export function parseRecipients(value: string | string[] | undefined | null): string[] {
 	if (!value) return [];
@@ -88,16 +103,12 @@ export async function sendOutboundEmail(
 	provider: EmailProvider,
 	input: OutboundMailInput
 ): Promise<OutboundMailResult> {
-	const subjectError = validateSubject(input.subject);
-	if (subjectError) {
-		throw new Error(subjectError);
+	const invalid = validateOutboundMail(input);
+	if (invalid) {
+		throw new Error(invalid);
 	}
 
 	const to = parseRecipients(input.to);
-	if (to.length === 0) {
-		throw new Error('At least one valid recipient is required');
-	}
-
 	const cc = parseRecipients(input.cc);
 	const bcc = parseRecipients(input.bcc);
 	const safeText = input.text.trim();
@@ -126,7 +137,6 @@ export async function sendOutboundEmail(
 		references,
 		...(Object.keys(headers).length ? { headers } : {}),
 		attachments: input.attachments,
-		scheduledAt: input.scheduledAt ?? null,
 		idempotencyKey: input.idempotencyKey ?? crypto.randomUUID()
 	});
 }

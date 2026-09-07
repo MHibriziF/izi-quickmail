@@ -1,6 +1,8 @@
 import type { LayoutServerLoad } from './$types';
 import { getMailboxCounts } from '$lib/server/mail-store';
 import { runDueTrashPurge } from '$lib/server/cleanup';
+import { getEmailProvider } from '$lib/server/context';
+import { runDueScheduledSends } from '$lib/server/scheduled-send';
 import type { MailboxCounts } from '$lib/types';
 
 const EMPTY_COUNTS: MailboxCounts = {
@@ -28,6 +30,22 @@ export const load: LayoutServerLoad = async ({ locals, platform, depends }) => {
 			await runDueTrashPurge(db, platform?.env.ATTACHMENTS, locals.user.id);
 		} catch {
 			// Never block the mailbox on housekeeping.
+		}
+	}
+
+	// The cron trigger is what normally sends scheduled mail, but `vite dev`
+	// never runs the Worker and so never fires it. Sweeping this user's own due
+	// messages on load keeps scheduling working in development, and is a cheap
+	// no-op in production where the trigger has already been round.
+	const bucket = platform?.env.ATTACHMENTS;
+	if (db && bucket && locals.user) {
+		try {
+			await runDueScheduledSends({ DB: db, ATTACHMENTS: bucket }, getEmailProvider(platform), {
+				userId: locals.user.id
+			});
+		} catch {
+			// A message that cannot go out records its own failure; the mailbox
+			// still has to load.
 		}
 	}
 

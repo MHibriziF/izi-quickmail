@@ -46,27 +46,9 @@ const base = {
 };
 
 describe('handing a message to the provider', () => {
-	test('a send time reaches the provider', async () => {
-		const { provider, calls } = recordingProvider();
-		const scheduledAt = '2026-09-07T06:00:00.000Z';
-
-		await sendOutboundEmail(provider, { ...base, scheduledAt });
-
-		// Regression guard: this function rebuilds the payload rather than
-		// forwarding its argument, so a new field is dropped unless it is added
-		// here too — and an optional field going missing is invisible to tsc.
-		assert.equal(calls.length, 1);
-		assert.equal(calls[0].scheduledAt, scheduledAt);
-	});
-
-	test('an ordinary send carries no time', async () => {
-		const { provider, calls } = recordingProvider();
-
-		await sendOutboundEmail(provider, base);
-
-		assert.equal(calls[0].scheduledAt, null);
-	});
-
+	// Regression guard: this function rebuilds the payload rather than
+	// forwarding its argument, so a new field is dropped unless it is added
+	// here too — and an optional field going missing is invisible to tsc.
 	test('the recipients and subject survive the rebuild', async () => {
 		const { provider, calls } = recordingProvider();
 

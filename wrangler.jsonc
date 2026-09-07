@@ -41,6 +41,14 @@
     "CLOUDFLARE_MAIL_DOMAINS": ".",
   },
 
+  // Scheduled send. Mail waits in D1 and this trigger delivers it, so the
+  // feature works on either provider and the time is not capped by a
+  // provider's hold-until horizon. Every minute is the finest Cron Triggers
+  // offer, and it is what makes a picked time land on the minute.
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
+
   "send_email": [
     {
       "name": "EMAIL",

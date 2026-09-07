@@ -1,13 +1,15 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getEmailProvider } from '$lib/server/context';
 import { getEmailForUser } from '$lib/server/mail-store';
+import { cancelScheduledSend } from '$lib/server/scheduled-send';
 
 /**
  * Recall a scheduled message.
  *
- * The provider is asked first: if it has already released the message, the row
- * must stay as sent mail rather than reappearing as an unsent draft the person
- * thinks never went out.
+ * Nothing has left the building — the message is waiting in our own outbox —
+ * so this is a local state change. It only succeeds while the row is still
+ * `scheduled`: once the sweep has claimed it, the message is on its way and
+ * must stay sent mail rather than reappearing as a draft the sender thinks
+ * never went out.
  */
 export const POST: RequestHandler = async ({ params, locals, platform }) => {
 	const db = platform?.env.DB;
@@ -20,39 +22,10 @@ export const POST: RequestHandler = async ({ params, locals, platform }) => {
 		return json({ error: 'That message is not scheduled' }, { status: 400 });
 	}
 
-	const provider = getEmailProvider(platform);
-	if (!provider.cancelScheduled) {
-		return json({ error: 'This provider cannot recall a scheduled message' }, { status: 400 });
-	}
-
-	if (!email.provider_id) {
-		return json({ error: 'That message has no provider reference' }, { status: 400 });
-	}
-
-	try {
-		await provider.cancelScheduled(email.provider_id);
-	} catch (error) {
-		return json(
-			{
-				error:
-					error instanceof Error
-						? `Could not recall it — ${error.message}`
-						: 'Could not recall that message'
-			},
-			{ status: 400 }
-		);
-	}
-
 	// Back to a draft, so the writing is not thrown away with the schedule.
-	await db
-		.prepare(
-			`UPDATE emails
-			    SET status = 'draft', scheduled_at = NULL, provider_id = NULL,
-			        status_at = datetime('now')
-			  WHERE id = ? AND user_id = ?`
-		)
-		.bind(email.id, locals.user.id)
-		.run();
+	if (!(await cancelScheduledSend(db, locals.user.id, email.id))) {
+		return json({ error: 'That message has already been sent' }, { status: 409 });
+	}
 
 	return json({ ok: true, draftId: email.id });
 };

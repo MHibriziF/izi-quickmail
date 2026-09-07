@@ -30,7 +30,6 @@ export function createResendProvider(apiKey: string): EmailProvider {
 						...(input.headers && Object.keys(input.headers).length
 							? { headers: input.headers }
 							: {}),
-						...(input.scheduledAt ? { scheduled_at: input.scheduledAt } : {}),
 						...(input.attachments?.length
 							? {
 									attachments: input.attachments.map((file) => ({
@@ -45,13 +44,6 @@ export function createResendProvider(apiKey: string): EmailProvider {
 				);
 
 				return { providerId: result.id };
-			} catch (error) {
-				throw wrapResendError(error);
-			}
-		},
-		async cancelScheduled(providerId: string): Promise<void> {
-			try {
-				await client.cancelScheduled(providerId);
 			} catch (error) {
 				throw wrapResendError(error);
 			}

@@ -14,7 +14,12 @@ import { getEmailSignature } from './email-signature';
 import { stripHtml } from './html';
 import { insertEmail } from './mail-store';
 import { initialOutboundStatus, type EmailProvider } from './email-provider';
-import { escapeHtml, parseRecipients, sendOutboundEmail } from './send-mail';
+import {
+	escapeHtml,
+	parseRecipients,
+	sendOutboundEmail,
+	validateOutboundMail
+} from './send-mail';
 
 export type ComposeInput = {
 	fromAddressId?: string | null;
@@ -32,7 +37,7 @@ export type ComposeInput = {
 	attachments?: OutboundAttachmentInput[];
 	/** Disable subject fallback for messages that intentionally start a thread. */
 	subjectMatch?: boolean;
-	/** ISO 8601. Held by the provider until then. */
+	/** ISO 8601. Stored unsent and left for the cron sweep to deliver. */
 	scheduledAt?: string | null;
 };
 
@@ -101,13 +106,20 @@ export async function resolveReplyFromAddress(
 	return getDefaultAddress(db, user.id);
 }
 
-/** Send through the configured provider, then record it in the Sent folder. */
+/**
+ * Send through the configured provider, then record it in the Sent folder.
+ *
+ * A message with a `scheduledAt` is stored but not sent: the row itself is the
+ * queue, and `runDueScheduledSends` delivers it when its time comes. Storing
+ * the composed body — signature and all — means the message that goes out is
+ * the one that was written, however long it waits.
+ */
 export async function sendAndStore(
 	env: { DB: D1Database; ATTACHMENTS: R2Bucket },
 	provider: EmailProvider,
 	user: User,
 	input: ComposeInput
-): Promise<{ emailId: string; providerId: string; from: MailAddress }> {
+): Promise<{ emailId: string; providerId: string | null; from: MailAddress }> {
 	// resolveFromAddress scopes the lookup to this user, so ownership is implied.
 	const from = input.fromAddress ?? (await resolveFromAddress(env.DB, user, input.fromAddressId));
 
@@ -134,20 +146,30 @@ export async function sendAndStore(
 		throw new Error('Attachments exceed the total size limit');
 	}
 
-	const { providerId } = await sendOutboundEmail(provider, {
-		from,
-		senderName: from.label?.trim() || user.name,
-		to: input.to,
-		cc: input.cc ?? undefined,
-		bcc: input.bcc ?? undefined,
-		subject: input.subject,
-		text,
-		html: html ?? undefined,
-		inReplyTo: input.inReplyTo,
-		references: input.references,
-		scheduledAt: input.scheduledAt ?? null,
-		attachments
-	});
+	// Scheduled mail is checked now rather than at send time, so a bad subject
+	// or recipient is the sender's problem while they are still looking at it.
+	const invalid = validateOutboundMail({ subject: input.subject, to: input.to });
+	if (invalid) {
+		throw new Error(invalid);
+	}
+
+	const providerId = input.scheduledAt
+		? null
+		: (
+				await sendOutboundEmail(provider, {
+					from,
+					senderName: from.label?.trim() || user.name,
+					to: input.to,
+					cc: input.cc ?? undefined,
+					bcc: input.bcc ?? undefined,
+					subject: input.subject,
+					text,
+					html: html ?? undefined,
+					inReplyTo: input.inReplyTo,
+					references: input.references,
+					attachments
+				})
+			).providerId;
 
 	const emailId = await insertEmail(env.DB, {
 		userId: user.id,
@@ -165,8 +187,8 @@ export async function sendAndStore(
 		domainId: from.domain_id,
 		addressId: from.id,
 		providerId,
-		// A held message is not queued for delivery yet, so it gets its own state
-		// rather than looking like mail that is already on its way.
+		// A waiting message has not been handed to anyone yet, so it gets its own
+		// state rather than looking like mail that is already on its way.
 		status: input.scheduledAt ? 'scheduled' : initialOutboundStatus(provider.kind),
 		scheduledAt: input.scheduledAt ?? null,
 		isRead: true,

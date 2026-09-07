@@ -70,7 +70,6 @@ export type SendEmailPayload = {
 		content_id?: string;
 	}>;
 	tags?: Array<{ name: string; value: string }>;
-	scheduled_at?: string;
 };
 
 export type ReceivedAttachment = {
@@ -149,16 +148,6 @@ export function createResendClient(apiKey: string) {
 				method: 'POST',
 				body: JSON.stringify(payload),
 				idempotencyKey
-			});
-		},
-
-		/**
-		 * POST /emails/:id/cancel — only works while a scheduled message is still
-		 * held. Once it has gone out, Resend refuses, which is the honest answer.
-		 */
-		async cancelScheduled(id: string): Promise<void> {
-			await request<{ id: string }>(`/emails/${encodeURIComponent(id)}/cancel`, {
-				method: 'POST'
 			});
 		},
 
