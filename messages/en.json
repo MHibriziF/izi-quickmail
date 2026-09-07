@@ -83,7 +83,11 @@
 		"email": "Email",
 		"password": "Password",
 		"signingIn": "Signing in…",
-		"loginFailed": "Login failed"
+		"loginFailed": "Login failed",
+		"twoFactorLabel": "Authenticator code",
+		"recoveryHint": "Or enter one of your recovery codes.",
+		"verify": "Verify",
+		"forgotPassword": "Forgot password?"
 	},
 	"accountSetup": {
 		"title": "Complete account setup — {app}",

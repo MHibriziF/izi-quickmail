@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Logo from '$lib/components/Logo.svelte';
+	import { t } from '$lib/i18n';
 	import { APP_NAME } from '$lib/constants';
 	import { discardPushSubscriptionFromAnotherAccount } from '$lib/push-client';
 
@@ -40,7 +41,7 @@
 			}
 			window.location.href = '/inbox';
 		} catch {
-			error = 'Network error';
+			error = t('common.networkError');
 		} finally {
 			loading = false;
 		}
@@ -48,23 +49,23 @@
 </script>
 
 <svelte:head>
-	<title>Sign in — {APP_NAME}</title>
+	<title>{t('auth.signInTitle', { app: APP_NAME })}</title>
 </svelte:head>
 
 <div class="auth-shell">
 	<div class="auth-card">
 		<div class="auth-brand">
 			<div class="brand-icon"><Logo size={48} /></div>
-			<h1>Sign in</h1>
+			<h1>{t('auth.signIn')}</h1>
 		</div>
 
 		<form class="mt-8 space-y-4" onsubmit={submit}>
 			<div>
-				<label for="email" class="text-sm text-[var(--color-text-secondary)]">Email</label>
+				<label for="email" class="text-sm text-[var(--color-text-secondary)]">{t('auth.email')}</label>
 				<input id="email" type="email" bind:value={email} required autocomplete="username" class="auth-input" />
 			</div>
 			<div>
-				<label for="password" class="text-sm text-[var(--color-text-secondary)]">Password</label>
+				<label for="password" class="text-sm text-[var(--color-text-secondary)]">{t('auth.password')}</label>
 				<input
 					id="password"
 					type="password"
@@ -78,7 +79,7 @@
 			{#if needsCode}
 				<div>
 					<label for="code" class="text-sm text-[var(--color-text-secondary)]">
-						Authenticator code
+						{t('auth.twoFactorLabel')}
 					</label>
 					<!-- svelte-ignore a11y_autofocus -->
 					<input
@@ -92,7 +93,7 @@
 						placeholder="123456"
 						class="auth-input"
 					/>
-					<p class="hint">Or enter one of your recovery codes.</p>
+					<p class="hint">{t('auth.recoveryHint')}</p>
 				</div>
 			{/if}
 
@@ -101,12 +102,12 @@
 			{/if}
 
 			<button type="submit" disabled={loading} class="btn-primary mt-2 w-full py-2.5">
-				{loading ? 'Signing in…' : needsCode ? 'Verify' : 'Continue'}
+				{loading ? t('auth.signingIn') : needsCode ? t('auth.verify') : t('common.continue')}
 			</button>
 		</form>
 
 		{#if !needsCode}
-			<a href="/forgot" class="forgot">Forgot password?</a>
+			<a href="/forgot" class="forgot">{t('auth.forgotPassword')}</a>
 		{/if}
 	</div>
 </div>

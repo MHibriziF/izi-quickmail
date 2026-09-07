@@ -83,7 +83,11 @@
 		"email": "E-mail",
 		"password": "Mot de passe",
 		"signingIn": "Connexion…",
-		"loginFailed": "Échec de la connexion"
+		"loginFailed": "Échec de la connexion",
+		"twoFactorLabel": "Code d’authentification",
+		"recoveryHint": "Ou saisissez l’un de vos codes de récupération.",
+		"verify": "Vérifier",
+		"forgotPassword": "Mot de passe oublié ?"
 	},
 	"accountSetup": {
 		"title": "Finaliser le compte — {app}",

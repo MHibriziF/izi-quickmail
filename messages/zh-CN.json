@@ -83,7 +83,11 @@
 		"email": "邮箱",
 		"password": "密码",
 		"signingIn": "正在登录…",
-		"loginFailed": "登录失败"
+		"loginFailed": "登录失败",
+		"twoFactorLabel": "验证器代码",
+		"recoveryHint": "或输入你的某个恢复码。",
+		"verify": "验证",
+		"forgotPassword": "忘记密码？"
 	},
 	"accountSetup": {
 		"title": "完成账户设置 — {app}",

@@ -83,7 +83,11 @@
 		"email": "Email",
 		"password": "Kata sandi",
 		"signingIn": "Sedang masuk…",
-		"loginFailed": "Gagal masuk"
+		"loginFailed": "Gagal masuk",
+		"twoFactorLabel": "Kode autentikator",
+		"recoveryHint": "Atau masukkan salah satu kode pemulihan Anda.",
+		"verify": "Verifikasi",
+		"forgotPassword": "Lupa kata sandi?"
 	},
 	"accountSetup": {
 		"title": "Selesaikan penyiapan akun — {app}",
