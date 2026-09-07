@@ -93,13 +93,12 @@
 		}
 	]);
 
+	// Upstream splits settings across /settings/<section>; this fork still has
+	// the one page, and its sectioned version arrives with the device-session
+	// work that page also lists. One entry beats five links to nothing.
 	const settingsNav = $derived<NavItem[]>([
 		{ href: '/inbox', icon: 'ArrowLeft', label: t('common.back') },
-		{ href: '/settings/general', icon: 'SettingsGear', label: t('nav.general'), shortcut: 'g s' },
-		{ href: '/settings/appearance', icon: 'Stars', label: t('nav.appearance') },
-		{ href: '/settings/connections', icon: 'Users', label: t('nav.connections') },
-		{ href: '/settings/notifications', icon: 'Bell', label: t('nav.notifications') },
-		{ href: '/settings/shortcuts', icon: 'Tabs', label: t('nav.shortcuts'), shortcut: '?' },
+		{ href: '/settings', icon: 'SettingsGear', label: t('nav.settings'), shortcut: 'g s' },
 		...(data.user.is_admin ? [{ href: '/admin', icon: 'SettingsGear', label: t('nav.admin') }] : [])
 	]);
 

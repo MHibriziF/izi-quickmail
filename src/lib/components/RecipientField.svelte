@@ -16,6 +16,12 @@
 		placeholder = '',
 		id,
 		required = false,
+		/**
+		 * Which shell is rendering this. The chips and the suggestion list are
+		 * the same either way; only the row and label chrome differ, so the
+		 * field can sit in Zero's composer without dragging Classic's in.
+		 */
+		shell = 'classic',
 		trailing
 	}: {
 		value: string;
@@ -23,9 +29,13 @@
 		placeholder?: string;
 		id: string;
 		required?: boolean;
+		shell?: 'classic' | 'zero';
 		/** Rendered at the end of the row — the Cc/Bcc toggle lives here. */
 		trailing?: Snippet;
 	} = $props();
+
+	const rowClass = $derived(shell === 'zero' ? 'z-composer-row' : 'field-row recipients');
+	const labelClass = $derived(shell === 'zero' ? 'z-composer-label' : 'field-label');
 
 	const SEPARATORS = [' ', ',', ';', 'Enter', 'Tab'];
 
@@ -146,8 +156,8 @@
 	}
 </script>
 
-<div class="field-row recipients">
-	<span class="field-label" id={`${id}-label`}>{label}</span>
+<div class={rowClass} class:recipients={true}>
+	<span class={labelClass} id={`${id}-label`}>{label}</span>
 
 	<div class="entry">
 		{#each chips as chip, index (chip)}

@@ -2,6 +2,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
+	import RecipientField from '$lib/components/RecipientField.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
 	import type { MailAddress, OutboundAttachmentInput } from '$lib/types';
@@ -183,30 +184,43 @@
 
 		<form class="z-composer" onsubmit={send}>
 			<div class="z-composer-fields">
-				<div class="z-composer-row">
-					<span class="z-composer-label">{t('compose.toColon')}</span>
-					<input class="z-composer-input" bind:value={to} required placeholder={t('compose.emailPlaceholder')} />
-					<div class="z-composer-row-actions">
-						<button type="button" class="z-composer-link" onclick={() => (showCc = !showCc)}>{t('compose.cc')}</button>
-						<button type="button" class="z-composer-link" onclick={() => (showBcc = !showBcc)}>{t('compose.bcc')}</button>
-						<Tooltip text={t('common.close')}>
-							<button type="button" class="z-composer-link" aria-label={t('common.close')} onclick={close}>
-								<Icon name="X" size={14} />
-							</button>
-						</Tooltip>
-					</div>
-				</div>
+				<RecipientField
+					id="z-to"
+					shell="zero"
+					label={t('compose.toColon')}
+					bind:value={to}
+					placeholder={t('compose.emailPlaceholder')}
+					required
+				>
+					{#snippet trailing()}
+						<div class="z-composer-row-actions">
+							<button type="button" class="z-composer-link" onclick={() => (showCc = !showCc)}>{t('compose.cc')}</button>
+							<button type="button" class="z-composer-link" onclick={() => (showBcc = !showBcc)}>{t('compose.bcc')}</button>
+							<Tooltip text={t('common.close')}>
+								<button type="button" class="z-composer-link" aria-label={t('common.close')} onclick={close}>
+									<Icon name="X" size={14} />
+								</button>
+							</Tooltip>
+						</div>
+					{/snippet}
+				</RecipientField>
 				{#if showCc}
-					<div class="z-composer-row">
-						<span class="z-composer-label">{t('compose.ccColon')}</span>
-						<input class="z-composer-input" bind:value={cc} placeholder={t('compose.ccPlaceholder')} />
-					</div>
+					<RecipientField
+						id="z-cc"
+						shell="zero"
+						label={t('compose.ccColon')}
+						bind:value={cc}
+						placeholder={t('compose.ccPlaceholder')}
+					/>
 				{/if}
 				{#if showBcc}
-					<div class="z-composer-row">
-						<span class="z-composer-label">{t('compose.bccColon')}</span>
-						<input class="z-composer-input" bind:value={bcc} placeholder={t('compose.bccPlaceholder')} />
-					</div>
+					<RecipientField
+						id="z-bcc"
+						shell="zero"
+						label={t('compose.bccColon')}
+						bind:value={bcc}
+						placeholder={t('compose.bccPlaceholder')}
+					/>
 				{/if}
 				<div class="z-composer-row">
 						<span class="z-composer-label">{t('compose.subjectColon')}</span>
