@@ -16,7 +16,7 @@
 		if (id === current || busy) return;
 		busy = true;
 		try {
-			await switchUiTheme(id);
+			await switchUiTheme(id, t('settings.switching'));
 		} finally {
 			busy = false;
 		}

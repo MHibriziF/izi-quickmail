@@ -441,7 +441,8 @@
 		"addressPlaceholder": "Dukungan",
 		"namePlaceholder": "Nama",
 		"interfaceHint": "Zero adalah tampilan dua panel; Classic adalah tata letak aslinya.",
-		"languageAccountHint": "Berlaku untuk akun ini di mana pun Anda masuk."
+		"languageAccountHint": "Berlaku untuk akun ini di mana pun Anda masuk.",
+		"switching": "Mengganti antarmuka…"
 	},
 	"install": {
 		"homeScreen": "Layar utama",

@@ -441,7 +441,8 @@
 		"addressPlaceholder": "Soporte",
 		"namePlaceholder": "Nombre",
 		"interfaceHint": "Zero es la interfaz de dos paneles; Classic es la disposición original.",
-		"languageAccountHint": "Se aplica a esta cuenta dondequiera que inicies sesión."
+		"languageAccountHint": "Se aplica a esta cuenta dondequiera que inicies sesión.",
+		"switching": "Cambiando de interfaz…"
 	},
 	"install": {
 		"homeScreen": "Pantalla de inicio",

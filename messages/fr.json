@@ -441,7 +441,8 @@
 		"addressPlaceholder": "Support",
 		"namePlaceholder": "Nom",
 		"interfaceHint": "Zero est l’interface à deux volets ; Classic est la disposition d’origine.",
-		"languageAccountHint": "S’applique à ce compte partout où vous vous connectez."
+		"languageAccountHint": "S’applique à ce compte partout où vous vous connectez.",
+		"switching": "Changement d’interface…"
 	},
 	"install": {
 		"homeScreen": "Écran d’accueil",

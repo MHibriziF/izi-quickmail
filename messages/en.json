@@ -441,7 +441,8 @@
 		"addressPlaceholder": "Support",
 		"namePlaceholder": "Name",
 		"interfaceHint": "Zero is the two-pane shell; Classic is the original layout.",
-		"languageAccountHint": "Applies to this account everywhere you sign in."
+		"languageAccountHint": "Applies to this account everywhere you sign in.",
+		"switching": "Switching interface…"
 	},
 	"install": {
 		"homeScreen": "Home screen",
