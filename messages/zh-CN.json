@@ -514,7 +514,9 @@
 		"delayed": "延迟",
 		"bounced": "退信",
 		"complained": "被标为垃圾邮件",
-		"failed": "失败"
+		"failed": "失败",
+		"draft": "草稿",
+		"scheduled": "已定时"
 	},
 	"date": {
 		"now": "现在"

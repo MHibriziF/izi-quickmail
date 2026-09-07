@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EmailProviderKind } from '$lib/types';
+	import { t } from '$lib/i18n';
 	import Logo from './Logo.svelte';
 	import PartnerLink from './PartnerLink.svelte';
 
@@ -39,7 +40,7 @@
 		{/if}
 
 		{#if steps.length > 1}
-			<ol class="steps" aria-label="Setup progress">
+			<ol class="steps" aria-label={t('wizard.progress')}>
 				{#each steps as label, index (label)}
 					<li class:active={current === index + 1} class:done={current > index + 1}>
 						<span class="step-dot">{current > index + 1 ? '✓' : index + 1}</span>
@@ -73,8 +74,9 @@
 	.brand-icon {
 		display: flex;
 		margin-bottom: 1rem;
+		overflow: hidden;
 		/* Matches the mark's own corner radius so the shadow hugs the tile. */
-		border-radius: 0.75rem;
+		border-radius: 0.775rem;
 		box-shadow: var(--shadow-sm);
 	}
 

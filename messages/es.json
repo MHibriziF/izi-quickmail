@@ -514,7 +514,9 @@
 		"delayed": "Retrasado",
 		"bounced": "Rechazado",
 		"complained": "Marcado como spam",
-		"failed": "Error"
+		"failed": "Error",
+		"draft": "Borrador",
+		"scheduled": "Programado"
 	},
 	"date": {
 		"now": "Ahora"
