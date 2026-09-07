@@ -1,3 +1,34 @@
+export type EmailIdentity = {
+	name: string | null;
+	address: string;
+};
+
+/**
+ * Splits `Grace Hopper <grace@example.com>` into its two halves.
+ *
+ * The address is parsed by `parseEmailAddress` either way, so this returns the
+ * same address that function would — it only adds the display name.
+ */
+export function parseEmailIdentity(value: string): EmailIdentity {
+	const trimmed = value.trim();
+	const bracketMatch = trimmed.match(/^(.*?)<([^>]+)>$/);
+	if (!bracketMatch) {
+		return { name: null, address: parseEmailAddress(trimmed) };
+	}
+
+	const rawName = bracketMatch[1].trim();
+	// A quoted name may escape characters; unwrap it before storing.
+	const name =
+		rawName.startsWith('"') && rawName.endsWith('"')
+			? rawName.slice(1, -1).replace(/\\(.)/g, '$1').trim()
+			: rawName;
+
+	return {
+		name: name || null,
+		address: parseEmailAddress(bracketMatch[2])
+	};
+}
+
 export function parseEmailAddress(value: string): string {
 	const trimmed = value.trim();
 	const bracketMatch = trimmed.match(/<([^>]+)>/);

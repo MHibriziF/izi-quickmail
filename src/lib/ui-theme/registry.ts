@@ -1,8 +1,9 @@
 import { theme as classic } from '$themes/classic/index';
+import { theme as zero } from '$themes/zero/index';
 import { parseThemeId } from './ids';
 import type { ThemeModule } from './types';
 
-const builtins: ThemeModule[] = [classic];
+const builtins: ThemeModule[] = [zero, classic];
 
 /**
  * Anything else dropped into `src/themes/*` is picked up too, so a deployment
@@ -18,7 +19,7 @@ function extraThemes(): ThemeModule[] {
 	for (const [path, mod] of Object.entries(discovered)) {
 		const candidate = mod.theme;
 		if (!candidate?.id || builtins.some((theme) => theme.id === candidate.id)) continue;
-		if (path.includes('/classic/')) continue;
+		if (path.includes('/classic/') || path.includes('/zero/')) continue;
 		extras.push(candidate);
 	}
 	return extras;
@@ -36,5 +37,5 @@ export function listThemes(): { id: string; name: string }[] {
 
 export function getTheme(id: string | null | undefined): ThemeModule {
 	const resolved = parseThemeId(id, listThemeIds());
-	return themes.find((theme) => theme.id === resolved) ?? classic;
+	return themes.find((theme) => theme.id === resolved) ?? zero;
 }

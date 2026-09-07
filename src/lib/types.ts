@@ -90,6 +90,8 @@ export type EmailRow = {
 	user_id: string;
 	direction: 'inbound' | 'outbound';
 	from_addr: string;
+	/** Display name the message arrived under, when it had one. */
+	from_name: string | null;
 	to_addr: string;
 	cc_addr: string | null;
 	bcc_addr: string | null;
@@ -194,6 +196,7 @@ export type ThreadMessage = {
 	id: string;
 	direction: 'inbound' | 'outbound';
 	from_addr: string;
+	from_name: string | null;
 	to_addr: string;
 	cc_addr: string | null;
 	subject: string;

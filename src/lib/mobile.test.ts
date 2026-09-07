@@ -120,12 +120,13 @@ test('stacked swipe wrapper does not become a phone column on desktop', () => {
 });
 
 test('compose is not a centred reading column on desktop', () => {
-	const shells = themeShells();
-	assert.ok(shells.length > 0, 'expected at least one theme shell');
+	// Classic caps the reading column; Zero is two-pane and has no such list.
+	// The rule is about compose either way: it must never be in one.
+	const classic = readFileSync(join(root, 'src/themes/classic/Shell.svelte'), 'utf8');
+	assert.match(classic, /const NARROW = \['\/mail', '\/settings'\]/);
 
-	for (const file of shells) {
+	for (const file of themeShells()) {
 		const source = readFileSync(join(root, file), 'utf8');
-		assert.match(source, /const NARROW = \['\/mail', '\/settings'\]/, file);
 		assert.doesNotMatch(source, /NARROW = \[[^\]]*\/compose/, file);
 	}
 });

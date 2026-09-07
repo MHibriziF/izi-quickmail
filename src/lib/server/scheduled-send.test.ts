@@ -15,6 +15,7 @@ function scheduledRow(overrides: Partial<EmailRow> = {}): EmailRow {
 		user_id: 'user-1',
 		direction: 'outbound',
 		from_addr: 'ada@ourdomain.test',
+		from_name: 'Ada',
 		to_addr: 'grace@example.com',
 		cc_addr: null,
 		bcc_addr: null,

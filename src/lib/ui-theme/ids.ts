@@ -2,13 +2,10 @@ export const UI_THEME_COOKIE = 'qi_ui_theme';
 export const UI_THEME_STORAGE_KEY = 'quickinbox:ui-theme';
 export const THEME_ENGINE = 'quickinbox-theme@1';
 
-/**
- * Themes that ship with the app. Zero arrives next; until then Classic — the
- * layout this app has always had — is the only one, and the default.
- */
-export const BUILTIN_THEME_IDS = ['classic'] as const;
+/** Themes that ship with the app. Anything in `src/themes/*` is picked up too. */
+export const BUILTIN_THEME_IDS = ['zero', 'classic'] as const;
 
-export const DEFAULT_UI_THEME = 'classic';
+export const DEFAULT_UI_THEME = 'zero';
 
 export type BuiltinThemeId = (typeof BUILTIN_THEME_IDS)[number];
 

@@ -12,6 +12,7 @@
 	import TimeZonePanel from '$lib/components/TimeZonePanel.svelte';
 	import InstallApp from '$lib/components/InstallApp.svelte';
 	import LocalePicker from '$lib/components/LocalePicker.svelte';
+	import UiThemePicker from '$lib/components/UiThemePicker.svelte';
 	import {
 		readThemePreference,
 		setThemePreference,
@@ -474,6 +475,12 @@
 	<TimeZonePanel timeZone={data.timeZone} />
 
 	<CleanupPanel retentionDays={data.cleanup.trashRetentionDays} />
+
+	<section class="surface-lg card">
+		<h2><Icon name="layout-4-line" size={18} /> Interface</h2>
+		<p class="card-hint">Zero is the two-pane shell; Classic is the original layout.</p>
+		<UiThemePicker />
+	</section>
 
 	<section class="surface-lg card">
 		<h2><Icon name="translate-2" size={18} /> Language</h2>

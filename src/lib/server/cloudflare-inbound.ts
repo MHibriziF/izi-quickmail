@@ -39,7 +39,8 @@ export async function handleCloudflareInbound(
 		bcc: mailboxAddresses(parsed.bcc)
 	});
 
-	const from = inboundSender(mailboxAddresses(parsed.from)[0], message.from);
+	const sender = firstMailboxIdentity(parsed.from);
+	const from = inboundSender(sender?.address, message.from);
 	const subject = parsed.subject?.trim() || message.headers.get('subject')?.trim() || '(no subject)';
 	const messageId =
 		normalizeMessageId(parsed.messageId ?? message.headers.get('message-id')) ?? null;
@@ -74,6 +75,7 @@ export async function handleCloudflareInbound(
 		userId: route.userId,
 		direction: 'inbound',
 		from,
+		fromName: sender?.name ?? null,
 		to: route.address,
 		cc: mailboxAddresses(parsed.cc).join(', ') || null,
 		subject,
@@ -141,6 +143,35 @@ export function inboundSender(
 
 	const envelope = parseEmailAddress(envelopeFrom ?? '');
 	return envelope || header;
+}
+
+/**
+ * The sender, as both halves — postal-mime already parsed the display name out
+ * of the `From:` header, so there is no need to parse it again.
+ */
+function firstMailboxIdentity(
+	value: Address | Address[] | undefined
+): { name: string | null; address: string } | null {
+	if (!value) return null;
+	const list = Array.isArray(value) ? value : [value];
+
+	for (const item of list) {
+		if (item.address) {
+			return { name: item.name?.trim() || null, address: parseEmailAddress(item.address) };
+		}
+		if (item.group) {
+			for (const member of item.group) {
+				if (member.address) {
+					return {
+						name: member.name?.trim() || null,
+						address: parseEmailAddress(member.address)
+					};
+				}
+			}
+		}
+	}
+
+	return null;
 }
 
 function mailboxAddresses(value: Address | Address[] | undefined): string[] {
