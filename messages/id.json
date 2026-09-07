@@ -275,7 +275,8 @@
 		"bccColon": "Bcc:",
 		"subjectColon": "Subjek:",
 		"fromColon": "Dari:",
-		"scheduleSend": "Jadwalkan pengiriman"
+		"scheduleSend": "Jadwalkan pengiriman",
+		"removeRecipient": "Hapus {address}"
 	},
 	"thread": {
 		"close": "Tutup",
@@ -586,5 +587,63 @@
 		"pickDateTime": "Pilih tanggal dan waktu",
 		"pickFuture": "Pilih waktu di masa depan",
 		"pickWithin": "Pilih waktu dalam {years} tahun ke depan"
+	},
+	"cleanup": {
+		"title": "Pembersihan",
+		"hint": "Bersihkan surel lama sekaligus, dan biarkan Sampah mengosongkan dirinya. Draf dan pesan terjadwal tidak pernah disentuh.",
+		"autoEmpty": "Kosongkan Sampah otomatis",
+		"autoEmptyHint": "Berjalan paling banyak sekali sehari saat Anda membuka kotak surat. Menghapus dari Sampah bersifat permanen dan ikut menghapus lampirannya.",
+		"emptyExpiredNow": "Kosongkan yang kedaluwarsa sekarang",
+		"moveOld": "Pindahkan surel lama ke Sampah",
+		"olderThan": "Lebih lama dari",
+		"olderThanDays": "Lebih lama dari {days} hari",
+		"onlyRead": "Hanya pesan yang sudah saya baca",
+		"keepStarred": "Simpan pesan berbintang",
+		"nothingMatches": "Tidak ada yang cocok.",
+		"matchCount": "{count} pesan cocok. Pesan itu dipindahkan ke Sampah, jadi masih bisa diambil kembali.",
+		"matchCountPlural": "{count} pesan cocok. Semuanya dipindahkan ke Sampah, jadi masih bisa diambil kembali.",
+		"checkHowMany": "Periksa berapa banyak",
+		"checking": "Memeriksa…",
+		"moving": "Memindahkan…",
+		"moveToTrash": "Pindahkan {count} ke Sampah",
+		"never": "Tidak pernah",
+		"afterYear": "Setelah satu tahun",
+		"afterDays": "Setelah {days} hari",
+		"movedOne": "{count} pesan dipindahkan ke Sampah.",
+		"movedMany": "{count} pesan dipindahkan ke Sampah."
+	},
+	"twoFactor": {
+		"title": "Autentikasi dua faktor",
+		"saveCodes": "Simpan kode pemulihan ini sekarang — masing-masing hanya berlaku sekali, dan hanya ditampilkan kali ini. Kode inilah jalan masuk Anda jika ponsel hilang.",
+		"copyCodes": "Salin kode",
+		"savedThem": "Sudah saya simpan",
+		"scanHint": "Pindai ini dengan Google Authenticator, 1Password, atau Authy, lalu masukkan kode 6 digit yang muncul. Tidak ada yang berubah sampai kode itu cocok.",
+		"cannotScan": "Tidak bisa memindai? Masukkan kunci ini secara manual:",
+		"codeLabel": "Kode 6 digit",
+		"turnOn": "Aktifkan",
+		"checking": "Memeriksa…",
+		"on": "Aktif",
+		"enabledHint": "Anda akan dimintai kode dari aplikasi autentikator saat masuk.",
+		"noCodesLeft": "Kode pemulihan habis. Jika ponsel Anda hilang, Anda akan terkunci — buat set yang baru.",
+		"codesRemaining": "Tersisa {count} kode pemulihan yang belum terpakai.",
+		"newCodes": "Kode pemulihan baru",
+		"turnOff": "Nonaktifkan",
+		"setUpHint": "Tambahkan langkah kedua saat masuk memakai aplikasi autentikator, supaya kata sandi yang dicuri saja tidak cukup.",
+		"setUp": "Siapkan",
+		"preparing": "Menyiapkan…"
+	},
+	"recovery": {
+		"title": "Alamat pemulihan",
+		"hint": "Alamat di luar kotak surat ini — Gmail Anda, misalnya. Ke sanalah tautan atur ulang kata sandi dikirim, dan ke sana pula kami mengabari perubahan keamanan. Tautan yang dikirim ke alamat yang hanya bisa dibaca setelah masuk tentu tidak berguna saat Anda tidak bisa masuk.",
+		"confirmed": "Terkonfirmasi",
+		"unconfirmed": "Belum dikonfirmasi",
+		"pendingHint": "{address} — klik tautan yang kami kirim sebelum bisa dipakai mengatur ulang kata sandi.",
+		"noneSet": "Belum diatur. Tanpa itu, kata sandi yang lupa hanya bisa diperbaiki lewat baris perintah.",
+		"changeTo": "Ubah ke",
+		"addressLabel": "Alamat pemulihan",
+		"sendConfirmation": "Kirim konfirmasi",
+		"sending": "Mengirim…",
+		"removed": "Alamat pemulihan dihapus.",
+		"confirmationSent": "Konfirmasi dikirim ke {address}. Klik tautan di dalamnya untuk menyelesaikan."
 	}
 }

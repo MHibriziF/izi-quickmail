@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import { t } from '$lib/i18n';
 
 	/**
 	 * Recipient entry as chips.
@@ -166,7 +167,7 @@
 				<button
 					type="button"
 					class="chip-x"
-					aria-label={`Remove ${chip}`}
+					aria-label={t('compose.removeRecipient', { address: chip })}
 					onclick={() => remove(index)}
 				>
 					<Icon name="close-line" size={12} />

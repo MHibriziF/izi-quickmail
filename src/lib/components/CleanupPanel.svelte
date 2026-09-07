@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import Icon from './Icon.svelte';
+	import { t } from '$lib/i18n';
 	import { SWEEP_AGE_CHOICES, TRASH_RETENTION_CHOICES } from '$lib/cleanup-options';
 
 	let { retentionDays: initialRetention }: { retentionDays: number } = $props();
@@ -20,9 +21,9 @@
 	let confirming = $state(false);
 
 	function describe(days: number): string {
-		if (days === 0) return 'Never';
-		if (days === 365) return 'After a year';
-		return `After ${days} days`;
+		if (days === 0) return t('cleanup.never');
+		if (days === 365) return t('cleanup.afterYear');
+		return t('cleanup.afterDays', { days });
 	}
 
 	async function preview() {
@@ -44,7 +45,7 @@
 			count = body.count;
 			confirming = true;
 		} catch {
-			error = 'Network error';
+			error = t('common.networkError');
 		} finally {
 			counting = false;
 		}
@@ -67,7 +68,7 @@
 			}
 			return body;
 		} catch {
-			error = 'Network error';
+			error = t('common.networkError');
 			return null;
 		} finally {
 			busy = false;
@@ -77,7 +78,9 @@
 	async function sweep() {
 		const body = await post({ action: 'sweep', olderThanDays, onlyRead, keepStarred });
 		if (!body) return;
-		notice = `Moved ${body.moved} ${body.moved === 1 ? 'message' : 'messages'} to Trash.`;
+		notice = t(body.moved === 1 ? 'cleanup.movedOne' : 'cleanup.movedMany', {
+			count: body.moved
+		});
 		count = null;
 		confirming = false;
 		await invalidateAll();
@@ -109,73 +112,67 @@
 </script>
 
 <section class="surface-lg card">
-	<h2><Icon name="brush-line" size={18} /> Cleanup</h2>
+	<h2><Icon name="brush-line" size={18} /> {t('cleanup.title')}</h2>
 
-	<p class="card-hint">
-		Clear out old mail in bulk, and let Trash empty itself. Drafts and scheduled messages are
-		never touched.
-	</p>
+	<p class="card-hint">{t('cleanup.hint')}</p>
 
 	<div class="block">
-		<label class="field-title" for="retention">Empty Trash automatically</label>
+		<label class="field-title" for="retention">{t('cleanup.autoEmpty')}</label>
 		<select id="retention" class="text-input" value={retention} onchange={saveRetention}>
 			{#each TRASH_RETENTION_CHOICES as days (days)}
 				<option value={days}>{describe(days)}</option>
 			{/each}
 		</select>
-		<p class="hint">
-			Runs at most once a day when you open the mailbox. Deleting from Trash is permanent and
-			takes attachments with it.
-		</p>
+		<p class="hint">{t('cleanup.autoEmptyHint')}</p>
 		<div class="actions">
 			<button type="button" class="btn-ghost" disabled={busy} onclick={emptyExpired}>
-				Empty expired now
+				{t('cleanup.emptyExpiredNow')}
 			</button>
 		</div>
 	</div>
 
 	<div class="block">
-		<span class="field-title">Move old mail to Trash</span>
+		<span class="field-title">{t('cleanup.moveOld')}</span>
 
 		<div class="row">
 			<select
 				class="text-input"
 				bind:value={olderThanDays}
 				onchange={resetCount}
-				aria-label="Older than"
+				aria-label={t('cleanup.olderThan')}
 			>
 				{#each SWEEP_AGE_CHOICES as days (days)}
-					<option value={days}>Older than {days} days</option>
+					<option value={days}>{t('cleanup.olderThanDays', { days })}</option>
 				{/each}
 			</select>
 		</div>
 
 		<label class="check">
 			<input type="checkbox" bind:checked={onlyRead} onchange={resetCount} />
-			<span>Only messages I have read</span>
+			<span>{t('cleanup.onlyRead')}</span>
 		</label>
 		<label class="check">
 			<input type="checkbox" bind:checked={keepStarred} onchange={resetCount} />
-			<span>Keep starred messages</span>
+			<span>{t('cleanup.keepStarred')}</span>
 		</label>
 
 		{#if confirming && count !== null}
 			<p class="count">
 				{count === 0
-					? 'Nothing matches that.'
-					: `${count} ${count === 1 ? 'message' : 'messages'} match. They move to Trash, so you can still get them back.`}
+					? t('cleanup.nothingMatches')
+					: t(count === 1 ? 'cleanup.matchCount' : 'cleanup.matchCountPlural', { count })}
 			</p>
 		{/if}
 
 		<div class="actions">
 			{#if confirming && count !== null && count > 0}
-				<button type="button" class="btn-ghost" onclick={resetCount}>Cancel</button>
+				<button type="button" class="btn-ghost" onclick={resetCount}>{t('common.cancel')}</button>
 				<button type="button" class="btn-primary" disabled={busy} onclick={sweep}>
-					{busy ? 'Moving…' : `Move ${count} to Trash`}
+					{busy ? t('cleanup.moving') : t('cleanup.moveToTrash', { count })}
 				</button>
 			{:else}
 				<button type="button" class="btn-primary" disabled={counting} onclick={preview}>
-					{counting ? 'Checking…' : 'Check how many'}
+					{counting ? t('cleanup.checking') : t('cleanup.checkHowMany')}
 				</button>
 			{/if}
 		</div>

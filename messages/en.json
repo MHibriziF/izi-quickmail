@@ -275,7 +275,8 @@
 		"bccColon": "Bcc:",
 		"subjectColon": "Subject:",
 		"fromColon": "From:",
-		"scheduleSend": "Schedule send"
+		"scheduleSend": "Schedule send",
+		"removeRecipient": "Remove {address}"
 	},
 	"thread": {
 		"close": "Close",
@@ -586,5 +587,63 @@
 		"pickDateTime": "Pick a date and time",
 		"pickFuture": "Pick a time in the future",
 		"pickWithin": "Pick a time within the next {years} years"
+	},
+	"cleanup": {
+		"title": "Cleanup",
+		"hint": "Clear out old mail in bulk, and let Trash empty itself. Drafts and scheduled messages are never touched.",
+		"autoEmpty": "Empty Trash automatically",
+		"autoEmptyHint": "Runs at most once a day when you open the mailbox. Deleting from Trash is permanent and takes attachments with it.",
+		"emptyExpiredNow": "Empty expired now",
+		"moveOld": "Move old mail to Trash",
+		"olderThan": "Older than",
+		"olderThanDays": "Older than {days} days",
+		"onlyRead": "Only messages I have read",
+		"keepStarred": "Keep starred messages",
+		"nothingMatches": "Nothing matches that.",
+		"matchCount": "{count} message matches. It moves to Trash, so you can still get it back.",
+		"matchCountPlural": "{count} messages match. They move to Trash, so you can still get them back.",
+		"checkHowMany": "Check how many",
+		"checking": "Checking…",
+		"moving": "Moving…",
+		"moveToTrash": "Move {count} to Trash",
+		"never": "Never",
+		"afterYear": "After a year",
+		"afterDays": "After {days} days",
+		"movedOne": "Moved {count} message to Trash.",
+		"movedMany": "Moved {count} messages to Trash."
+	},
+	"twoFactor": {
+		"title": "Two-factor authentication",
+		"saveCodes": "Save these recovery codes now — each works once, and this is the only time they are shown. They are the way back in if you lose your phone.",
+		"copyCodes": "Copy codes",
+		"savedThem": "I have saved them",
+		"scanHint": "Scan this with Google Authenticator, 1Password or Authy, then enter the 6-digit code it shows. Nothing changes until that code checks out.",
+		"cannotScan": "Can’t scan it? Enter this key by hand:",
+		"codeLabel": "6-digit code",
+		"turnOn": "Turn on",
+		"checking": "Checking…",
+		"on": "On",
+		"enabledHint": "You’ll be asked for a code from your authenticator when you sign in.",
+		"noCodesLeft": "No recovery codes left. If you lose your phone you will be locked out — generate a new set.",
+		"codesRemaining": "{count} unused recovery codes remaining.",
+		"newCodes": "New recovery codes",
+		"turnOff": "Turn off",
+		"setUpHint": "Add a second step at sign-in using an authenticator app, so a stolen password is not enough on its own.",
+		"setUp": "Set up",
+		"preparing": "Preparing…"
+	},
+	"recovery": {
+		"title": "Recovery address",
+		"hint": "An address outside this mailbox — your Gmail, say. It is where a password reset link goes, and where we tell you about security changes. A link sent to an address you can only read by signing in would be no use when you cannot sign in.",
+		"confirmed": "Confirmed",
+		"unconfirmed": "Unconfirmed",
+		"pendingHint": "{address} — click the link we sent before it can reset your password.",
+		"noneSet": "None set. Without one, a forgotten password can only be fixed from the command line.",
+		"changeTo": "Change to",
+		"addressLabel": "Recovery address",
+		"sendConfirmation": "Send confirmation",
+		"sending": "Sending…",
+		"removed": "Recovery address removed.",
+		"confirmationSent": "Confirmation sent to {address}. Click the link in it to finish."
 	}
 }

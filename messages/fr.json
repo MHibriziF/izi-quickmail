@@ -275,7 +275,8 @@
 		"bccColon": "Cci :",
 		"subjectColon": "Objet :",
 		"fromColon": "De :",
-		"scheduleSend": "Envoi programmé"
+		"scheduleSend": "Envoi programmé",
+		"removeRecipient": "Supprimer {address}"
 	},
 	"thread": {
 		"close": "Fermer",
@@ -586,5 +587,63 @@
 		"pickDateTime": "Choisissez une date et une heure",
 		"pickFuture": "Choisissez une heure dans le futur",
 		"pickWithin": "Choisissez une heure dans les {years} prochaines années"
+	},
+	"cleanup": {
+		"title": "Nettoyage",
+		"hint": "Videz le courrier ancien en masse, et laissez la corbeille se vider seule. Les brouillons et les messages programmés ne sont jamais touchés.",
+		"autoEmpty": "Vider la corbeille automatiquement",
+		"autoEmptyHint": "S’exécute au plus une fois par jour à l’ouverture de la boîte. La suppression depuis la corbeille est définitive et emporte les pièces jointes.",
+		"emptyExpiredNow": "Vider les expirés maintenant",
+		"moveOld": "Déplacer le courrier ancien vers la corbeille",
+		"olderThan": "Plus ancien que",
+		"olderThanDays": "Plus ancien que {days} jours",
+		"onlyRead": "Seulement les messages que j’ai lus",
+		"keepStarred": "Conserver les messages suivis",
+		"nothingMatches": "Rien ne correspond.",
+		"matchCount": "{count} message correspond. Il part à la corbeille, vous pouvez donc le récupérer.",
+		"matchCountPlural": "{count} messages correspondent. Ils partent à la corbeille, vous pouvez donc les récupérer.",
+		"checkHowMany": "Vérifier combien",
+		"checking": "Vérification…",
+		"moving": "Déplacement…",
+		"moveToTrash": "Déplacer {count} vers la corbeille",
+		"never": "Jamais",
+		"afterYear": "Après un an",
+		"afterDays": "Après {days} jours",
+		"movedOne": "{count} message déplacé vers la corbeille.",
+		"movedMany": "{count} messages déplacés vers la corbeille."
+	},
+	"twoFactor": {
+		"title": "Authentification à deux facteurs",
+		"saveCodes": "Enregistrez ces codes de récupération maintenant — chacun ne sert qu’une fois, et ils ne seront plus jamais affichés. Ils sont votre moyen de revenir si vous perdez votre téléphone.",
+		"copyCodes": "Copier les codes",
+		"savedThem": "Je les ai enregistrés",
+		"scanHint": "Scannez ceci avec Google Authenticator, 1Password ou Authy, puis saisissez le code à 6 chiffres affiché. Rien ne change tant que ce code n’est pas validé.",
+		"cannotScan": "Impossible de scanner ? Saisissez cette clé à la main :",
+		"codeLabel": "Code à 6 chiffres",
+		"turnOn": "Activer",
+		"checking": "Vérification…",
+		"on": "Activé",
+		"enabledHint": "Un code de votre application d’authentification vous sera demandé à la connexion.",
+		"noCodesLeft": "Plus aucun code de récupération. Si vous perdez votre téléphone, vous serez bloqué — générez-en de nouveaux.",
+		"codesRemaining": "{count} codes de récupération inutilisés restants.",
+		"newCodes": "Nouveaux codes de récupération",
+		"turnOff": "Désactiver",
+		"setUpHint": "Ajoutez une seconde étape à la connexion avec une application d’authentification, pour qu’un mot de passe volé ne suffise pas.",
+		"setUp": "Configurer",
+		"preparing": "Préparation…"
+	},
+	"recovery": {
+		"title": "Adresse de récupération",
+		"hint": "Une adresse en dehors de cette boîte — votre Gmail, par exemple. C’est là qu’arrive le lien de réinitialisation, et là que nous signalons les changements de sécurité. Un lien envoyé à une adresse lisible seulement après connexion ne servirait à rien quand vous ne pouvez pas vous connecter.",
+		"confirmed": "Confirmée",
+		"unconfirmed": "Non confirmée",
+		"pendingHint": "{address} — cliquez sur le lien envoyé avant qu’elle puisse réinitialiser votre mot de passe.",
+		"noneSet": "Aucune définie. Sans elle, un mot de passe oublié ne peut être corrigé qu’en ligne de commande.",
+		"changeTo": "Remplacer par",
+		"addressLabel": "Adresse de récupération",
+		"sendConfirmation": "Envoyer la confirmation",
+		"sending": "Envoi…",
+		"removed": "Adresse de récupération supprimée.",
+		"confirmationSent": "Confirmation envoyée à {address}. Cliquez sur le lien qu’elle contient pour terminer."
 	}
 }

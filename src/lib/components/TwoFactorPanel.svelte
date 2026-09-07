@@ -3,6 +3,7 @@
 	import qrcode from 'qrcode-generator';
 	import Icon from '$lib/components/Icon.svelte';
 	import { formatSecretForDisplay } from '$lib/totp-display';
+	import { t } from '$lib/i18n';
 
 	let {
 		enabled: initialEnabled,
@@ -51,7 +52,7 @@
 			}
 			return body;
 		} catch {
-			error = 'Network error';
+			error = t('common.networkError');
 			return null;
 		} finally {
 			busy = false;
@@ -116,14 +117,11 @@
 </script>
 
 <section class="surface-lg card">
-	<h2><Icon name="shield-keyhole-line" size={18} /> Two-factor authentication</h2>
+	<h2><Icon name="shield-keyhole-line" size={18} /> {t('twoFactor.title')}</h2>
 
 	{#if codes.length}
 		<!-- Shown once. There is no way to read them back afterwards. -->
-		<p class="card-hint">
-			Save these recovery codes now — each works once, and this is the only time they are shown.
-			They are the way back in if you lose your phone.
-		</p>
+		<p class="card-hint">{t('twoFactor.saveCodes')}</p>
 		<ul class="codes">
 			{#each codes as backup (backup)}
 				<li>{backup}</li>
@@ -131,28 +129,25 @@
 		</ul>
 		<div class="actions">
 			<button type="button" class="btn-primary" onclick={copyCodes}>
-				{copied ? 'Copied' : 'Copy codes'}
+				{copied ? t('common.copied') : t('twoFactor.copyCodes')}
 			</button>
 			<button type="button" class="btn-ghost" onclick={() => (codes = [])}>
-				I have saved them
+				{t('twoFactor.savedThem')}
 			</button>
 		</div>
 	{:else if uri}
-		<p class="card-hint">
-			Scan this with Google Authenticator, 1Password or Authy, then enter the 6-digit code it
-			shows. Nothing changes until that code checks out.
-		</p>
+		<p class="card-hint">{t('twoFactor.scanHint')}</p>
 
 		<div class="enroll">
 			<div class="qr">{@html qrSvg}</div>
 			<div class="manual">
-				<p class="manual-label">Can't scan it? Enter this key by hand:</p>
+				<p class="manual-label">{t('twoFactor.cannotScan')}</p>
 				<code class="secret">{formatSecretForDisplay(secret)}</code>
 			</div>
 		</div>
 
 		<form class="stack" onsubmit={confirm}>
-			<label class="field-title" for="totp-code">6-digit code</label>
+			<label class="field-title" for="totp-code">{t('twoFactor.codeLabel')}</label>
 			<input
 				id="totp-code"
 				class="text-input"
@@ -164,29 +159,26 @@
 				required
 			/>
 			<div class="actions">
-				<button type="button" class="btn-ghost" onclick={cancel}>Cancel</button>
+				<button type="button" class="btn-ghost" onclick={cancel}>{t('common.cancel')}</button>
 				<button type="submit" class="btn-primary" disabled={busy}>
-					{busy ? 'Checking…' : 'Turn on'}
+					{busy ? t('twoFactor.checking') : t('twoFactor.turnOn')}
 				</button>
 			</div>
 		</form>
 	{:else if enabled}
 		<p class="card-hint">
-			<span class="on-badge">On</span>
-			You'll be asked for a code from your authenticator when you sign in.
+			<span class="on-badge">{t('twoFactor.on')}</span>
+			{t('twoFactor.enabledHint')}
 		</p>
 
 		{#if remaining === 0}
-			<p class="warn">
-				No recovery codes left. If you lose your phone you will be locked out — generate a new
-				set.
-			</p>
+			<p class="warn">{t('twoFactor.noCodesLeft')}</p>
 		{:else}
-			<p class="card-hint">{remaining} unused recovery codes remaining.</p>
+			<p class="card-hint">{t('twoFactor.codesRemaining', { count: remaining })}</p>
 		{/if}
 
 		<form class="stack" onsubmit={regenerate}>
-			<label class="field-title" for="regen-password">Password</label>
+			<label class="field-title" for="regen-password">{t('auth.password')}</label>
 			<input
 				id="regen-password"
 				class="text-input"
@@ -196,20 +188,17 @@
 				required
 			/>
 			<div class="actions">
-				<button type="submit" class="btn-ghost" disabled={busy}>New recovery codes</button>
+				<button type="submit" class="btn-ghost" disabled={busy}>{t('twoFactor.newCodes')}</button>
 				<button type="button" class="btn-ghost danger" disabled={busy} onclick={disable}>
-					Turn off
+					{t('twoFactor.turnOff')}
 				</button>
 			</div>
 		</form>
 	{:else}
-		<p class="card-hint">
-			Add a second step at sign-in using an authenticator app, so a stolen password is not
-			enough on its own.
-		</p>
+		<p class="card-hint">{t('twoFactor.setUpHint')}</p>
 		<div class="actions">
 			<button type="button" class="btn-primary" onclick={start} disabled={busy}>
-				{busy ? 'Preparing…' : 'Set up'}
+				{busy ? t('twoFactor.preparing') : t('twoFactor.setUp')}
 			</button>
 		</div>
 	{/if}

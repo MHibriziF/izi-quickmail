@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { t } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let {
@@ -39,7 +40,7 @@
 			password = '';
 			return body;
 		} catch {
-			error = 'Network error';
+			error = t('common.networkError');
 			return null;
 		} finally {
 			busy = false;
@@ -51,43 +52,37 @@
 		const body = await call({ email: draft, password });
 		if (!body) return;
 		draft = '';
-		notice = `Confirmation sent to ${body.pending}. Click the link in it to finish.`;
+		notice = t('recovery.confirmationSent', { address: body.pending });
 	}
 
 	async function clear() {
 		const body = await call({ action: 'clear', password });
-		if (body) notice = 'Recovery address removed.';
+		if (body) notice = t('recovery.removed');
 	}
 </script>
 
 <section class="surface-lg card">
-	<h2><Icon name="lifebuoy-line" size={18} /> Recovery address</h2>
+	<h2><Icon name="lifebuoy-line" size={18} /> {t('recovery.title')}</h2>
 
-	<p class="card-hint">
-		An address outside this mailbox — your Gmail, say. It is where a password reset link goes, and
-		where we tell you about security changes. A link sent to an address you can only read by
-		signing in would be no use when you cannot sign in.
-	</p>
+	<p class="card-hint">{t('recovery.hint')}</p>
 
 	{#if email}
 		<p class="current">
-			<span class="on-badge">Confirmed</span>
+			<span class="on-badge">{t('recovery.confirmed')}</span>
 			{email}
 		</p>
 	{:else if pending}
 		<p class="current">
-			<span class="wait-badge">Unconfirmed</span>
-			{pending} — click the link we sent before it can reset your password.
+			<span class="wait-badge">{t('recovery.unconfirmed')}</span>
+			{t('recovery.pendingHint', { address: pending })}
 		</p>
 	{:else}
-		<p class="warn">
-			None set. Without one, a forgotten password can only be fixed from the command line.
-		</p>
+		<p class="warn">{t('recovery.noneSet')}</p>
 	{/if}
 
 	<form class="stack" onsubmit={save}>
 		<label class="field-title" for="recovery-email">
-			{email || pending ? 'Change to' : 'Recovery address'}
+			{email || pending ? t('recovery.changeTo') : t('recovery.addressLabel')}
 		</label>
 		<input
 			id="recovery-email"
@@ -99,7 +94,7 @@
 			required
 		/>
 
-		<label class="field-title" for="recovery-password">Password</label>
+		<label class="field-title" for="recovery-password">{t('auth.password')}</label>
 		<input
 			id="recovery-password"
 			class="text-input"
@@ -112,11 +107,11 @@
 		<div class="actions">
 			{#if email || pending}
 				<button type="button" class="btn-ghost danger" disabled={busy} onclick={clear}>
-					Remove
+					{t('common.remove')}
 				</button>
 			{/if}
 			<button type="submit" class="btn-primary" disabled={busy}>
-				{busy ? 'Sending…' : 'Send confirmation'}
+				{busy ? t('recovery.sending') : t('recovery.sendConfirmation')}
 			</button>
 		</div>
 	</form>

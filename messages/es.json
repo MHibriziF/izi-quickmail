@@ -275,7 +275,8 @@
 		"bccColon": "Cco:",
 		"subjectColon": "Asunto:",
 		"fromColon": "De:",
-		"scheduleSend": "Programar envío"
+		"scheduleSend": "Programar envío",
+		"removeRecipient": "Quitar {address}"
 	},
 	"thread": {
 		"close": "Cerrar",
@@ -586,5 +587,63 @@
 		"pickDateTime": "Elige una fecha y una hora",
 		"pickFuture": "Elige una hora futura",
 		"pickWithin": "Elige una hora dentro de los próximos {years} años"
+	},
+	"cleanup": {
+		"title": "Limpieza",
+		"hint": "Vacía el correo antiguo en bloque y deja que la papelera se vacíe sola. Los borradores y los mensajes programados nunca se tocan.",
+		"autoEmpty": "Vaciar la papelera automáticamente",
+		"autoEmptyHint": "Se ejecuta como mucho una vez al día al abrir el buzón. Borrar de la papelera es permanente y se lleva los adjuntos.",
+		"emptyExpiredNow": "Vaciar los caducados ahora",
+		"moveOld": "Mover correo antiguo a la papelera",
+		"olderThan": "Más antiguo que",
+		"olderThanDays": "Más antiguo que {days} días",
+		"onlyRead": "Solo los mensajes que he leído",
+		"keepStarred": "Conservar los mensajes destacados",
+		"nothingMatches": "No hay coincidencias.",
+		"matchCount": "{count} mensaje coincide. Va a la papelera, así que puedes recuperarlo.",
+		"matchCountPlural": "{count} mensajes coinciden. Van a la papelera, así que puedes recuperarlos.",
+		"checkHowMany": "Comprobar cuántos",
+		"checking": "Comprobando…",
+		"moving": "Moviendo…",
+		"moveToTrash": "Mover {count} a la papelera",
+		"never": "Nunca",
+		"afterYear": "Después de un año",
+		"afterDays": "Después de {days} días",
+		"movedOne": "{count} mensaje movido a la papelera.",
+		"movedMany": "{count} mensajes movidos a la papelera."
+	},
+	"twoFactor": {
+		"title": "Autenticación en dos pasos",
+		"saveCodes": "Guarda ahora estos códigos de recuperación — cada uno sirve una vez, y es la única vez que se muestran. Son tu forma de volver a entrar si pierdes el teléfono.",
+		"copyCodes": "Copiar códigos",
+		"savedThem": "Ya los he guardado",
+		"scanHint": "Escanea esto con Google Authenticator, 1Password o Authy y luego escribe el código de 6 dígitos que muestre. Nada cambia hasta que ese código sea correcto.",
+		"cannotScan": "¿No puedes escanear? Introduce esta clave a mano:",
+		"codeLabel": "Código de 6 dígitos",
+		"turnOn": "Activar",
+		"checking": "Comprobando…",
+		"on": "Activado",
+		"enabledHint": "Se te pedirá un código de tu aplicación de autenticación al iniciar sesión.",
+		"noCodesLeft": "No quedan códigos de recuperación. Si pierdes el teléfono te quedarás fuera — genera un conjunto nuevo.",
+		"codesRemaining": "Quedan {count} códigos de recuperación sin usar.",
+		"newCodes": "Nuevos códigos de recuperación",
+		"turnOff": "Desactivar",
+		"setUpHint": "Añade un segundo paso al iniciar sesión con una aplicación de autenticación, para que una contraseña robada no baste por sí sola.",
+		"setUp": "Configurar",
+		"preparing": "Preparando…"
+	},
+	"recovery": {
+		"title": "Dirección de recuperación",
+		"hint": "Una dirección fuera de este buzón — tu Gmail, por ejemplo. Ahí llega el enlace para restablecer la contraseña, y ahí te avisamos de los cambios de seguridad. Un enlace enviado a una dirección que solo puedes leer iniciando sesión no serviría de nada cuando no puedes iniciar sesión.",
+		"confirmed": "Confirmada",
+		"unconfirmed": "Sin confirmar",
+		"pendingHint": "{address} — haz clic en el enlace que enviamos antes de que pueda restablecer tu contraseña.",
+		"noneSet": "Ninguna definida. Sin ella, una contraseña olvidada solo se puede arreglar desde la línea de comandos.",
+		"changeTo": "Cambiar a",
+		"addressLabel": "Dirección de recuperación",
+		"sendConfirmation": "Enviar confirmación",
+		"sending": "Enviando…",
+		"removed": "Dirección de recuperación eliminada.",
+		"confirmationSent": "Confirmación enviada a {address}. Haz clic en el enlace para terminar."
 	}
 }
