@@ -93,12 +93,17 @@
 		}
 	]);
 
-	// Upstream splits settings across /settings/<section>; this fork still has
-	// the one page, and its sectioned version arrives with the device-session
-	// work that page also lists. One entry beats five links to nothing.
+	// The panes come from SETTINGS_SECTIONS, which this fork defines against its
+	// own settings page — no shortcuts sheet to configure, but security and
+	// cleanup to show. Classic ignores all of this and renders the whole page.
 	const settingsNav = $derived<NavItem[]>([
 		{ href: '/inbox', icon: 'ArrowLeft', label: t('common.back') },
-		{ href: '/settings', icon: 'SettingsGear', label: t('nav.settings'), shortcut: 'g s' },
+		{ href: '/settings/general', icon: 'SettingsGear', label: t('nav.general'), shortcut: 'g s' },
+		{ href: '/settings/appearance', icon: 'Stars', label: t('nav.appearance') },
+		{ href: '/settings/security', icon: 'LockIcon', label: t('nav.security') },
+		{ href: '/settings/connections', icon: 'Users', label: t('nav.connections') },
+		{ href: '/settings/notifications', icon: 'Bell', label: t('nav.notifications') },
+		{ href: '/settings/cleanup', icon: 'Bin', label: t('nav.cleanup') },
 		...(data.user.is_admin ? [{ href: '/admin', icon: 'SettingsGear', label: t('nav.admin') }] : [])
 	]);
 
@@ -213,7 +218,7 @@
 				t: '/sent',
 				a: '/archive',
 				b: '/trash',
-				s: '/settings'
+				s: '/settings/general'
 			};
 			const href = map[event.key.toLowerCase()];
 			chord = '';
@@ -307,7 +312,7 @@
 			{#if !settings}
 				<Tooltip text={t('nav.settings')} side="right" enabled={collapsed && !mobileOpen} stretch>
 					<a
-						href="/settings"
+						href="/settings/general"
 						class="z-nav-link"
 						class:active={isActive('/settings')}
 						aria-label={collapsed && !mobileOpen ? t('nav.settings') : undefined}
@@ -350,7 +355,7 @@
 			<a href="/sent" aria-label={t('nav.sent')}><Icon name="Plane2" size={18} /></a>
 		</Tooltip>
 		<Tooltip text={t('nav.settings')} side="top">
-			<a href="/settings" aria-label={t('nav.settings')}><Icon name="SettingsGear" size={18} /></a>
+			<a href="/settings/general" aria-label={t('nav.settings')}><Icon name="SettingsGear" size={18} /></a>
 		</Tooltip>
 	</nav>
 </div>

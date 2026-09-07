@@ -191,7 +191,7 @@
 					</div>
 				{/if}
 				<Tooltip text={t('account.addAddress')}>
-					<a href="/settings" class="z-tile add" aria-label={t('account.addAddress')}>
+					<a href="/settings/connections" class="z-tile add" aria-label={t('account.addAddress')}>
 						<Icon name="Plus" size={14} />
 					</a>
 				</Tooltip>
@@ -244,7 +244,7 @@
 						</span>
 					</button>
 				{/each}
-				<a href="/settings" onclick={closeMenus}>
+				<a href="/settings/connections" onclick={closeMenus}>
 					<Icon name="Plus" size={16} />
 					{t('account.addAddress')}
 				</a>
@@ -252,7 +252,7 @@
 			{#if collapsed}
 				<LocaleSwitcher embedded />
 			{/if}
-			<a href="/settings" onclick={closeMenus}>
+			<a href="/settings/general" onclick={closeMenus}>
 				<Icon name="SettingsGear" size={16} />
 				{t('nav.settings')}
 			</a>

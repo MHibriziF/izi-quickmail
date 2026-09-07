@@ -64,7 +64,9 @@
 		"collapseSidebar": "收起侧边栏",
 		"toggleSidebar": "切换侧边栏",
 		"openSidebar": "打开侧边栏",
-		"closeSidebar": "关闭侧边栏"
+		"closeSidebar": "关闭侧边栏",
+		"security": "安全",
+		"cleanup": "清理"
 	},
 	"account": {
 		"menu": "账户菜单",

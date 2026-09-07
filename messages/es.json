@@ -64,7 +64,9 @@
 		"collapseSidebar": "Contraer barra lateral",
 		"toggleSidebar": "Mostrar u ocultar barra lateral",
 		"openSidebar": "Abrir barra lateral",
-		"closeSidebar": "Cerrar barra lateral"
+		"closeSidebar": "Cerrar barra lateral",
+		"security": "Seguridad",
+		"cleanup": "Limpieza"
 	},
 	"account": {
 		"menu": "Menú de la cuenta",

@@ -64,7 +64,9 @@
 		"collapseSidebar": "Réduire la barre latérale",
 		"toggleSidebar": "Afficher ou masquer la barre latérale",
 		"openSidebar": "Ouvrir la barre latérale",
-		"closeSidebar": "Fermer la barre latérale"
+		"closeSidebar": "Fermer la barre latérale",
+		"security": "Sécurité",
+		"cleanup": "Nettoyage"
 	},
 	"account": {
 		"menu": "Menu du compte",

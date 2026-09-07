@@ -64,7 +64,9 @@
 		"collapseSidebar": "Collapse sidebar",
 		"toggleSidebar": "Toggle sidebar",
 		"openSidebar": "Open sidebar",
-		"closeSidebar": "Close sidebar"
+		"closeSidebar": "Close sidebar",
+		"security": "Security",
+		"cleanup": "Cleanup"
 	},
 	"account": {
 		"menu": "Account menu",
