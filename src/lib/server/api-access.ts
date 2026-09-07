@@ -28,6 +28,11 @@ const BEARER_ROUTES: RouteRule[] = [
 	},
 	{
 		method: 'GET',
+		match: (pathname) => /^\/api\/drafts\/[^/]+$/.test(pathname),
+		scopes: ['mail:read']
+	},
+	{
+		method: 'GET',
 		match: (pathname) => pathname === '/api/mail/sync',
 		scopes: ['mail:read']
 	},

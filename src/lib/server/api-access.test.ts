@@ -261,3 +261,41 @@ describe('API key access', () => {
 		);
 	});
 });
+
+test('a draft is readable with mail:read, and not without it', () => {
+	assert.deepEqual(
+		authorizeApiRequest({
+			pathname: '/api/drafts/abc-123',
+			method: 'GET',
+			authMethod: 'api_token',
+			scopes: ['mail:read']
+		}),
+		{ ok: true }
+	);
+
+	assert.equal(
+		authorizeApiRequest({
+			pathname: '/api/drafts/abc-123',
+			method: 'GET',
+			authMethod: 'api_token',
+			scopes: ['mail:send']
+		}).ok,
+		false
+	);
+});
+
+test('a draft cannot be written through an API key', () => {
+	// Only the read rule exists, and unmatched routes are denied.
+	for (const method of ['POST', 'PUT', 'DELETE']) {
+		assert.equal(
+			authorizeApiRequest({
+				pathname: '/api/drafts/abc-123',
+				method,
+				authMethod: 'api_token',
+				scopes: ['mail:read', 'mail:send']
+			}).ok,
+			false,
+			method
+		);
+	}
+});
