@@ -55,6 +55,19 @@
 	--color-line: var(--z-border);
 	--color-focus-line: var(--color-accent, #90ac9a);
 	--color-focus-halo: var(--color-accent-soft, rgba(144, 172, 154, 0.18));
+
+	/*
+	 * Shared components — the settings panels, the schedule picker — are styled
+	 * against these, so without the mapping their buttons stayed Classic's green
+	 * inside Zero's shell. `--color-on-accent` is deliberately not remapped:
+	 * `--z-on-primary` already derives from it, and inverting that is a cycle.
+	 */
+	--color-accent: var(--z-primary);
+	--color-accent-hover: var(--z-primary-hover);
+	/* Zero separates panels with a hairline, not a drop shadow. */
+	--shadow-xs: none;
+	--shadow-sm: 0 0 0 1px var(--z-border);
+	--shadow-md: 0 0 0 1px var(--z-border);
 }
 
 [data-ui-theme='zero'][data-theme='dark'] {
@@ -86,6 +99,12 @@
 	--color-muted: var(--z-muted);
 	--color-line: var(--z-border);
 	--color-scrim: rgba(0, 0, 0, 0.55);
+
+	--color-accent: var(--z-primary);
+	--color-accent-hover: var(--z-primary-hover);
+	--shadow-xs: none;
+	--shadow-sm: 0 0 0 1px var(--z-border);
+	--shadow-md: 0 0 0 1px var(--z-border);
 }
 
 [data-ui-theme='zero'] body {
