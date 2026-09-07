@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	import { MAX_SCHEDULE_DAYS } from '$lib/constants';
+	import { MAX_SCHEDULE_YEARS } from '$lib/constants';
 	import {
 		detectTimeZone,
 		fromLocalInputValue,
@@ -59,9 +59,12 @@
 	let error = $state('');
 
 	const customMin = $derived(toLocalInputValue(new Date(Date.now() + 60_000), zone));
-	/** The provider will not hold a message longer than this. */
+	/**
+	 * Not a delivery limit — the message waits here, not at the provider. It is
+	 * only far enough out that a mistyped year is caught by the field itself.
+	 */
 	const customMax = $derived(
-		toLocalInputValue(new Date(Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000), zone)
+		toLocalInputValue(new Date(Date.now() + MAX_SCHEDULE_YEARS * 365 * 24 * 60 * 60 * 1000), zone)
 	);
 
 	function choose(when: Date) {
@@ -84,8 +87,8 @@
 			error = 'Pick a time in the future';
 			return;
 		}
-		if (when.getTime() > Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000) {
-			error = `Scheduled send only reaches ${MAX_SCHEDULE_DAYS} days ahead`;
+		if (when.getTime() > Date.now() + MAX_SCHEDULE_YEARS * 365 * 24 * 60 * 60 * 1000) {
+			error = `Pick a time within the next ${MAX_SCHEDULE_YEARS} years`;
 			return;
 		}
 

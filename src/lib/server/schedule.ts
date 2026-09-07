@@ -1,11 +1,16 @@
-import { MAX_SCHEDULE_DAYS } from '$lib/constants';
+import { MAX_SCHEDULE_YEARS } from '$lib/constants';
+
+/** Milliseconds beyond which a send time is treated as a mistyped year. */
+const MAX_SCHEDULE_MS = MAX_SCHEDULE_YEARS * 365 * 24 * 60 * 60 * 1000;
 
 /**
  * Validates a requested send time.
  *
  * Shared by the compose and reply endpoints so the two cannot drift: a past
  * time would send immediately, which is never what someone picking a date
- * meant, and the provider refuses anything past its own horizon.
+ * meant. There is no upper bound worth enforcing beyond a typo guard — the
+ * message waits in our own outbox, not on a provider that caps how long it
+ * will hold one.
  */
 export function parseScheduledAt(
 	value: unknown
@@ -20,8 +25,8 @@ export function parseScheduledAt(
 	if (when.getTime() <= Date.now()) {
 		return { error: 'Pick a time in the future' };
 	}
-	if (when.getTime() > Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000) {
-		return { error: `Scheduled send only reaches ${MAX_SCHEDULE_DAYS} days ahead` };
+	if (when.getTime() > Date.now() + MAX_SCHEDULE_MS) {
+		return { error: `Pick a time within the next ${MAX_SCHEDULE_YEARS} years` };
 	}
 
 	return { iso: when.toISOString() };

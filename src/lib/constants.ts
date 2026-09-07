@@ -13,5 +13,9 @@ export const MAILBOX_PAGE_SIZE = 25;
 export const MAX_USER_NAME_LENGTH = 80;
 /** Shortest password `setUserPassword` will accept. */
 export const MIN_PASSWORD_LENGTH = 8;
-/** Resend refuses a `scheduled_at` further out than this, so neither do we. */
-export const MAX_SCHEDULE_DAYS = 30;
+/**
+ * Scheduled send is run by our own cron, not held by the provider, so there is
+ * no delivery horizon to respect. This is only a typo guard — a mistyped year
+ * would otherwise leave a message sitting in the outbox for good.
+ */
+export const MAX_SCHEDULE_YEARS = 5;
