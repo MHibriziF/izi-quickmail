@@ -1,0 +1,110 @@
+import type { D1Database } from '@cloudflare/workers-types';
+import { splitStatements } from './migrate-sql';
+
+/**
+ * Applies pending D1 migrations from inside the Worker.
+ *
+ * Deploy to Cloudflare provisions the database but never runs migrations, so a
+ * fresh deploy would otherwise land on a schema-less D1 and fail on the first
+ * query — the person deploying has to know to run wrangler by hand. Bundling
+ * the migrations and applying them on first use makes the button enough.
+ *
+ * `d1_migrations` is wrangler's own table, with wrangler's own schema and
+ * naming, so the two paths are interchangeable: whichever runs first, the other
+ * sees the work as done.
+ */
+
+/** Every file in `migrations/`, inlined at build time. */
+const FILES = import.meta.glob('/migrations/*.sql', {
+	query: '?raw',
+	import: 'default',
+	eager: true
+}) as Record<string, string>;
+
+const CREATE_TRACKING_TABLE = `CREATE TABLE IF NOT EXISTS d1_migrations(
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		name       TEXT UNIQUE,
+		applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+)`;
+
+export type Migration = { name: string; sql: string };
+
+/** Migrations in the order wrangler would apply them: by filename. */
+export function listMigrations(): Migration[] {
+	return Object.entries(FILES)
+		.map(([path, sql]) => ({ name: path.split('/').pop() ?? path, sql }))
+		.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+}
+
+async function appliedNames(db: D1Database): Promise<Set<string>> {
+	await db.prepare(CREATE_TRACKING_TABLE).run();
+	const { results } = await db.prepare('SELECT name FROM d1_migrations').all<{ name: string }>();
+	return new Set(results.map((row) => row.name));
+}
+
+/**
+ * Applies whatever has not run yet, oldest first.
+ *
+ * Each migration goes to D1 as one batch — its statements plus the row
+ * recording it — so it either lands whole or not at all. That is also what
+ * makes it safe for two requests to arrive at once on a cold deploy: the
+ * second batch fails on the name's UNIQUE constraint and rolls back rather
+ * than applying anything twice.
+ */
+export async function applyPendingMigrations(db: D1Database): Promise<string[]> {
+	const applied = await appliedNames(db);
+	const pending = listMigrations().filter((migration) => !applied.has(migration.name));
+	if (pending.length === 0) return [];
+
+	const ran: string[] = [];
+
+	for (const migration of pending) {
+		const statements = splitStatements(migration.sql).map((statement) => db.prepare(statement));
+		if (statements.length === 0) continue;
+
+		try {
+			await db.batch([
+				...statements,
+				db.prepare('INSERT INTO d1_migrations (name) VALUES (?)').bind(migration.name)
+			]);
+			ran.push(migration.name);
+		} catch (error) {
+			// Another request got there first: it is applied, not broken.
+			if ((await appliedNames(db)).has(migration.name)) continue;
+			throw new Error(`Migration ${migration.name} failed: ${describe(error)}`);
+		}
+	}
+
+	return ran;
+}
+
+function describe(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Runs the migrations at most once per isolate.
+ *
+ * The promise is cached rather than the result, so requests arriving together
+ * in one isolate wait on the same run instead of starting their own. A failure
+ * clears the cache so the next request can try again — a half-migrated
+ * database that never retries would be worse than a slow one.
+ */
+let inFlight: Promise<void> | null = null;
+
+export function ensureSchema(db: D1Database): Promise<void> {
+	if (!inFlight) {
+		inFlight = applyPendingMigrations(db)
+			.then((ran) => {
+				if (ran.length > 0) {
+					console.log(`applied ${ran.length} migration(s): ${ran.join(', ')}`);
+				}
+			})
+			.catch((error) => {
+				inFlight = null;
+				throw error;
+			});
+	}
+
+	return inFlight;
+}

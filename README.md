@@ -38,6 +38,9 @@ On top of everything upstream ships:
 - **Editable display name** — change the name recipients see on your mail without touching the database. **Settings → Account**.
 - **Time zone** — pick the zone your mail and your scheduled sends are read in, rather than trusting whatever the browser reports. **Settings → Time zone**.
 - **Broader deletion** — trash that empties itself on a retention period you choose, plus a sweep that moves mail older than a given age to the trash. Drafts and scheduled messages are never swept, and a count is always shown before anything moves. **Settings → Cleanup**.
+- **Bahasa Indonesia**, alongside English, French, Spanish and Simplified Chinese. **Settings → Language**.
+- **Two interfaces** — Zero, the two-pane shell with a command palette and keyboard shortcuts, or Classic, the original stacked layout. Per account, in **Settings → Interface**.
+- **[Migrations that apply themselves](#database-migrations)** — the Deploy to Cloudflare button never runs them, so upstream's one-click deploy lands on an empty database. Here the Worker brings its own schema up to date.
 
 ## Quick start
 
@@ -64,12 +67,15 @@ Pulling updates does **not** rename your Worker, D1 database, or R2 bucket —
 leave those as they are (often `quickmail` / `quickmail-attachments`). Existing
 `qm_live_` API keys keep working, and `quickmail` remains a CLI alias.
 
-Every update, apply migrations before deploying:
+The Worker applies any pending migrations itself on the first request after a
+deploy, so `bun run deploy` is enough. To apply them ahead of time instead:
 
 ```bash
 bun run db:migrate:remote
-bun run deploy
 ```
+
+Both paths write to the same `d1_migrations` table, so it does not matter which
+runs first.
 
 **Coming from upstream, or from a build of this fork before scheduled send moved
 to cron:** migration `0019` moves any message Resend was already holding to
@@ -115,7 +121,9 @@ bunx wrangler r2 bucket create quickmail-attachments
 ```
 
 Copy the printed `database_id` into `wrangler.jsonc` (replacing
-`REPLACE_WITH_YOUR_D1_DATABASE_ID`), then run migrations:
+`REPLACE_WITH_YOUR_D1_DATABASE_ID`). Migrations are applied by the Worker on
+its first request, so there is nothing else to run — but you can apply them up
+front if you prefer:
 
 ```bash
 bun run db:migrate:remote
@@ -219,6 +227,24 @@ bun run deploy
 
 Users opt in under **Settings → Desktop notifications**. Don't rotate the key
 pair after users subscribe, or they'll have to re-enable.
+
+## Database migrations
+
+*Changed by this fork.*
+
+Upstream leaves the schema to `wrangler d1 migrations apply`, which the **Deploy
+to Cloudflare** button never runs — so a one-click deploy lands on an empty
+database and fails until someone knows to migrate it by hand.
+
+Here the migration files are bundled into the Worker and any pending ones are
+applied on the first request (and by the `email()` and cron handlers, whichever
+arrives first). They are recorded in `d1_migrations` — wrangler's own table, in
+wrangler's own format — so the CLI and the Worker agree about what has run and
+either can go first.
+
+Each migration is sent as a single D1 batch together with the row recording it,
+so it lands whole or not at all, and two requests hitting a cold deploy at once
+cannot apply anything twice.
 
 ## Scheduled send
 

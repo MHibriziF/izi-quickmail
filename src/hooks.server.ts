@@ -5,6 +5,7 @@ import { countUsers, getUserFromSession, readSessionToken } from '$lib/server/au
 import { DOMAIN_COOKIE, UI_THEME_COOKIE, UI_THEME_COOKIE_MAX_AGE } from '$lib/server/constants';
 import { listAddressesForUser, listDomains } from '$lib/server/domains';
 import { getUserLocale } from '$lib/server/locale';
+import { ensureSchema } from '$lib/server/migrate';
 import { getUserUiTheme } from '$lib/server/ui-theme';
 import { BUILTIN_THEME_IDS, DEFAULT_UI_THEME, parseThemeId } from '$lib/ui-theme/ids';
 import {
@@ -75,6 +76,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 		localeFromAcceptLanguage(event.request.headers.get('accept-language'));
 
 	const { pathname } = event.url;
+
+	// Deploy to Cloudflare provisions D1 but never migrates it, so the schema is
+	// brought up to date here rather than leaving a fresh deploy broken until
+	// someone runs wrangler by hand. Cached per isolate; a no-op once applied.
+	if (db) {
+		try {
+			await ensureSchema(db);
+		} catch (error) {
+			console.error('Could not apply database migrations', error);
+		}
+	}
 
 	if (db) {
 		const session = readSessionToken(event.cookies);

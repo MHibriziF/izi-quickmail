@@ -5,6 +5,7 @@ import {
 	type CloudflareInboundMessage
 } from './lib/server/cloudflare-inbound';
 import { getEmailProvider } from './lib/server/context';
+import { ensureSchema } from './lib/server/migrate';
 import { runDueScheduledSends } from './lib/server/scheduled-send';
 // Renamed from `_worker.js` by `scripts/wrap-cloudflare-worker.mjs` after `vite build`.
 // @ts-expect-error file is created at build time
@@ -35,6 +36,9 @@ export default {
 			return;
 		}
 
+		// Inbound mail can be the first thing a fresh deploy ever sees.
+		await ensureSchema(env.DB);
+
 		const inboundEnv: CloudflareInboundEnv = {
 			DB: env.DB,
 			ATTACHMENTS: env.ATTACHMENTS,
@@ -59,6 +63,7 @@ export default {
 		ctx.waitUntil(
 			(async () => {
 				try {
+					await ensureSchema(env.DB);
 					const provider = getEmailProvider({ env, ctx });
 					const { sent, failed } = await runDueScheduledSends(
 						{ DB: env.DB, ATTACHMENTS: env.ATTACHMENTS },
