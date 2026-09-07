@@ -43,6 +43,8 @@ declare global {
 			activeDomainId: string | null;
 			/** Which shell to render — the user's saved choice, else the cookie. */
 			uiTheme: string;
+			/** UI language — saved choice, else the cookie, else Accept-Language. */
+			locale: string;
 		}
 	}
 }

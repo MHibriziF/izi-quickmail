@@ -4,6 +4,7 @@ import { runDueTrashPurge } from '$lib/server/cleanup';
 import { getEmailProvider } from '$lib/server/context';
 import { runDueScheduledSends } from '$lib/server/scheduled-send';
 import { DEFAULT_UI_THEME } from '$lib/ui-theme/ids';
+import { DEFAULT_LOCALE } from '$lib/i18n/locales';
 import type { MailboxCounts } from '$lib/types';
 
 const EMPTY_COUNTS: MailboxCounts = {
@@ -71,6 +72,7 @@ export const load: LayoutServerLoad = async ({ locals, platform, depends }) => {
 		addresses: locals.addresses,
 		activeDomainId: locals.activeDomainId,
 		counts,
-		uiTheme: locals.uiTheme ?? DEFAULT_UI_THEME
+		uiTheme: locals.uiTheme ?? DEFAULT_UI_THEME,
+		locale: locals.locale ?? DEFAULT_LOCALE
 	};
 };

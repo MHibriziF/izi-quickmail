@@ -11,6 +11,7 @@
 	import CleanupPanel from '$lib/components/CleanupPanel.svelte';
 	import TimeZonePanel from '$lib/components/TimeZonePanel.svelte';
 	import InstallApp from '$lib/components/InstallApp.svelte';
+	import LocalePicker from '$lib/components/LocalePicker.svelte';
 	import {
 		readThemePreference,
 		setThemePreference,
@@ -473,6 +474,12 @@
 	<TimeZonePanel timeZone={data.timeZone} />
 
 	<CleanupPanel retentionDays={data.cleanup.trashRetentionDays} />
+
+	<section class="surface-lg card">
+		<h2><Icon name="translate-2" size={18} /> Language</h2>
+		<p class="card-hint">Applies to this account everywhere you sign in.</p>
+		<LocalePicker />
+	</section>
 
 	<section class="surface-lg card">
 		<h2><Icon name="contrast-2-line" size={18} /> Appearance</h2>

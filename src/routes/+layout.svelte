@@ -10,6 +10,7 @@
 	} from '$lib/app-chrome';
 	import { setupMobileViewTransitions } from '$lib/view-transitions';
 	import { persistUiTheme } from '$lib/ui-theme/apply';
+	import { persistLocale } from '$lib/i18n';
 	import { getTheme } from '$lib/ui-theme/registry';
 	import MailboxLiveSync from '$lib/components/MailboxLiveSync.svelte';
 	import type { ThemeShellData } from '$lib/ui-theme/types';
@@ -43,6 +44,10 @@
 	// keeps a hard reload from painting the wrong one.
 	$effect(() => {
 		if (data.user) persistUiTheme(data.uiTheme);
+	});
+
+	$effect(() => {
+		persistLocale(data.locale);
 	});
 
 	$effect(() => {
