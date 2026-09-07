@@ -1,5 +1,5 @@
 import { redirect, type Handle } from '@sveltejs/kit';
-import { authorizeApiRequest } from '$lib/server/api-access';
+import { authorizeApiRequest, canAccessDuringFirstLogin } from '$lib/server/api-access';
 import { getUserByApiToken, readBearerToken } from '$lib/server/api-tokens';
 import { countUsers, getUserFromSession, readSessionToken } from '$lib/server/auth';
 import { DOMAIN_COOKIE, UI_THEME_COOKIE, UI_THEME_COOKIE_MAX_AGE } from '$lib/server/constants';
@@ -107,12 +107,20 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
+	// A token minted before setup was completed is not a credential yet.
+	if (event.locals.user?.must_change_password && event.locals.authMethod === 'api_token') {
+		event.locals.user = null;
+		event.locals.authMethod = null;
+		event.locals.apiScopes = [];
+		event.locals.apiTokenId = null;
+	}
+
 	// Webhooks authenticate with a signature, not a session.
 	if (pathname.startsWith('/api/webhooks/')) {
 		return render(event, resolve);
 	}
 
-	if (db && event.locals.user) {
+	if (db && event.locals.user && !event.locals.user.must_change_password) {
 		const [domains, addresses] = await Promise.all([
 			listDomains(db),
 			listAddressesForUser(db, event.locals.user.id)
@@ -137,6 +145,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return jsonError('Unauthorized', 401);
 		}
 
+		if (
+			event.locals.user.must_change_password &&
+			!canAccessDuringFirstLogin(pathname, event.request.method)
+		) {
+			return jsonError('Complete account setup before continuing', 403);
+		}
+
 		const access = authorizeApiRequest({
 			pathname,
 			method: event.request.method,
@@ -150,7 +165,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		return render(event, resolve);
 	}
 
-	if (db && event.locals.user) {
+	if (db && event.locals.user && !event.locals.user.must_change_password) {
 		const [storedTheme, storedLocale] = await Promise.all([
 			getUserUiTheme(db, event.locals.user.id),
 			getUserLocale(db, event.locals.user.id)
@@ -199,7 +214,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (pathname === '/login') {
 		if (event.locals.user) {
-			throw redirect(303, '/inbox');
+			throw redirect(303, event.locals.user.must_change_password ? '/account/setup' : '/inbox');
 		}
 		return render(event, resolve);
 	}
@@ -210,6 +225,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (!event.locals.user) {
 		throw redirect(303, '/login');
+	}
+
+	// Nothing else is reachable until the temporary password is replaced.
+	if (event.locals.user.must_change_password) {
+		if (pathname !== '/account/setup') {
+			throw redirect(303, '/account/setup');
+		}
+		return render(event, resolve);
+	}
+
+	if (pathname === '/account/setup') {
+		throw redirect(303, '/inbox');
 	}
 
 	// Nothing works until a provider domain is connected and the user owns an

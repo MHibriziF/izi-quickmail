@@ -3,6 +3,8 @@ export type User = {
 	email: string;
 	name: string;
 	is_admin: boolean;
+	/** Admin-created logins start on a temporary password they must replace. */
+	must_change_password: boolean;
 	created_at: string;
 };
 

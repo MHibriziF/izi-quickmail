@@ -128,6 +128,11 @@ const BEARER_ROUTES: RouteRule[] = [
 	}
 ];
 
+/** The only request an account still on its temporary password may make. */
+export function canAccessDuringFirstLogin(pathname: string, method: string): boolean {
+	return method.toUpperCase() === 'POST' && pathname === '/api/auth/complete-setup';
+}
+
 /** Bulk mailbox actions. Per-action scopes are enforced in `authorizeMailAction`. */
 export const MAIL_ACTIONS = [
 	'read',

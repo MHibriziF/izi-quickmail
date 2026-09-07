@@ -19,7 +19,11 @@
 	let { children, data }: { children: import('svelte').Snippet; data: LayoutData } = $props();
 
 	// Onboarding runs before the user has an address, so the shell would be empty.
-	const showShell = $derived(Boolean(data.user) && $page.url.pathname !== '/onboarding');
+	const showShell = $derived(
+		Boolean(data.user) &&
+			$page.url.pathname !== '/onboarding' &&
+			$page.url.pathname !== '/account/setup'
+	);
 
 	// The shell is the theme's — everything below it is the same routes either way.
 	const ThemeShell = $derived(getTheme(data.uiTheme).Shell);
