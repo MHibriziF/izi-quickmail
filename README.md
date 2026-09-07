@@ -1,11 +1,19 @@
 # Quickinbox
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/DivinPrince/quickinbox)
+[![Deploy this fork](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/MHibriziF/izi-quickmail)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 
 Self-hosted email for your own domain, running on Cloudflare Workers.
 Get `you@yourdomain.com` with a full web client — no third-party mailbox,
 no servers to maintain.
+
+> **This is a fork of [DivinPrince/quickinbox](https://github.com/DivinPrince/quickinbox)**,
+> the original project by [Irasubiza Divin Prince](https://github.com/DivinPrince).
+> Everything below that is not marked as an addition came from there, and the
+> credit for it goes there. This fork adds the features listed under
+> [What this fork adds](#what-this-fork-adds).
+>
+> Prefer the original? [![Deploy the original](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/DivinPrince/quickinbox)
 
 ## Features
 
@@ -18,9 +26,22 @@ no servers to maintain.
 - **REST API, CLI, and MCP server** — send and read mail from scripts, the terminal, or AI agents
 - Light and dark themes
 
+## What this fork adds
+
+On top of everything upstream ships:
+
+- **Scheduled send** — pick any future date and time, or one of the presets, from the caret beside **Send**. The message waits in your own outbox and a [cron trigger](#scheduled-send) delivers it, so it works on either mail provider and is not capped at a provider's hold-until horizon. Recall it back to a draft any time before it goes.
+- **Two-factor authentication** — TOTP from any authenticator app, with single-use backup codes, asked for at sign-in. **Settings → Two-factor authentication**.
+- **Recovery address** — link a second mailbox you already own to the account. It is where security notices land and where forgotten-password links are sent, so losing access to this inbox does not lock you out of it. **Settings → Recovery address**.
+- **Recipient suggestions** — the composer offers addresses you have written to before as you type.
+- **Recipient chips** — To, Cc and Bcc turn what you have typed into a chip on space, comma, semicolon, <kbd>Enter</kbd> or <kbd>Tab</kbd>, so a mistyped address is visible before you send rather than after.
+- **Editable display name** — change the name recipients see on your mail without touching the database. **Settings → Account**.
+- **Time zone** — pick the zone your mail and your scheduled sends are read in, rather than trusting whatever the browser reports. **Settings → Time zone**.
+- **Broader deletion** — trash that empties itself on a retention period you choose, plus a sweep that moves mail older than a given age to the trash. Drafts and scheduled messages are never swept, and a count is always shown before anything moves. **Settings → Cleanup**.
+
 ## Quick start
 
-Click **Deploy to Cloudflare** above, or run the setup wizard locally:
+Click **Deploy this fork** above, or run the setup wizard locally:
 
 ```bash
 bun run setup
@@ -39,7 +60,21 @@ You need:
 
 ## Updating an existing install
 
-If you already deployed from this repo, pulling updates only changes the product name in the UI and docs. It does **not** rename your Worker, D1 database, or R2 bucket — leave those as they are (often `quickmail` / `quickmail-attachments`). Existing `qm_live_` API keys keep working, and `quickmail` remains a CLI alias.
+Pulling updates does **not** rename your Worker, D1 database, or R2 bucket —
+leave those as they are (often `quickmail` / `quickmail-attachments`). Existing
+`qm_live_` API keys keep working, and `quickmail` remains a CLI alias.
+
+Every update, apply migrations before deploying:
+
+```bash
+bun run db:migrate:remote
+bun run deploy
+```
+
+**Coming from upstream, or from a build of this fork before scheduled send moved
+to cron:** migration `0019` moves any message Resend was already holding to
+`queued` and leaves Resend to release it, so nothing is sent twice. Those
+messages can no longer be recalled; anything scheduled after the update can.
 
 ## Choosing a mail provider
 
@@ -185,6 +220,35 @@ bun run deploy
 Users opt in under **Settings → Desktop notifications**. Don't rotate the key
 pair after users subscribe, or they'll have to re-enable.
 
+## Scheduled send
+
+*Added by this fork.*
+
+A scheduled message is stored unsent in D1 — nothing is handed to the mail
+provider until its time comes. A [Cron Trigger](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+declared in `wrangler.jsonc` runs the Worker every minute and sends whatever is
+due:
+
+```jsonc
+"triggers": {
+  "crons": ["* * * * *"]
+}
+```
+
+Nothing to configure — `bun run deploy` registers the trigger. Because the app
+holds the message rather than the provider, scheduling works on **both**
+providers and the send time can be as far out as you like.
+
+A message that the provider rejects is retried on the next two ticks and then
+marked failed, with the provider's reason on the message. Recalling one from
+the thread view turns it back into a draft, and only works while it is still
+waiting — once the sweep has picked it up, it is on its way.
+
+Under `vite dev` the Worker never runs, so the trigger never fires; a page load
+sweeps the signed-in user's own due messages instead, which keeps scheduling
+testable locally. On a deployed Worker the trigger has already been round and
+that check costs one indexed query.
+
 ## Development
 
 ```bash
@@ -234,7 +298,7 @@ shown once. Revoking a key takes effect immediately. New keys start with
 ## CLI and MCP
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/DivinPrince/quickinbox/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/MHibriziF/izi-quickmail/main/scripts/install.sh | sh
 quickinbox login --url https://<your-instance> --token <key from Settings>
 quickinbox inbox
 quickinbox send --to someone@example.com --subject "Hi" --body "Hello"
@@ -276,7 +340,7 @@ Both providers accept every address on a connected domain. The app then routes:
 
 ```
 src/
-  worker.ts          SvelteKit fetch + Cloudflare email() inbound
+  worker.ts          SvelteKit fetch + Cloudflare email() inbound + scheduled() send
   routes/            inbox, compose, drafts, settings, admin, setup
   lib/
     components/      sidebar, mailbox, composer, thread view
@@ -304,4 +368,6 @@ migrations/          D1 schema, applied in order
 ## License
 
 [MIT](LICENSE.md) — use it, modify it, ship it, commercially or not.
-Copyright © 2026 Irasubiza Divin Prince.
+Copyright © 2026 Irasubiza Divin Prince, original author of
+[quickinbox](https://github.com/DivinPrince/quickinbox), from which this fork
+descends and under whose licence it is redistributed.
