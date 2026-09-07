@@ -787,6 +787,32 @@ export async function getEmailForUser(
 }
 
 /**
+ * Every sent or received message in a conversation, oldest first.
+ *
+ * Forward-all renders these in order, so drafts are excluded — an unsent draft
+ * is not part of what the recipient is being shown.
+ */
+export async function listForwardThreadMessages(
+	db: D1Database,
+	userId: string,
+	threadId: string
+): Promise<EmailRow[]> {
+	const { results } = await db
+		.prepare(
+			`SELECT * FROM emails
+			 WHERE user_id = ?
+			   AND COALESCE(thread_id, id) = ?
+			   AND (status IS NULL OR status <> 'draft')
+			   AND deleted_at IS NULL
+			 ORDER BY datetime(created_at) ASC, id ASC`
+		)
+		.bind(userId, threadId)
+		.all<EmailRow>();
+
+	return results;
+}
+
+/**
  * The whole conversation an email belongs to, oldest first — both directions,
  * which is the point: a reply from the other side is part of the thread, not a
  * new message in the inbox.
