@@ -107,6 +107,32 @@ export async function insertEmail(
 		)
 		.run();
 
+	// A new inbound reply brings an archived conversation back to the inbox.
+	// Clear the thread-wide archive state after the message is safely stored.
+	if (input.direction === 'inbound') {
+		await db
+			.prepare(
+				`UPDATE emails SET archived_at = NULL
+				 WHERE user_id = ? AND COALESCE(thread_id, id) = ?`
+			)
+			.bind(input.userId, threadId)
+			.run();
+	} else if (input.replyToEmailId) {
+		// Sending a reply from an archived conversation should not silently move
+		// it back into the inbox. Carry the parent's archive state to the new row.
+		await db
+			.prepare(
+				`UPDATE emails SET archived_at = datetime('now')
+				 WHERE id = ? AND user_id = ?
+				   AND EXISTS (
+				     SELECT 1 FROM emails parent
+				     WHERE parent.id = ? AND parent.user_id = ? AND parent.archived_at IS NOT NULL
+				   )`
+			)
+			.bind(id, input.userId, input.replyToEmailId, input.userId)
+			.run();
+	}
+
 	return id;
 }
 
@@ -146,7 +172,9 @@ export async function updateEmailStatusByProviderId(
 function viewFilter(view: MailboxView): string {
 	switch (view) {
 		case 'inbox':
-			return "e.deleted_at IS NULL AND e.direction = 'inbound'";
+			return "e.deleted_at IS NULL AND e.archived_at IS NULL AND e.direction = 'inbound'";
+		case 'archive':
+			return "e.deleted_at IS NULL AND e.archived_at IS NOT NULL AND (e.status IS NULL OR e.status <> 'draft')";
 		case 'sent':
 			return "e.deleted_at IS NULL AND e.direction = 'outbound' AND (e.status IS NULL OR e.status <> 'draft')";
 		case 'drafts':
@@ -199,6 +227,7 @@ type ThreadMessageRow = {
 	body_head: string | null;
 	is_read: number;
 	is_starred: number;
+	archived_at: string | null;
 	has_attachments: number;
 	domain_id: string | null;
 	address_id: string | null;
@@ -294,7 +323,7 @@ export async function listMailbox(
 	const { results: messages } = await db
 		.prepare(
 			`SELECT m.id, COALESCE(m.thread_id, m.id) AS thread_id, m.direction, m.from_addr, m.to_addr,
-			        m.subject, m.is_read, m.is_starred, m.created_at, m.domain_id, m.address_id, m.status,
+			        m.subject, m.is_read, m.is_starred, m.archived_at, m.created_at, m.domain_id, m.address_id, m.status,
 			        substr(COALESCE(m.body_text, ''), 1, 4000) AS body_head,
 			        EXISTS(SELECT 1 FROM email_attachments a WHERE a.email_id = m.id) AS has_attachments
 			 FROM emails m
@@ -355,6 +384,8 @@ function toThreadSummary(messages: ThreadMessageRow[]): ThreadSummary {
 		is_read: messages.every((message) => message.is_read === 1),
 		is_starred: messages.some((message) => message.is_starred === 1),
 		is_draft: latest.status === 'draft',
+		// A conversation is archived only once every message in it is.
+		is_archived: messages.every((message) => message.archived_at !== null),
 		has_attachments: messages.some((message) => message.has_attachments === 1),
 		domain_id: latest.domain_id,
 		address_id: latest.address_id,
@@ -391,7 +422,7 @@ export async function listEmails(
 
 	const { results } = await db
 		.prepare(
-			`SELECT e.id, e.direction, e.from_addr, e.to_addr, e.subject, e.is_read, e.is_starred,
+			`SELECT e.id, e.direction, e.from_addr, e.to_addr, e.subject, e.is_read, e.is_starred, e.archived_at,
 			        e.created_at, e.domain_id, e.address_id, e.status,
 			        substr(COALESCE(e.body_text, ''), 1, 4000) AS body_head,
 			        EXISTS(SELECT 1 FROM email_attachments a WHERE a.email_id = e.id) AS has_attachments
@@ -413,6 +444,7 @@ export async function listEmails(
 		is_read: row.is_read === 1,
 		is_starred: row.is_starred === 1,
 		is_draft: row.status === 'draft',
+		is_archived: row.archived_at !== null,
 		has_attachments: row.has_attachments === 1,
 		domain_id: row.domain_id,
 		address_id: row.address_id,
@@ -474,8 +506,9 @@ export async function getMailboxCounts(
 	const row = await db
 		.prepare(
 			`SELECT
-				COUNT(DISTINCT CASE WHEN deleted_at IS NULL AND direction = 'inbound' THEN ${thread} END) AS inbox,
-				COUNT(DISTINCT CASE WHEN deleted_at IS NULL AND direction = 'inbound' AND is_read = 0 THEN ${thread} END) AS inbox_unread,
+				COUNT(DISTINCT CASE WHEN deleted_at IS NULL AND archived_at IS NULL AND direction = 'inbound' THEN ${thread} END) AS inbox,
+				COUNT(DISTINCT CASE WHEN deleted_at IS NULL AND archived_at IS NULL AND direction = 'inbound' AND is_read = 0 THEN ${thread} END) AS inbox_unread,
+				COUNT(DISTINCT CASE WHEN deleted_at IS NULL AND archived_at IS NOT NULL AND (status IS NULL OR status <> 'draft') THEN ${thread} END) AS archive,
 				COUNT(DISTINCT CASE WHEN deleted_at IS NULL AND is_starred = 1 AND (status IS NULL OR status <> 'draft') THEN ${thread} END) AS starred,
 				COUNT(DISTINCT CASE WHEN deleted_at IS NULL AND status = 'draft' THEN ${thread} END) AS drafts,
 				COUNT(DISTINCT CASE WHEN deleted_at IS NULL AND direction = 'outbound' AND (status IS NULL OR status <> 'draft') THEN ${thread} END) AS sent,
@@ -488,6 +521,7 @@ export async function getMailboxCounts(
 	return {
 		inbox: row?.inbox ?? 0,
 		inbox_unread: row?.inbox_unread ?? 0,
+		archive: row?.archive ?? 0,
 		starred: row?.starred ?? 0,
 		drafts: row?.drafts ?? 0,
 		sent: row?.sent ?? 0,
@@ -535,9 +569,10 @@ export type MailFlagUpdate = {
 	isRead?: boolean;
 	isStarred?: boolean;
 	trashed?: boolean;
+	archived?: boolean;
 };
 
-/** Applies list actions (read/unread, star, trash, restore) to a set of rows. */
+/** Applies list actions (read/unread, star, archive, trash, restore) to a set of rows. */
 export async function setEmailFlags(
 	db: D1Database,
 	userId: string,
@@ -559,6 +594,9 @@ export async function setEmailFlags(
 	}
 	if (update.trashed !== undefined) {
 		assignments.push(update.trashed ? "deleted_at = datetime('now')" : 'deleted_at = NULL');
+	}
+	if (update.archived !== undefined) {
+		assignments.push(update.archived ? "archived_at = datetime('now')" : 'archived_at = NULL');
 	}
 
 	if (assignments.length === 0) return 0;
@@ -785,7 +823,7 @@ export async function listThreadMessages(
 		.prepare(
 			`SELECT e.id, e.direction, e.from_addr, e.to_addr, e.cc_addr, e.subject,
 			        e.body_text, e.body_html, e.message_id, e.references_header,
-			        e.status, e.status_detail, e.scheduled_at, e.is_read, e.is_starred,
+			        e.status, e.status_detail, e.scheduled_at, e.is_read, e.is_starred, e.archived_at,
 		        e.deleted_at, e.created_at
 			 FROM emails e
 			 WHERE e.user_id = ?

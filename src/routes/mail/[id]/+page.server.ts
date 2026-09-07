@@ -31,6 +31,7 @@ export const load: PageServerLoad = async ({ params, locals, platform }) => {
 		/** The message that was linked to — expanded first when the page opens. */
 		focusId: email.id,
 		trashed: Boolean(email.deleted_at),
+		archived: Boolean(email.archived_at),
 		/** Opening this thread cleared unread messages, so the badges are stale. */
 		markedRead: newlyRead > 0,
 		subject: displaySubject(messages[0]?.subject ?? email.subject),

@@ -134,6 +134,8 @@ export const MAIL_ACTIONS = [
 	'unread',
 	'star',
 	'unstar',
+	'archive',
+	'unarchive',
 	'trash',
 	'restore',
 	'delete',
@@ -174,6 +176,8 @@ export function authorizeMailAction(input: {
 		case 'unread':
 		case 'star':
 		case 'unstar':
+		case 'archive':
+		case 'unarchive':
 			if (!input.scopes.includes('mail:read')) {
 				return { ok: false, status: 403, error: 'This API key needs mail:read.' };
 			}

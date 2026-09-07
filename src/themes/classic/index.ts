@@ -12,7 +12,7 @@ export const theme: ThemeModule = {
 		composeOverlay: false,
 		commandPalette: false,
 		shortcuts: false,
-		folders: ['inbox', 'starred', 'drafts', 'sent', 'trash']
+		folders: ['inbox', 'archive', 'starred', 'drafts', 'sent', 'trash']
 	},
 	Shell
 };

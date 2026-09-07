@@ -31,6 +31,7 @@
 
 	const mailboxes = $derived<NavItem[]>([
 		{ href: '/inbox', icon: 'inbox-line', label: 'Inbox', badge: counts.inbox_unread },
+		{ href: '/archive', icon: 'archive-line', label: 'Archive', count: counts.archive },
 		{ href: '/drafts', icon: 'draft-line', label: 'Drafts', count: counts.drafts },
 		{ href: '/sent', icon: 'send-plane-line', label: 'Sent' },
 		{ href: '/starred', icon: 'star-line', label: 'Starred', count: counts.starred },
