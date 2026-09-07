@@ -52,7 +52,8 @@
 	}
 
 	// Local copy so stars and reads can flip before the server round trip lands.
-	let items = $state<ThreadSummary[]>([]);
+	// Seeded from the prop so the server renders the rows; see Zero's Mailbox.
+	let items = $state<ThreadSummary[]>(mailbox.threads);
 	let selected = $state<string[]>([]);
 	let busy = $state(false);
 	let filterOpen = $state(false);

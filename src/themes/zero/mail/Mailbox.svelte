@@ -22,7 +22,10 @@
 	} = $props();
 
 	let selected = $state<string[]>([]);
-	let items = $state<ThreadSummary[]>([]);
+	// Seeded from the prop, not left empty for an effect to fill: effects do not
+	// run during SSR, so an empty start renders the "nothing here" state on the
+	// server and the rows only appear once hydration catches up.
+	let items = $state<ThreadSummary[]>(mailbox.threads);
 	let refreshing = $state(false);
 	let isMac = $state(true);
 	let viewsOpen = $state(false);
