@@ -70,6 +70,8 @@ export async function sendForwardedMessages(
 		text,
 		html,
 		attachments,
+		// A forwarded thread's files come from several messages at once.
+		allowCombinedAttachments: ordered.length > 1,
 		subjectMatch: false
 	});
 
