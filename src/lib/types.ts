@@ -28,7 +28,7 @@ export type DeliveryStatus =
 
 /**
  * What the `emails.status` column can hold: a delivery state, an unsent draft,
- * or a message the provider is holding until its `scheduled_at`.
+ * or a message waiting in our own outbox until its `scheduled_at`.
  */
 export type MailStatus = DeliveryStatus | 'draft' | 'scheduled';
 
@@ -110,6 +110,8 @@ export type EmailRow = {
 	status: MailStatus | null;
 	status_at: string | null;
 	scheduled_at: string | null;
+	/** How many times the scheduled sweep has tried to deliver this. */
+	send_attempts: number;
 	status_detail: string | null;
 	is_read: number;
 	is_starred: number;
