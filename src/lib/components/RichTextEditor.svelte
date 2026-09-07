@@ -1,9 +1,10 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { t } from '$lib/i18n';
 
 	let {
 		html = $bindable(''),
-		placeholder = 'Write your message…',
+		placeholder = t('compose.writeMessagePlaceholder'),
 		minHeight = 240,
 		embedded = false,
 		fill = false,

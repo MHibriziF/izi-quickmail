@@ -87,7 +87,21 @@
 		"twoFactorLabel": "Code d’authentification",
 		"recoveryHint": "Ou saisissez l’un de vos codes de récupération.",
 		"verify": "Vérifier",
-		"forgotPassword": "Mot de passe oublié ?"
+		"forgotPassword": "Mot de passe oublié ?",
+		"forgotTitle": "Mot de passe oublié",
+		"forgotHint": "Saisissez l’adresse de votre boîte. Si elle a une adresse de récupération confirmée, nous y enverrons un lien de réinitialisation.",
+		"sendResetLink": "Envoyer le lien",
+		"backToSignIn": "Retour à la connexion",
+		"resetTitle": "Définir un nouveau mot de passe",
+		"passwordUpdated": "Mot de passe mis à jour",
+		"resetDoneHint": "Tous les autres appareils ont été déconnectés. Connectez-vous avec votre nouveau mot de passe — si vous utilisez une application d’authentification, un code vous sera toujours demandé.",
+		"goToSignIn": "Aller à la connexion",
+		"missingToken": "Ce lien n’a pas de jeton. Demandez-en un nouveau depuis la page de connexion.",
+		"requestNewLink": "Demander un nouveau lien",
+		"setPassword": "Définir le mot de passe",
+		"passwordsDoNotMatch": "Ces mots de passe ne correspondent pas",
+		"networkTryAgain": "Erreur réseau. Réessayez.",
+		"backToSettings": "Retour aux paramètres"
 	},
 	"accountSetup": {
 		"title": "Finaliser le compte — {app}",
@@ -280,7 +294,10 @@
 		"subjectColon": "Objet :",
 		"fromColon": "De :",
 		"scheduleSend": "Envoi programmé",
-		"removeRecipient": "Supprimer {address}"
+		"removeRecipient": "Supprimer {address}",
+		"spaceToAdd": "Espace pour ajouter",
+		"cancelSend": "Annuler l’envoi",
+		"recalling": "Annulation…"
 	},
 	"thread": {
 		"close": "Fermer",

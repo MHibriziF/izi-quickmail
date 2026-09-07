@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { t } from '$lib/i18n';
 	import Logo from '$lib/components/Logo.svelte';
 	import { APP_NAME, MIN_PASSWORD_LENGTH } from '$lib/constants';
 
@@ -16,7 +17,7 @@
 		error = '';
 
 		if (password !== confirm) {
-			error = 'Those passwords do not match';
+			error = t('auth.passwordsDoNotMatch');
 			return;
 		}
 		if (password.length < MIN_PASSWORD_LENGTH) {
@@ -38,36 +39,33 @@
 			}
 			done = true;
 		} catch {
-			error = 'Network error. Try again.';
+			error = t('auth.networkTryAgain');
 		} finally {
 			loading = false;
 		}
 	}
 </script>
 
-<svelte:head><title>Set a new password — {APP_NAME}</title></svelte:head>
+<svelte:head><title>{t('auth.resetTitle')} — {APP_NAME}</title></svelte:head>
 
 <div class="auth-shell">
 	<div class="auth-card">
 		<div class="auth-brand">
 			<div class="brand-icon"><Logo size={48} /></div>
-			<h1>{done ? 'Password updated' : 'Set a new password'}</h1>
+			<h1>{done ? t('auth.passwordUpdated') : t('auth.resetTitle')}</h1>
 		</div>
 
 		{#if done}
-			<p class="note">
-				Every other device has been signed out. Sign in with your new password — if you use an
-				authenticator, you will still be asked for a code.
-			</p>
-			<a href="/login" class="btn-primary block-link">Go to sign in</a>
+			<p class="note">{t('auth.resetDoneHint')}</p>
+			<a href="/login" class="btn-primary block-link">{t('auth.goToSignIn')}</a>
 		{:else if !token}
-			<p class="note">That link is missing its token. Request a new one from the sign-in page.</p>
-			<a href="/forgot" class="btn-primary block-link">Request a new link</a>
+			<p class="note">{t('auth.missingToken')}</p>
+			<a href="/forgot" class="btn-primary block-link">{t('auth.requestNewLink')}</a>
 		{:else}
 			<form class="mt-8 space-y-4" onsubmit={submit}>
 				<div>
 					<label for="password" class="text-sm text-[var(--color-text-secondary)]">
-						New password
+						{t('accountSetup.newPassword')}
 					</label>
 					<input
 						id="password"
@@ -81,7 +79,7 @@
 				</div>
 				<div>
 					<label for="confirm" class="text-sm text-[var(--color-text-secondary)]">
-						Confirm password
+						{t('setup.confirmPassword')}
 					</label>
 					<input
 						id="confirm"
@@ -99,7 +97,7 @@
 				{/if}
 
 				<button type="submit" disabled={loading} class="btn-primary mt-2 w-full py-2.5">
-					{loading ? 'Saving…' : 'Set password'}
+					{loading ? t('common.saving') : t('auth.setPassword')}
 				</button>
 			</form>
 		{/if}

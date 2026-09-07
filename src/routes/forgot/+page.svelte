@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Logo from '$lib/components/Logo.svelte';
+	import { t } from '$lib/i18n';
 	import { APP_NAME } from '$lib/constants';
 
 	let email = $state('');
@@ -22,34 +23,31 @@
 			message = body.message ?? 'Check your recovery address.';
 			sent = true;
 		} catch {
-			message = 'Network error. Try again.';
+			message = t('auth.networkTryAgain');
 		} finally {
 			loading = false;
 		}
 	}
 </script>
 
-<svelte:head><title>Forgot password — {APP_NAME}</title></svelte:head>
+<svelte:head><title>{t('auth.forgotTitle')} — {APP_NAME}</title></svelte:head>
 
 <div class="auth-shell">
 	<div class="auth-card">
 		<div class="auth-brand">
 			<div class="brand-icon"><Logo size={48} /></div>
-			<h1>Forgot password</h1>
+			<h1>{t('auth.forgotTitle')}</h1>
 		</div>
 
 		{#if sent}
 			<p class="note">{message}</p>
-			<a href="/login" class="btn-primary block-link">Back to sign in</a>
+			<a href="/login" class="btn-primary block-link">{t('auth.backToSignIn')}</a>
 		{:else}
-			<p class="note">
-				Enter your mailbox address. If it has a confirmed recovery address, we'll send a reset
-				link there.
-			</p>
+			<p class="note">{t('auth.forgotHint')}</p>
 
 			<form class="mt-8 space-y-4" onsubmit={submit}>
 				<div>
-					<label for="email" class="text-sm text-[var(--color-text-secondary)]">Email</label>
+					<label for="email" class="text-sm text-[var(--color-text-secondary)]">{t('auth.email')}</label>
 					<input
 						id="email"
 						type="email"
@@ -61,11 +59,11 @@
 				</div>
 
 				<button type="submit" disabled={loading} class="btn-primary mt-2 w-full py-2.5">
-					{loading ? 'Sending…' : 'Send reset link'}
+					{loading ? t('recovery.sending') : t('auth.sendResetLink')}
 				</button>
 			</form>
 
-			<a href="/login" class="back">Back to sign in</a>
+			<a href="/login" class="back">{t('auth.backToSignIn')}</a>
 		{/if}
 	</div>
 </div>

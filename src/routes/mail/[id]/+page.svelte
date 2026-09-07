@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidate, invalidateAll } from '$app/navigation';
+	import { t } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import AttachmentPicker from '$lib/components/AttachmentPicker.svelte';
@@ -42,7 +43,7 @@
 			const draftId = await cancelScheduledSend(scheduled.id);
 			window.location.href = `/compose?draft=${draftId}`;
 		} catch (failure) {
-			cancelError = describeMailError(failure, 'Network error');
+			cancelError = describeMailError(failure, t('common.networkError'));
 		} finally {
 			cancelling = false;
 		}
@@ -184,7 +185,7 @@
 			// The forward is our own message now, so the mailbox has changed.
 			await invalidateAll();
 		} catch (failure) {
-			error = describeMailError(failure, 'Network error');
+			error = describeMailError(failure, t('common.networkError'));
 		} finally {
 			sending = false;
 		}
@@ -217,7 +218,7 @@
 			// The sent reply is now part of this conversation.
 			await invalidateAll();
 		} catch (failure) {
-			error = describeMailError(failure, 'Network error');
+			error = describeMailError(failure, t('common.networkError'));
 		} finally {
 			sending = false;
 		}
@@ -233,7 +234,7 @@
 		<a
 			href={backHref}
 			class="btn-ghost back-btn"
-			aria-label="Back"
+			aria-label={t('common.back')}
 			onclick={(event) => {
 				if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
 				event.preventDefault();
@@ -248,37 +249,37 @@
 				type="button"
 				class="icon-btn"
 				class:starred
-				aria-label={starred ? 'Remove star' : 'Add star'}
+				aria-label={starred ? t('mailbox.removeStar') : t('mailbox.addStar')}
 				onclick={toggleStar}
 			>
 				<Icon name={starred ? 'star-fill' : 'star-line'} size={16} />
 			</button>
 
 			{#if data.trashed}
-				<button type="button" class="icon-btn" aria-label="Restore" onclick={restore}>
+				<button type="button" class="icon-btn" aria-label={t('mailbox.restore')} onclick={restore}>
 					<Icon name="arrow-go-back-line" size={16} />
 				</button>
 				<button
 					type="button"
 					class="icon-btn danger"
-					aria-label="Delete permanently"
+					aria-label={t('mailbox.deletePermanently')}
 					onclick={destroy}
 				>
 					<Icon name="delete-bin-2-line" size={16} />
 				</button>
 			{:else}
-				<button type="button" class="icon-btn" aria-label="Mark as unread" onclick={markUnread}>
+				<button type="button" class="icon-btn" aria-label={t('mailbox.markUnread')} onclick={markUnread}>
 					<Icon name="mail-line" size={16} />
 				</button>
 				<button
 					type="button"
 					class="icon-btn"
-					aria-label={data.archived ? 'Move to inbox' : 'Archive'}
+					aria-label={data.archived ? t('mailbox.moveToInbox') : t('nav.archive')}
 					onclick={toggleArchive}
 				>
 					<Icon name={data.archived ? 'inbox-line' : 'archive-line'} size={16} />
 				</button>
-				<button type="button" class="icon-btn" aria-label="Move to trash" onclick={trash}>
+				<button type="button" class="icon-btn" aria-label={t('mailbox.moveToTrash')} onclick={trash}>
 					<Icon name="delete-bin-line" size={16} />
 				</button>
 			{/if}
@@ -287,7 +288,7 @@
 				type="button"
 				class="icon-btn"
 				class:active={forwardOpen}
-				aria-label="Forward"
+				aria-label={t('thread.forward')}
 				onclick={openForward}
 			>
 				<Icon name="share-forward-line" size={16} />
@@ -295,7 +296,7 @@
 
 			<button type="button" class="btn-primary reply-launch" onclick={openReply}>
 				<Icon name="reply-line" size={16} />
-				{replyOpen ? 'Close' : 'Reply'}
+				{replyOpen ? t('common.close') : t('thread.reply')}
 			</button>
 		</div>
 	</header>
@@ -304,7 +305,7 @@
 	<div class="scheduled-bar">
 		<Icon name="calendar-schedule-line" size={16} />
 		<span class="scheduled-text">
-			Scheduled to send
+			{t('thread.scheduled')}
 			{#if scheduled.scheduled_at}
 				{new Intl.DateTimeFormat(undefined, {
 					weekday: 'short',
@@ -316,7 +317,7 @@
 			{/if}
 		</span>
 		<button type="button" class="btn-ghost" disabled={cancelling} onclick={cancelSchedule}>
-			{cancelling ? 'Recalling…' : 'Cancel send'}
+			{cancelling ? t('compose.recalling') : t('compose.cancelSend')}
 		</button>
 	</div>
 	{#if cancelError}<p class="scheduled-error">{cancelError}</p>{/if}
@@ -377,7 +378,7 @@
 				bind:html={forwardHtml}
 				embedded
 				minHeight={140}
-				placeholder="Add a note…"
+				placeholder={t('thread.notePlaceholder')}
 			/>
 
 			{#if forwardFiles > 0}
@@ -394,7 +395,7 @@
 					</button>
 					<button type="submit" class="btn-primary" disabled={sending}>
 						<Icon name="share-forward-line" size={16} />
-						{sending ? 'Sending…' : 'Forward'}
+						{sending ? t('common.sending') : t('thread.forward')}
 					</button>
 				</div>
 			</div>
@@ -420,7 +421,7 @@
 				</p>
 			{/if}
 
-			<RichTextEditor bind:html={replyHtml} embedded minHeight={160} placeholder="Reply…" />
+			<RichTextEditor bind:html={replyHtml} embedded minHeight={160} placeholder={t('thread.replyPlaceholder')} />
 
 			<div class="reply-footer">
 				<AttachmentPicker bind:attachments={replyAttachments} />

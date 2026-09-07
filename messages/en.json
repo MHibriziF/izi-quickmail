@@ -87,7 +87,21 @@
 		"twoFactorLabel": "Authenticator code",
 		"recoveryHint": "Or enter one of your recovery codes.",
 		"verify": "Verify",
-		"forgotPassword": "Forgot password?"
+		"forgotPassword": "Forgot password?",
+		"forgotTitle": "Forgot password",
+		"forgotHint": "Enter your mailbox address. If it has a confirmed recovery address, we’ll send a reset link there.",
+		"sendResetLink": "Send reset link",
+		"backToSignIn": "Back to sign in",
+		"resetTitle": "Set a new password",
+		"passwordUpdated": "Password updated",
+		"resetDoneHint": "Every other device has been signed out. Sign in with your new password — if you use an authenticator, you will still be asked for a code.",
+		"goToSignIn": "Go to sign in",
+		"missingToken": "That link is missing its token. Request a new one from the sign-in page.",
+		"requestNewLink": "Request a new link",
+		"setPassword": "Set password",
+		"passwordsDoNotMatch": "Those passwords do not match",
+		"networkTryAgain": "Network error. Try again.",
+		"backToSettings": "Back to settings"
 	},
 	"accountSetup": {
 		"title": "Complete account setup — {app}",
@@ -280,7 +294,10 @@
 		"subjectColon": "Subject:",
 		"fromColon": "From:",
 		"scheduleSend": "Schedule send",
-		"removeRecipient": "Remove {address}"
+		"removeRecipient": "Remove {address}",
+		"spaceToAdd": "Space to add",
+		"cancelSend": "Cancel send",
+		"recalling": "Recalling…"
 	},
 	"thread": {
 		"close": "Close",

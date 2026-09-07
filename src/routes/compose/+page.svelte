@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { t } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
@@ -105,7 +106,7 @@
 	/** Send now, or leave it in the outbox until `scheduledAt`. */
 	async function deliver(scheduledAt: string | null) {
 		if (isHtmlEmpty(html)) {
-			error = 'Write a message';
+			error = t('compose.writeMessage');
 			return;
 		}
 
@@ -127,7 +128,7 @@
 			});
 			window.location.href = '/sent';
 		} catch (failure) {
-			error = describeMailError(failure, 'Network error');
+			error = describeMailError(failure, t('common.networkError'));
 		} finally {
 			sending = false;
 		}
@@ -135,7 +136,7 @@
 </script>
 
 <svelte:head>
-	<title>{draftId ? 'Draft' : 'Compose'} — {APP_NAME}</title>
+	<title>{draftId ? t('compose.draft') : t('nav.compose')} — {APP_NAME}</title>
 </svelte:head>
 
 <form class="compose-page" onsubmit={submit}>
@@ -143,14 +144,14 @@
 		<button
 			type="button"
 			class="icon-btn"
-			aria-label="Close"
+			aria-label={t('common.close')}
 			onpointerdown={(event) => event.stopPropagation()}
 			onclick={closeComposer}
 		>
 			<Icon name="close-line" size={22} />
 		</button>
 		<div class="compose-heading">
-			<h1 class="page-title">{draftId ? 'Draft' : 'New message'}</h1>
+			<h1 class="page-title">{draftId ? t('compose.draft') : t('nav.newMessage')}</h1>
 			{#if savedAt}<span class="saved">Saved {savedAt}</span>{/if}
 		</div>
 		<SendButton {sending} timeZone={data.timeZone} onsend={deliver} />
@@ -158,7 +159,7 @@
 
 	<header class="compose-header">
 		<div class="compose-heading">
-			<h1 class="page-title">{draftId ? 'Draft' : 'New message'}</h1>
+			<h1 class="page-title">{draftId ? t('compose.draft') : t('nav.newMessage')}</h1>
 			{#if savedAt}<span class="saved">Saved {savedAt}</span>{/if}
 		</div>
 
@@ -169,14 +170,14 @@
 				onclick={() => (showCopies = !showCopies)}
 				aria-expanded={showCopies}
 			>
-				Cc/Bcc
+				{t('compose.ccBcc')}
 			</button>
 			<button type="button" class="btn-ghost" disabled={savingDraft || !hasDraftText} onclick={saveDraft}>
 				<Icon name="save-line" size={15} />
 				{savingDraft ? 'Saving…' : 'Save draft'}
 			</button>
 			{#if draftId}
-				<button type="button" class="btn-ghost" onclick={discardDraft} aria-label="Discard draft">
+				<button type="button" class="btn-ghost" onclick={discardDraft} aria-label={t('compose.discardDraft')}>
 					<Icon name="delete-bin-line" size={15} />
 				</button>
 			{/if}
@@ -187,13 +188,13 @@
 	<div class="surface compose-fields">
 		<!-- With several domains connected, choosing the identity matters. -->
 		<div class="field-row">
-			<span class="field-label">From</span>
+			<span class="field-label">{t('compose.from')}</span>
 			{#if addresses.length > 1}
 				<select
 					value={fromAddressId}
 					onchange={(event) => (chosenAddressId = event.currentTarget.value)}
 					class="field-input"
-					aria-label="Send from"
+					aria-label={t('compose.sendFrom')}
 				>
 					{#each addresses as address (address.id)}
 						<option value={address.id}>
@@ -210,7 +211,7 @@
 			{/if}
 		</div>
 
-		<RecipientField id="to" label="To" bind:value={to} placeholder="recipient@example.com" required>
+		<RecipientField id="to" label={t('compose.to')} bind:value={to} placeholder={t('compose.recipientPlaceholder')} required>
 			{#snippet trailing()}
 				<button
 					type="button"
@@ -218,24 +219,24 @@
 					onclick={() => (showCopies = !showCopies)}
 					aria-expanded={showCopies}
 				>
-					Cc/Bcc
+					{t('compose.ccBcc')}
 				</button>
 			{/snippet}
 		</RecipientField>
 
 		{#if showCopies}
-			<RecipientField id="cc" label="Cc" bind:value={cc} placeholder="Space to add" />
-			<RecipientField id="bcc" label="Bcc" bind:value={bcc} placeholder="Space to add" />
+			<RecipientField id="cc" label={t('compose.cc')} bind:value={cc} placeholder={t('compose.spaceToAdd')} />
+			<RecipientField id="bcc" label={t('compose.bcc')} bind:value={bcc} placeholder={t('compose.spaceToAdd')} />
 		{/if}
 
 		<div class="field-row">
-			<span class="field-label">Subject</span>
+			<span class="field-label">{t('compose.subject')}</span>
 			<input
 				id="subject"
 				type="text"
 				bind:value={subject}
 				required
-				placeholder="Subject"
+				placeholder={t('compose.subject')}
 				class="field-input"
 			/>
 		</div>
@@ -264,7 +265,7 @@
 					<button
 						type="button"
 						class="icon-btn danger"
-						aria-label="Discard draft"
+						aria-label={t('compose.discardDraft')}
 						onclick={discardDraft}
 					>
 						<Icon name="delete-bin-line" size={18} />

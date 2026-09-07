@@ -87,7 +87,21 @@
 		"twoFactorLabel": "Kode autentikator",
 		"recoveryHint": "Atau masukkan salah satu kode pemulihan Anda.",
 		"verify": "Verifikasi",
-		"forgotPassword": "Lupa kata sandi?"
+		"forgotPassword": "Lupa kata sandi?",
+		"forgotTitle": "Lupa kata sandi",
+		"forgotHint": "Masukkan alamat kotak surat Anda. Jika ada alamat pemulihan yang sudah dikonfirmasi, kami kirim tautan atur ulang ke sana.",
+		"sendResetLink": "Kirim tautan atur ulang",
+		"backToSignIn": "Kembali ke halaman masuk",
+		"resetTitle": "Atur kata sandi baru",
+		"passwordUpdated": "Kata sandi diperbarui",
+		"resetDoneHint": "Semua perangkat lain telah dikeluarkan. Masuk dengan kata sandi baru Anda — jika memakai autentikator, kode tetap akan diminta.",
+		"goToSignIn": "Ke halaman masuk",
+		"missingToken": "Tautan itu tidak menyertakan token. Minta tautan baru dari halaman masuk.",
+		"requestNewLink": "Minta tautan baru",
+		"setPassword": "Atur kata sandi",
+		"passwordsDoNotMatch": "Kata sandi itu tidak cocok",
+		"networkTryAgain": "Gangguan jaringan. Coba lagi.",
+		"backToSettings": "Kembali ke pengaturan"
 	},
 	"accountSetup": {
 		"title": "Selesaikan penyiapan akun — {app}",
@@ -280,7 +294,10 @@
 		"subjectColon": "Subjek:",
 		"fromColon": "Dari:",
 		"scheduleSend": "Jadwalkan pengiriman",
-		"removeRecipient": "Hapus {address}"
+		"removeRecipient": "Hapus {address}",
+		"spaceToAdd": "Spasi untuk menambah",
+		"cancelSend": "Batalkan pengiriman",
+		"recalling": "Menarik kembali…"
 	},
 	"thread": {
 		"close": "Tutup",

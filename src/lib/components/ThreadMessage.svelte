@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { t } from '$lib/i18n';
 	import AttachmentList from './AttachmentList.svelte';
 	import DeliveryStatus from './DeliveryStatus.svelte';
 	import EmailBody from './EmailBody.svelte';
@@ -145,7 +146,7 @@
 					{/if}
 				{/if}
 			{:else}
-				<p class="empty">Empty message</p>
+				<p class="empty">{t('thread.emptyMessage')}</p>
 			{/if}
 		</div>
 

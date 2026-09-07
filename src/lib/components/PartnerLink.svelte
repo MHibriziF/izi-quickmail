@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { APP_NAME } from '$lib/constants';
+	import { t } from '$lib/i18n';
 	import type { EmailProviderKind } from '$lib/types';
 	import CloudflareMark from './CloudflareMark.svelte';
 	import Logo from './Logo.svelte';
@@ -7,7 +8,7 @@
 
 	let {
 		size = 44,
-		caption = 'Connected via Cloudflare Email',
+		caption = t('provider.cloudflare'),
 		kind = 'cloudflare'
 	}: {
 		size?: number;

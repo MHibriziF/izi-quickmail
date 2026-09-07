@@ -87,7 +87,21 @@
 		"twoFactorLabel": "Código de autenticación",
 		"recoveryHint": "O introduce uno de tus códigos de recuperación.",
 		"verify": "Verificar",
-		"forgotPassword": "¿Olvidaste tu contraseña?"
+		"forgotPassword": "¿Olvidaste tu contraseña?",
+		"forgotTitle": "Contraseña olvidada",
+		"forgotHint": "Introduce la dirección de tu buzón. Si tiene una dirección de recuperación confirmada, enviaremos allí un enlace para restablecerla.",
+		"sendResetLink": "Enviar enlace",
+		"backToSignIn": "Volver al inicio de sesión",
+		"resetTitle": "Establecer una nueva contraseña",
+		"passwordUpdated": "Contraseña actualizada",
+		"resetDoneHint": "Se ha cerrado la sesión en todos los demás dispositivos. Inicia sesión con tu nueva contraseña — si usas una aplicación de autenticación, se te seguirá pidiendo un código.",
+		"goToSignIn": "Ir al inicio de sesión",
+		"missingToken": "A ese enlace le falta el token. Pide uno nuevo desde la página de inicio de sesión.",
+		"requestNewLink": "Pedir un enlace nuevo",
+		"setPassword": "Establecer contraseña",
+		"passwordsDoNotMatch": "Esas contraseñas no coinciden",
+		"networkTryAgain": "Error de red. Inténtalo de nuevo.",
+		"backToSettings": "Volver a los ajustes"
 	},
 	"accountSetup": {
 		"title": "Completar cuenta — {app}",
@@ -280,7 +294,10 @@
 		"subjectColon": "Asunto:",
 		"fromColon": "De:",
 		"scheduleSend": "Programar envío",
-		"removeRecipient": "Quitar {address}"
+		"removeRecipient": "Quitar {address}",
+		"spaceToAdd": "Espacio para añadir",
+		"cancelSend": "Cancelar envío",
+		"recalling": "Cancelando…"
 	},
 	"thread": {
 		"close": "Cerrar",
