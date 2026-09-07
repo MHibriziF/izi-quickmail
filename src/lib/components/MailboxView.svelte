@@ -10,6 +10,7 @@
 	import PullToRefresh from './PullToRefresh.svelte';
 	import { formatRelativeDate } from '$lib/utils/date';
 	import { patchThread, runMailAction } from '$lib/mail/client';
+	import { t } from '$lib/i18n';
 	import { haptic, isPrimaryTab } from '$lib/app-chrome';
 	import type {
 		MailAddress,
@@ -29,14 +30,16 @@
 		filters: MailboxFilters;
 	} = $props();
 
-	const META: Record<MailboxView, { title: string; icon: string; empty: string }> = {
-		inbox: { title: 'Inbox', icon: 'inbox-line', empty: 'Your inbox is empty' },
-		archive: { title: 'Archive', icon: 'archive-line', empty: 'Nothing archived' },
-		starred: { title: 'Starred', icon: 'star-line', empty: 'No starred messages' },
-		drafts: { title: 'Drafts', icon: 'draft-line', empty: 'No drafts saved' },
-		sent: { title: 'Sent', icon: 'send-plane-line', empty: 'Nothing sent yet' },
-		trash: { title: 'Trash', icon: 'delete-bin-line', empty: 'Trash is empty' }
-	};
+	const META = $derived(
+		({
+			inbox: { title: t('nav.inbox'), icon: 'inbox-line', empty: t('mailbox.empty.inbox') },
+			archive: { title: t('nav.archive'), icon: 'archive-line', empty: t('mailbox.empty.archive') },
+			starred: { title: t('nav.starred'), icon: 'star-line', empty: t('mailbox.empty.starred') },
+			drafts: { title: t('nav.drafts'), icon: 'draft-line', empty: t('mailbox.empty.drafts') },
+			sent: { title: t('nav.sent'), icon: 'send-plane-line', empty: t('mailbox.empty.sent') },
+			trash: { title: t('nav.trash'), icon: 'delete-bin-line', empty: t('mailbox.empty.trash') }
+		}) satisfies Record<MailboxView, { title: string; icon: string; empty: string }>
+	);
 
 	const meta = $derived(META[view]);
 	const addresses = $derived(($currentPage.data.addresses ?? []) as MailAddress[]);
@@ -93,7 +96,7 @@
 	 */
 	function people(thread: ThreadSummary): string {
 		if (view === 'drafts' || (view === 'sent' && thread.participants.every((p) => p.self))) {
-			return recipientOf(thread) || (view === 'drafts' ? 'No recipient' : 'Unknown');
+			return recipientOf(thread) || (view === 'drafts' ? t('mailbox.noRecipient') : t('common.unknown'));
 		}
 
 		return thread.participants.map((participant) => participant.label).join(', ');
@@ -165,15 +168,15 @@
 	}
 
 	function swipeLeftAction(thread: ThreadSummary) {
-		if (view === 'trash') return { icon: 'delete-bin-2-line', label: 'Delete', tone: 'danger' as const };
-		return { icon: 'delete-bin-line', label: 'Trash', tone: 'danger' as const };
+		if (view === 'trash') return { icon: 'delete-bin-2-line', label: t('mailbox.delete'), tone: 'danger' as const };
+		return { icon: 'delete-bin-line', label: t('nav.trash'), tone: 'danger' as const };
 	}
 
 	function swipeRightAction(thread: ThreadSummary) {
-		if (view === 'trash') return { icon: 'arrow-go-back-line', label: 'Restore', tone: 'good' as const };
+		if (view === 'trash') return { icon: 'arrow-go-back-line', label: t('mailbox.restore'), tone: 'good' as const };
 		return {
 			icon: thread.is_starred ? 'star-fill' : 'star-line',
-			label: thread.is_starred ? 'Unstar' : 'Star',
+			label: thread.is_starred ? t('mailbox.unstar') : t('mailbox.star'),
 			tone: 'star' as const
 		};
 	}
@@ -231,7 +234,7 @@
 		<div class="toolbar-left">
 			<div class="select-all">
 				<Check
-					label="Select all messages"
+					label={t('mailbox.selectAll')}
 					checked={allSelected}
 					indeterminate={someSelected && !allSelected}
 					onchange={selectAll}
@@ -239,7 +242,7 @@
 				<button
 					type="button"
 					class="caret"
-					aria-label="Selection options"
+					aria-label={t('mailbox.selectionOptions')}
 					aria-expanded={selectMenuOpen}
 					onclick={() => (selectMenuOpen = !selectMenuOpen)}
 				>
@@ -250,7 +253,7 @@
 					<button
 						type="button"
 						class="backdrop"
-						aria-label="Close menu"
+						aria-label={t('mailbox.closeMenu')}
 						onclick={() => (selectMenuOpen = false)}
 					></button>
 					<div class="menu menu-left" role="menu">
@@ -274,13 +277,13 @@
 			</div>
 
 			{#if someSelected}
-				<span class="selected-count">{selected.length} selected</span>
+				<span class="selected-count">{t('mailbox.selectedCount', { count: selected.length })}</span>
 
 				<div class="bulk-actions">
 					<button
 						type="button"
 						class="tool-btn"
-						title="Mark as read"
+						title={t('mailbox.markRead')}
 						disabled={busy}
 						onclick={() => run('read')}
 					>
@@ -289,7 +292,7 @@
 					<button
 						type="button"
 						class="tool-btn"
-						title="Mark as unread"
+						title={t('mailbox.markUnread')}
 						disabled={busy}
 						onclick={() => run('unread')}
 					>
@@ -298,7 +301,7 @@
 					<button
 						type="button"
 						class="tool-btn"
-						title="Star"
+						title={t('mailbox.star')}
 						disabled={busy}
 						onclick={() => run('star')}
 					>
@@ -307,7 +310,7 @@
 					<button
 						type="button"
 						class="tool-btn"
-						title="Remove star"
+						title={t('mailbox.removeStar')}
 						disabled={busy}
 						onclick={() => run('unstar')}
 					>
@@ -318,7 +321,7 @@
 						<button
 							type="button"
 							class="tool-btn"
-							title="Move to inbox"
+							title={t('mailbox.moveToInbox')}
 							disabled={busy}
 							onclick={() => run('unarchive')}
 						>
@@ -328,7 +331,7 @@
 						<button
 							type="button"
 							class="tool-btn"
-							title="Archive"
+							title={t('nav.archive')}
 							disabled={busy}
 							onclick={() => run('archive')}
 						>
@@ -340,7 +343,7 @@
 						<button
 							type="button"
 							class="tool-btn"
-							title="Restore"
+							title={t('mailbox.restore')}
 							disabled={busy}
 							onclick={() => run('restore')}
 						>
@@ -349,7 +352,7 @@
 						<button
 							type="button"
 							class="tool-btn danger"
-							title="Delete permanently"
+							title={t('mailbox.deletePermanently')}
 							disabled={busy}
 							onclick={() => run('delete')}
 						>
@@ -359,7 +362,7 @@
 						<button
 							type="button"
 							class="tool-btn"
-							title="Move to trash"
+							title={t('mailbox.moveToTrash')}
 							disabled={busy}
 							onclick={() => run('trash')}
 						>
@@ -377,7 +380,7 @@
 					<button
 						type="button"
 						class="tool-btn"
-						aria-label="Mailbox actions"
+						aria-label={t('mailbox.mailboxActions')}
 						aria-expanded={moreOpen}
 						onclick={() => (moreOpen = !moreOpen)}
 					>
@@ -388,7 +391,7 @@
 						<button
 							type="button"
 							class="backdrop"
-							aria-label="Close menu"
+							aria-label={t('mailbox.closeMenu')}
 							onclick={() => (moreOpen = false)}
 						></button>
 						<div class="menu menu-left" role="menu">
@@ -403,7 +406,7 @@
 										moreOpen = false;
 									}}
 								>
-									<Icon name="close-line" size={15} /> Cancel selection
+									<Icon name="close-line" size={15} /> {t('mailbox.cancelSelection')}
 								</button>
 							{:else}
 								<button
@@ -485,7 +488,7 @@
 								</button>
 							{/if}
 							<button type="button" class="menu-item" onclick={() => run('read-all', [])}>
-								<Icon name="mail-open-line" size={15} /> Mark all as read
+								<Icon name="mail-open-line" size={15} /> {t('mailbox.markAllRead')}
 							</button>
 							<button type="button" class="menu-item" onclick={() => invalidateAll()}>
 								<Icon name="refresh-line" size={15} /> Refresh
@@ -496,7 +499,7 @@
 									class="menu-item danger"
 									onclick={() => run('empty-trash', [])}
 								>
-									<Icon name="delete-bin-2-line" size={15} /> Empty trash
+									<Icon name="delete-bin-2-line" size={15} /> {t('mailbox.emptyTrash')}
 								</button>
 							{/if}
 						</div>
@@ -520,12 +523,12 @@
 					type="button"
 					class="pill"
 					class:pill-on={activeFilterCount > 0}
-					aria-label="Filter"
+					aria-label={t('common.filter')}
 					aria-expanded={filterOpen}
 					onclick={() => (filterOpen = !filterOpen)}
 				>
 					<Icon name="equalizer-line" size={14} />
-					<span class="filter-label">Filter</span>
+					<span class="filter-label">{t('common.filter')}</span>
 					{#if activeFilterCount > 0}<span class="filter-count">{activeFilterCount}</span>{/if}
 				</button>
 
@@ -533,7 +536,7 @@
 					<button
 						type="button"
 						class="backdrop"
-						aria-label="Close filters"
+						aria-label={t('mailbox.clearFilters')}
 						onclick={() => (filterOpen = false)}
 					></button>
 					<div class="menu menu-right" role="menu">
@@ -607,7 +610,7 @@
 					class="pager-btn"
 					class:disabled={mailbox.page <= 1}
 					href={withParams({ page: mailbox.page - 1 })}
-					aria-label="Previous page"
+					aria-label={t('mailbox.previousPage')}
 				>
 					<Icon name="arrow-left-s-line" size={16} />
 				</a>
@@ -616,7 +619,7 @@
 					class="pager-btn"
 					class:disabled={mailbox.page >= mailbox.pageCount}
 					href={withParams({ page: mailbox.page + 1 })}
-					aria-label="Next page"
+					aria-label={t('mailbox.nextPage')}
 				>
 					<Icon name="arrow-right-s-line" size={16} />
 				</a>
@@ -625,20 +628,20 @@
 	</header>
 
 	{#if activeFilterCount > 0}
-		<div class="filter-chips" aria-label="Active filters">
+		<div class="filter-chips" aria-label={t('mailbox.activeFilters')}>
 			{#if filters.unreadOnly}
-				<a href={withParams({ unread: null })} class="filter-chip">Unread</a>
+				<a href={withParams({ unread: null })} class="filter-chip">{t('mailbox.unread')}</a>
 			{/if}
 			{#if filters.starredOnly}
-				<a href={withParams({ starred: null })} class="filter-chip">Starred</a>
+				<a href={withParams({ starred: null })} class="filter-chip">{t('nav.starred')}</a>
 			{/if}
 			{#if filters.attachmentsOnly}
-				<a href={withParams({ attachments: null })} class="filter-chip">Attachments</a>
+				<a href={withParams({ attachments: null })} class="filter-chip">{t('mailbox.attachments')}</a>
 			{/if}
 			{#if filters.addressId}
 				{@const filtered = addresses.find((address) => address.id === filters.addressId)}
 				<a href={withParams({ address: null })} class="filter-chip">
-					{filtered?.label || filtered?.address || 'Address'}
+					{filtered?.label || filtered?.address || t('mailbox.address')}
 				</a>
 			{/if}
 		</div>
@@ -647,8 +650,13 @@
 	{#if filters.q}
 		<div class="search-note">
 			<Icon name="search-line" size={14} />
-			<span>{mailbox.total} result{mailbox.total === 1 ? '' : 's'} for “{filters.q}”</span>
-			<a href={withParams({ q: null })} class="search-clear">Clear</a>
+			<span>
+				{t(mailbox.total === 1 ? 'mailbox.searchResults' : 'mailbox.searchResultsPlural', {
+					count: mailbox.total,
+					query: filters.q
+				})}
+			</span>
+			<a href={withParams({ q: null })} class="search-clear">{t('mailbox.clear')}</a>
 		</div>
 	{/if}
 
@@ -656,7 +664,7 @@
 		{#if items.length === 0}
 			<EmptyState
 				icon={filters.q ? 'search-line' : meta.icon}
-				title={filters.q ? 'No messages match that search' : meta.empty}
+				title={filters.q ? t('mailbox.empty.search') : meta.empty}
 			/>
 		{:else}
 			<ul>
@@ -683,7 +691,7 @@
 							type="button"
 							class="star"
 							class:on={thread.is_starred}
-							aria-label={thread.is_starred ? 'Remove star' : 'Add star'}
+							aria-label={thread.is_starred ? t('mailbox.removeStar') : t('mailbox.addStar')}
 							onclick={() => toggleStar(thread)}
 						>
 							<Icon name={thread.is_starred ? 'star-fill' : 'star-line'} size={15} />
@@ -710,7 +718,7 @@
 								{#if thread.message_count > 1}
 									<span class="count">{thread.message_count}</span>
 								{/if}
-								{#if thread.is_draft}<span class="tag tag-draft">Draft</span>{/if}
+								{#if thread.is_draft}<span class="tag tag-draft">{t('mailbox.draftTag')}</span>{/if}
 								{#if identity(thread)}
 									<span class="tag">{identity(thread)?.label || identity(thread)?.address}</span>
 								{/if}
@@ -740,7 +748,7 @@
 								<button
 									type="button"
 									class="tool-btn"
-									title="Restore"
+									title={t('mailbox.restore')}
 									onclick={() => run('restore', [thread.latest_id])}
 								>
 									<Icon name="arrow-go-back-line" size={15} />
@@ -748,7 +756,7 @@
 								<button
 									type="button"
 									class="tool-btn danger"
-									title="Delete permanently"
+									title={t('mailbox.deletePermanently')}
 									onclick={() => run('delete', [thread.latest_id])}
 								>
 									<Icon name="delete-bin-2-line" size={15} />
@@ -757,7 +765,7 @@
 								<button
 									type="button"
 									class="tool-btn"
-									title={thread.is_read ? 'Mark as unread' : 'Mark as read'}
+									title={thread.is_read ? t('mailbox.markUnread') : t('mailbox.markRead')}
 									onclick={() => run(thread.is_read ? 'unread' : 'read', [thread.latest_id])}
 								>
 									<Icon name={thread.is_read ? 'mail-line' : 'mail-open-line'} size={15} />
@@ -766,7 +774,7 @@
 									<button
 										type="button"
 										class="tool-btn"
-										title="Move to inbox"
+										title={t('mailbox.moveToInbox')}
 										onclick={() => run('unarchive', [thread.latest_id])}
 									>
 										<Icon name="inbox-line" size={15} />
@@ -775,7 +783,7 @@
 									<button
 										type="button"
 										class="tool-btn"
-										title="Archive"
+										title={t('nav.archive')}
 										onclick={() => run('archive', [thread.latest_id])}
 									>
 										<Icon name="archive-line" size={15} />
@@ -784,7 +792,7 @@
 								<button
 									type="button"
 									class="tool-btn"
-									title="Move to trash"
+									title={t('mailbox.moveToTrash')}
 									onclick={() => run('trash', [thread.latest_id])}
 								>
 									<Icon name="delete-bin-line" size={15} />
@@ -800,7 +808,7 @@
 
 	{#if mailbox.total > 0}
 		<footer class="list-foot">
-			<span>{rangeStart}–{rangeEnd} of {mailbox.total}</span>
+			<span>{t('mailbox.rangeOf', { start: rangeStart, end: rangeEnd, total: mailbox.total })}</span>
 		</footer>
 	{/if}
 </section>
