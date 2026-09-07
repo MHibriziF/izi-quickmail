@@ -1,4 +1,5 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
+import { buildThreadParticipants } from './thread-participants';
 import { MAILBOX_PAGE_SIZE } from '$lib/constants';
 import { MAX_BODY_BYTES } from './constants';
 import { stripQuotedText } from '$lib/utils/quotes';
@@ -358,24 +359,9 @@ function toThreadSummary(messages: ThreadMessageRow[]): ThreadSummary {
 	const latest = messages[messages.length - 1];
 
 	// Senders in the order they first spoke, with our own identities collapsed
-	// into a single "me" the way a conversation header reads.
-	const participants: ThreadParticipant[] = [];
-	for (const message of messages) {
-		if (message.direction === 'outbound') {
-			if (!participants.some((entry) => entry.self)) {
-				participants.push({ label: 'me', address: message.from_addr, self: true });
-			}
-			continue;
-		}
-
-		const address = message.from_addr;
-		const seen = participants.some(
-			(entry) => !entry.self && entry.address.toLowerCase() === address.toLowerCase()
-		);
-		if (seen) continue;
-
-		participants.push({ label: displayNameFor(address), address, self: false });
-	}
+	// into a single "me" the way a conversation header reads. A message that
+	// arrived with a display name supplies it, so the list reads as people.
+	const participants = buildThreadParticipants(messages);
 
 	return {
 		thread_id: oldest.thread_id,
@@ -396,13 +382,6 @@ function toThreadSummary(messages: ThreadMessageRow[]): ThreadSummary {
 		status: latest.status === 'draft' ? null : latest.status,
 		created_at: latest.created_at
 	};
-}
-
-/** "hello.there@x.com" → "hello there"; the list capitalizes it in CSS. */
-function displayNameFor(address: string): string {
-	if (!address) return 'Unknown';
-	const [local] = address.split('@');
-	return local.replace(/[._-]+/g, ' ');
 }
 
 /** The newest message's own words — quoted history is dropped. */
