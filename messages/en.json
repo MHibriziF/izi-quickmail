@@ -559,8 +559,32 @@
 	},
 	"language": {
 		"en": "English",
+		"id": "Bahasa Indonesia",
 		"fr": "Français",
 		"zh-CN": "简体中文",
 		"es": "Español"
+	},
+	"timezone": {
+		"title": "Time zone",
+		"hint": "Used when scheduling a send, so “tomorrow morning” means your morning. Leave it on this device unless the clock here is wrong or you are away from home.",
+		"label": "Time zone",
+		"followDevice": "Follow this device ({zone})",
+		"currently": "It is currently {time} there.",
+		"couldNotSave": "Could not save that time zone",
+		"nowShownIn": "Times now shown in {zone}.",
+		"followingDevice": "Following this device."
+	},
+	"schedule": {
+		"thisAfternoon": "This afternoon",
+		"thisEvening": "This evening",
+		"tomorrowMorning": "Tomorrow morning",
+		"tomorrowAfternoon": "Tomorrow afternoon",
+		"mondayMorning": "Monday morning",
+		"orPick": "Or pick a date and time",
+		"timesIn": "Times in {zone}",
+		"schedule": "Schedule",
+		"pickDateTime": "Pick a date and time",
+		"pickFuture": "Pick a time in the future",
+		"pickWithin": "Pick a time within the next {years} years"
 	}
 }

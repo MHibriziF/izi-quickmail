@@ -559,8 +559,32 @@
 	},
 	"language": {
 		"en": "English",
+		"id": "Bahasa Indonesia",
 		"fr": "Français",
 		"zh-CN": "简体中文",
 		"es": "Español"
+	},
+	"timezone": {
+		"title": "时区",
+		"hint": "用于定时发送，让“明天早上”指的是你的早上。除非本机时钟不准或你身在异地，否则保持跟随本设备即可。",
+		"label": "时区",
+		"followDevice": "跟随本设备（{zone}）",
+		"currently": "当地现在是 {time}。",
+		"couldNotSave": "无法保存该时区",
+		"nowShownIn": "时间现在按 {zone} 显示。",
+		"followingDevice": "跟随本设备。"
+	},
+	"schedule": {
+		"thisAfternoon": "今天下午",
+		"thisEvening": "今天晚上",
+		"tomorrowMorning": "明天上午",
+		"tomorrowAfternoon": "明天下午",
+		"mondayMorning": "周一上午",
+		"orPick": "或选择日期和时间",
+		"timesIn": "按 {zone} 显示",
+		"schedule": "定时发送",
+		"pickDateTime": "请选择日期和时间",
+		"pickFuture": "请选择将来的时间",
+		"pickWithin": "请选择未来 {years} 年内的时间"
 	}
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 	import SchedulePicker from './SchedulePicker.svelte';
+	import { t } from '$lib/i18n';
 
 	/**
 	 * Send now, or schedule. Shared by the composer and the reply box so the two
@@ -10,7 +11,7 @@
 	let {
 		sending = false,
 		disabled = false,
-		label = 'Send',
+		label = '',
 		showIcon = false,
 		timeZone = null,
 		onsend
@@ -34,13 +35,13 @@
 		onclick={() => onsend(null)}
 	>
 		{#if showIcon}<Icon name="send-plane-2-fill" size={16} />{/if}
-		{sending ? 'Sending…' : label}
+		{sending ? t('common.sending') : label || t('common.send')}
 	</button>
 	<button
 		type="button"
 		class="btn-primary send-more"
 		disabled={sending || disabled}
-		aria-label="Schedule send"
+		aria-label={t('compose.scheduleSend')}
 		onclick={() => (scheduleOpen = true)}
 	>
 		<Icon name="arrow-down-s-line" size={16} />

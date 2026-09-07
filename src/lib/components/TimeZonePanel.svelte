@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import Icon from './Icon.svelte';
+	import { t } from '$lib/i18n';
 	import { detectTimeZone } from '$lib/timezone';
 
 	let { timeZone: initial }: { timeZone: string | null } = $props();
@@ -53,14 +54,16 @@
 			});
 			const body = await res.json();
 			if (!res.ok) {
-				error = body.error ?? 'Could not save that time zone';
+				error = body.error ?? t('timezone.couldNotSave');
 				return;
 			}
 			saved = body.timeZone;
-			notice = saved ? `Times now shown in ${saved.replace('_', ' ')}.` : 'Following this device.';
+			notice = saved
+				? t('timezone.nowShownIn', { zone: saved.replace('_', ' ') })
+				: t('timezone.followingDevice');
 			await invalidateAll();
 		} catch {
-			error = 'Network error';
+			error = t('common.networkError');
 		} finally {
 			busy = false;
 		}
@@ -68,29 +71,26 @@
 </script>
 
 <section class="surface-lg card">
-	<h2><Icon name="time-line" size={18} /> Time zone</h2>
+	<h2><Icon name="time-line" size={18} /> {t('timezone.title')}</h2>
 
-	<p class="card-hint">
-		Used when scheduling a send, so "tomorrow morning" means your morning. Leave it on this
-		device unless the clock here is wrong or you are away from home.
-	</p>
+	<p class="card-hint">{t('timezone.hint')}</p>
 
 	<form class="stack" onsubmit={save}>
-		<label class="field-title" for="timezone">Time zone</label>
+		<label class="field-title" for="timezone">{t('timezone.label')}</label>
 		<select id="timezone" class="text-input" bind:value={choice}>
-			<option value="">Follow this device ({detected.replace('_', ' ')})</option>
+			<option value="">{t('timezone.followDevice', { zone: detected.replace('_', ' ') })}</option>
 			{#each zones as zone (zone)}
 				<option value={zone}>{zone.replace('_', ' ')}</option>
 			{/each}
 		</select>
 
 		{#if example}
-			<p class="hint">It is currently {example} there.</p>
+			<p class="hint">{t('timezone.currently', { time: example })}</p>
 		{/if}
 
 		<div class="actions">
 			<button type="submit" class="btn-primary" disabled={busy || choice === (saved ?? '')}>
-				{busy ? 'Saving…' : 'Save'}
+				{busy ? t('common.saving') : t('common.save')}
 			</button>
 		</div>
 	</form>

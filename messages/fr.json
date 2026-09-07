@@ -559,8 +559,32 @@
 	},
 	"language": {
 		"en": "English",
+		"id": "Bahasa Indonesia",
 		"fr": "Français",
 		"zh-CN": "简体中文",
 		"es": "Español"
+	},
+	"timezone": {
+		"title": "Fuseau horaire",
+		"hint": "Utilisé lors de la programmation d’un envoi, pour que « demain matin » corresponde à votre matin. Laissez le réglage sur cet appareil, sauf si son horloge est fausse ou si vous êtes loin de chez vous.",
+		"label": "Fuseau horaire",
+		"followDevice": "Suivre cet appareil ({zone})",
+		"currently": "Il est actuellement {time} là-bas.",
+		"couldNotSave": "Impossible d’enregistrer ce fuseau horaire",
+		"nowShownIn": "Heures désormais affichées en {zone}.",
+		"followingDevice": "Suit cet appareil."
+	},
+	"schedule": {
+		"thisAfternoon": "Cet après-midi",
+		"thisEvening": "Ce soir",
+		"tomorrowMorning": "Demain matin",
+		"tomorrowAfternoon": "Demain après-midi",
+		"mondayMorning": "Lundi matin",
+		"orPick": "Ou choisissez une date et une heure",
+		"timesIn": "Heures en {zone}",
+		"schedule": "Programmer",
+		"pickDateTime": "Choisissez une date et une heure",
+		"pickFuture": "Choisissez une heure dans le futur",
+		"pickWithin": "Choisissez une heure dans les {years} prochaines années"
 	}
 }

@@ -1,4 +1,4 @@
-export const LOCALES = ['en', 'fr', 'zh-CN', 'es'] as const;
+export const LOCALES = ['en', 'id', 'fr', 'zh-CN', 'es'] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -10,16 +10,19 @@ export const LOCALE_STORAGE_KEY = 'quickinbox:locale';
 
 export const LOCALE_OPTIONS: { id: Locale; name: string; nativeName: string }[] = [
 	{ id: 'en', name: 'English', nativeName: 'English' },
+	{ id: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia' },
 	{ id: 'fr', name: 'French', nativeName: 'Français' },
 	{ id: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文' },
 	{ id: 'es', name: 'Spanish', nativeName: 'Español' }
 ];
 
-/** Compact header label (EN / FR / ZH / ES). */
+/** Compact header label (EN / ID / FR / ZH / ES). */
 export function localeShortLabel(locale: Locale): string {
 	switch (locale) {
 		case 'en':
 			return 'EN';
+		case 'id':
+			return 'ID';
 		case 'fr':
 			return 'FR';
 		case 'zh-CN':

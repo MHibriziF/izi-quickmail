@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { t } from '$lib/i18n';
 	import { MAX_SCHEDULE_YEARS } from '$lib/constants';
 	import {
 		detectTimeZone,
@@ -35,11 +36,11 @@
 			if (when.getTime() - now > 60 * 60 * 1000) options.push({ label, when });
 		};
 
-		later('This afternoon', zonedHour(zone, 0, 13));
-		later('This evening', zonedHour(zone, 0, 18));
-		options.push({ label: 'Tomorrow morning', when: zonedHour(zone, 1, 8) });
-		options.push({ label: 'Tomorrow afternoon', when: zonedHour(zone, 1, 13) });
-		options.push({ label: 'Monday morning', when: zonedHour(zone, daysUntilMonday(), 8) });
+		later(t('schedule.thisAfternoon'), zonedHour(zone, 0, 13));
+		later(t('schedule.thisEvening'), zonedHour(zone, 0, 18));
+		options.push({ label: t('schedule.tomorrowMorning'), when: zonedHour(zone, 1, 8) });
+		options.push({ label: t('schedule.tomorrowAfternoon'), when: zonedHour(zone, 1, 13) });
+		options.push({ label: t('schedule.mondayMorning'), when: zonedHour(zone, daysUntilMonday(), 8) });
 
 		return options;
 	});
@@ -80,15 +81,15 @@
 		// not as the browser's local time.
 		const when = fromLocalInputValue(custom, zone);
 		if (!when) {
-			error = 'Pick a date and time';
+			error = t('schedule.pickDateTime');
 			return;
 		}
 		if (when.getTime() <= Date.now()) {
-			error = 'Pick a time in the future';
+			error = t('schedule.pickFuture');
 			return;
 		}
 		if (when.getTime() > Date.now() + MAX_SCHEDULE_YEARS * 365 * 24 * 60 * 60 * 1000) {
-			error = `Pick a time within the next ${MAX_SCHEDULE_YEARS} years`;
+			error = t('schedule.pickWithin', { years: MAX_SCHEDULE_YEARS });
 			return;
 		}
 
@@ -106,10 +107,10 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 	<div class="scrim" onclick={() => (open = false)}></div>
 
-	<div class="sheet" role="dialog" aria-modal="true" aria-label="Schedule send">
+	<div class="sheet" role="dialog" aria-modal="true" aria-label={t('compose.scheduleSend')}>
 		<div class="head">
-			<h2>Schedule send</h2>
-			<button type="button" class="icon-btn" aria-label="Close" onclick={() => (open = false)}>
+			<h2>{t('compose.scheduleSend')}</h2>
+			<button type="button" class="icon-btn" aria-label={t('common.close')} onclick={() => (open = false)}>
 				<Icon name="close-line" size={16} />
 			</button>
 		</div>
@@ -126,8 +127,8 @@
 		</ul>
 
 		<form class="custom" onsubmit={chooseCustom}>
-			<label class="field-title" for="custom-time">Or pick a date and time</label>
-			<p class="zone">Times in {zone.replace('_', ' ')}</p>
+			<label class="field-title" for="custom-time">{t('schedule.orPick')}</label>
+			<p class="zone">{t('schedule.timesIn', { zone: zone.replace('_', ' ') })}</p>
 			<input
 				id="custom-time"
 				class="text-input"
@@ -137,7 +138,7 @@
 				max={customMax}
 			/>
 			{#if error}<p class="error">{error}</p>{/if}
-			<button type="submit" class="btn-primary schedule-btn">Schedule</button>
+			<button type="submit" class="btn-primary schedule-btn">{t('schedule.schedule')}</button>
 		</form>
 	</div>
 {/if}

@@ -559,8 +559,32 @@
 	},
 	"language": {
 		"en": "English",
+		"id": "Bahasa Indonesia",
 		"fr": "Français",
 		"zh-CN": "简体中文",
 		"es": "Español"
+	},
+	"timezone": {
+		"title": "Zona horaria",
+		"hint": "Se usa al programar un envío, para que “mañana por la mañana” sea tu mañana. Déjalo en este dispositivo salvo que su reloj esté mal o estés fuera de casa.",
+		"label": "Zona horaria",
+		"followDevice": "Seguir este dispositivo ({zone})",
+		"currently": "Allí son las {time}.",
+		"couldNotSave": "No se pudo guardar esa zona horaria",
+		"nowShownIn": "Las horas se muestran ahora en {zone}.",
+		"followingDevice": "Siguiendo este dispositivo."
+	},
+	"schedule": {
+		"thisAfternoon": "Esta tarde",
+		"thisEvening": "Esta noche",
+		"tomorrowMorning": "Mañana por la mañana",
+		"tomorrowAfternoon": "Mañana por la tarde",
+		"mondayMorning": "El lunes por la mañana",
+		"orPick": "O elige una fecha y una hora",
+		"timesIn": "Horas en {zone}",
+		"schedule": "Programar",
+		"pickDateTime": "Elige una fecha y una hora",
+		"pickFuture": "Elige una hora futura",
+		"pickWithin": "Elige una hora dentro de los próximos {years} años"
 	}
 }

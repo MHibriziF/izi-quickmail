@@ -1,6 +1,7 @@
 import en from '../../../messages/en.json';
 import es from '../../../messages/es.json';
 import fr from '../../../messages/fr.json';
+import id from '../../../messages/id.json';
 import zhCN from '../../../messages/zh-CN.json';
 import { DEFAULT_LOCALE, parseLocale, type Locale } from './locales';
 
@@ -8,6 +9,7 @@ type MessageTree = Record<string, unknown>;
 
 const catalogs: Record<Locale, MessageTree> = {
 	en: en as MessageTree,
+	id: id as MessageTree,
 	fr: fr as MessageTree,
 	'zh-CN': zhCN as MessageTree,
 	es: es as MessageTree
