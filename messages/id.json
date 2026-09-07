@@ -425,7 +425,23 @@
 		"disconnectDevice": "Putuskan {name}?",
 		"thisBrowserSession": "sesi peramban ini",
 		"couldNotDisconnect": "Tidak bisa memutuskan perangkat itu",
-		"disconnectNetwork": "Gangguan jaringan saat memutuskan perangkat itu"
+		"disconnectNetwork": "Gangguan jaringan saat memutuskan perangkat itu",
+		"displayName": "Nama tampilan",
+		"saveName": "Simpan nama",
+		"currentPassword": "Kata sandi saat ini",
+		"newPassword": "Kata sandi baru",
+		"confirmNewPassword": "Konfirmasi kata sandi baru",
+		"signsOutDevices": "Mengeluarkan perangkat lain dan mencabut kunci API Anda.",
+		"changePassword": "Ubah kata sandi",
+		"changing": "Mengubah…",
+		"passwordChanged": "Kata sandi diubah",
+		"passwordsDoNotMatch": "Kata sandi baru tidak cocok",
+		"fromNamePlaceholder": "Nama pengirim",
+		"signaturePlaceholder": "Tanda tangan untuk alamat ini",
+		"addressPlaceholder": "Dukungan",
+		"namePlaceholder": "Nama",
+		"interfaceHint": "Zero adalah tampilan dua panel; Classic adalah tata letak aslinya.",
+		"languageAccountHint": "Berlaku untuk akun ini di mana pun Anda masuk."
 	},
 	"install": {
 		"homeScreen": "Layar utama",
@@ -503,7 +519,10 @@
 		"mobileDevice": "Perangkat seluler",
 		"noMobileDevices": "Saat ini tidak ada perangkat seluler yang terhubung.",
 		"unrouted": "Surel tidak terarah",
-		"unroutedHint": "Tidak ada alamat yang cocok maupun catch-all."
+		"unroutedHint": "Tidak ada alamat yang cocok maupun catch-all.",
+		"addressIsLogin": "Alamatnya adalah akun masuk mereka.",
+		"displayNamePlaceholder": "Nama tampilan",
+		"tempPasswordPlaceholder": "Kata sandi sementara"
 	},
 	"domains": {
 		"all": "Semua domain",

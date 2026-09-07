@@ -425,7 +425,23 @@
 		"disconnectDevice": "Disconnect {name}?",
 		"thisBrowserSession": "this browser session",
 		"couldNotDisconnect": "Could not disconnect that device",
-		"disconnectNetwork": "Network error while disconnecting that device"
+		"disconnectNetwork": "Network error while disconnecting that device",
+		"displayName": "Display name",
+		"saveName": "Save name",
+		"currentPassword": "Current password",
+		"newPassword": "New password",
+		"confirmNewPassword": "Confirm new password",
+		"signsOutDevices": "Signs out other devices and revokes your API keys.",
+		"changePassword": "Change password",
+		"changing": "Changing…",
+		"passwordChanged": "Password changed",
+		"passwordsDoNotMatch": "New passwords do not match",
+		"fromNamePlaceholder": "From name",
+		"signaturePlaceholder": "Signature for this address",
+		"addressPlaceholder": "Support",
+		"namePlaceholder": "Name",
+		"interfaceHint": "Zero is the two-pane shell; Classic is the original layout.",
+		"languageAccountHint": "Applies to this account everywhere you sign in."
 	},
 	"install": {
 		"homeScreen": "Home screen",
@@ -503,7 +519,10 @@
 		"mobileDevice": "Mobile device",
 		"noMobileDevices": "No mobile devices are currently connected.",
 		"unrouted": "Unrouted mail",
-		"unroutedHint": "No matching address or catch-all."
+		"unroutedHint": "No matching address or catch-all.",
+		"addressIsLogin": "Address is their login.",
+		"displayNamePlaceholder": "Display name",
+		"tempPasswordPlaceholder": "Temporary password"
 	},
 	"domains": {
 		"all": "All domains",

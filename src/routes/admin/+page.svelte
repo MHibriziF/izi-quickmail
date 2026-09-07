@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import { t } from '$lib/i18n';
 	import StackHeader from '$lib/components/StackHeader.svelte';
 	import AddressField from '$lib/components/AddressField.svelte';
 	import Check from '$lib/components/Check.svelte';
@@ -67,7 +68,7 @@
 			}
 			window.location.reload();
 		} catch {
-			userError = 'Network error';
+			userError = t('common.networkError');
 		} finally {
 			creatingUser = false;
 		}
@@ -94,7 +95,7 @@
 			}
 			window.location.reload();
 		} catch {
-			roleError = 'Network error';
+			roleError = t('common.networkError');
 		} finally {
 			changingRole = null;
 		}
@@ -125,7 +126,7 @@
 			}
 			window.location.reload();
 		} catch {
-			deleteError = 'Network error';
+			deleteError = t('common.networkError');
 		} finally {
 			deletingUser = null;
 		}
@@ -148,7 +149,7 @@
 			}
 			window.location.reload();
 		} catch {
-			domainError = 'Network error';
+			domainError = t('common.networkError');
 		} finally {
 			connecting = null;
 		}
@@ -184,7 +185,7 @@
 </svelte:head>
 
 <div class="admin-page">
-	<StackHeader title="Admin" back={false} />
+	<StackHeader title={t('nav.admin')} back={false} />
 
 	{#if data.loadError}
 		<div class="surface-lg banner">
@@ -194,8 +195,8 @@
 	{/if}
 
 	<section class="surface-lg admin-card">
-		<h2><Icon name="global-line" size={18} /> Domains</h2>
-		<p class="card-hint">Catch-all gets unmatched mail.</p>
+		<h2><Icon name="global-line" size={18} /> {t('nav.domains')}</h2>
+		<p class="card-hint">{t('admin.domainsHint')}</p>
 
 		<ul class="domain-list">
 			{#each data.domains as domain (domain.id)}
@@ -219,7 +220,7 @@
 
 					<div class="domain-controls">
 						<label class="control">
-							<span class="control-label">Catch-all</span>
+							<span class="control-label">{t('admin.catchall')}</span>
 							<select
 								value={domain.catchall_user_id ?? ''}
 								onchange={(event) =>
@@ -227,7 +228,7 @@
 										catchallUserId: (event.currentTarget as HTMLSelectElement).value || null
 									})}
 							>
-								<option value="">Nobody (hold as unrouted)</option>
+								<option value="">{t('admin.nobodyHold')}</option>
 								{#each data.users as user (user.id)}
 									<option value={user.id}>{user.name} — {user.email}</option>
 								{/each}
@@ -240,7 +241,7 @@
 								class="btn-ghost text-xs"
 								onclick={() => updateDomain(domain.id, { refresh: true })}
 							>
-								<Icon name="refresh-line" size={14} /> Re-sync
+								<Icon name="refresh-line" size={14} /> {t('admin.resync')}
 							</button>
 							<button
 								type="button"
@@ -265,7 +266,7 @@
 					{#if domain.catchall_user_id}
 						<p class="hint">
 							<Icon name="user-received-line" size={13} />
-							Goes to {userLabel(domain.catchall_user_id)}.
+							{t('admin.goesTo', { label: userLabel(domain.catchall_user_id) })}
 						</p>
 					{/if}
 				</li>
@@ -275,7 +276,10 @@
 		{#if connectable.length > 0}
 			<div class="connect-block">
 				<p class="connect-title">
-					Available in {data.providerKind === 'cloudflare' ? 'Cloudflare Email' : 'Resend'}
+					{t('admin.availableIn', {
+						provider:
+							data.providerKind === 'cloudflare' ? t('provider.cloudflare') : t('provider.resend')
+					})}
 				</p>
 				<ul class="connect-list">
 					{#each connectable as domain (domain.id)}
@@ -304,33 +308,33 @@
 	<div class="admin-grid">
 		<section class="surface-lg admin-card">
 			<h2><Icon name="user-add-line" size={18} /> New user</h2>
-			<p class="card-hint">Address is their login.</p>
+			<p class="card-hint">{t('admin.addressIsLogin')}</p>
 			<form class="mt-4 space-y-3" onsubmit={createUser}>
-				<input type="text" bind:value={name} required placeholder="Display name" class="admin-input" />
+				<input type="text" bind:value={name} required placeholder={t('admin.displayNamePlaceholder')} class="admin-input" />
 				<AddressField
 					bind:localPart
 					bind:domainId={newUserDomainId}
 					domains={data.domains}
 					placeholder="name"
-					label="Address"
+					label={t('settings.addressLabel')}
 				/>
 				<input
 					type="text"
 					bind:value={password}
 					required
 					minlength="8"
-					placeholder="Temporary password"
+					placeholder={t('admin.tempPasswordPlaceholder')}
 					class="admin-input"
 				/>
 
 				<div class="role-row">
 					<Check
-						label="Make this user an admin"
+						label={t('admin.makeAdmin')}
 						caption="Admin"
 						checked={makeAdmin}
 						onchange={(next) => (makeAdmin = next)}
 					/>
-					<span class="role-hint">Can manage users, domains, and unrouted mail.</span>
+					<span class="role-hint">{t('admin.roleHint')}</span>
 				</div>
 
 				{#if userError}<p class="error">{userError}</p>{/if}
@@ -342,7 +346,12 @@
 		</section>
 
 		<section class="surface-lg admin-card">
-			<h2><Icon name="group-line" size={18} /> {data.users.length} users</h2>
+			<h2>
+				<Icon name="group-line" size={18} />
+				{t(data.users.length === 1 ? 'admin.usersCount' : 'admin.usersCountPlural', {
+					count: data.users.length
+				})}
+			</h2>
 			<ul class="user-list">
 				{#each data.users as user (user.id)}
 					<li class="user-row">
@@ -358,13 +367,13 @@
 						</div>
 						{#if user.id === data.user?.id}
 							{#if user.is_admin}
-								<span class="admin-badge">Admin</span>
+								<span class="admin-badge">{t('nav.admin')}</span>
 							{/if}
 						{:else}
 							<Check
 								label={user.is_admin
-									? `Remove admin from ${user.name}`
-									: `Make ${user.name} an admin`}
+									? t('admin.removeAdminFrom', { name: user.name })
+									: t('admin.makeNamedAdmin', { name: user.name })}
 								caption="Admin"
 								checked={user.is_admin}
 								disabled={changingRole === user.id}
@@ -375,8 +384,8 @@
 							<button
 								type="button"
 								class="user-delete"
-								title="Delete {user.name}"
-								aria-label="Delete {user.name}"
+								title={t('admin.deleteNamed', { name: user.name })}
+								aria-label={t('admin.deleteNamed', { name: user.name })}
 								disabled={deletingUser === user.id}
 								onclick={() => removeUser(user.id, user.name)}
 							>
@@ -393,8 +402,8 @@
 
 	{#if data.unrouted.length > 0}
 		<section class="surface-lg admin-card">
-			<h2><Icon name="question-mark" size={18} /> Unrouted mail</h2>
-			<p class="card-hint">No matching address or catch-all.</p>
+			<h2><Icon name="question-mark" size={18} /> {t('admin.unrouted')}</h2>
+			<p class="card-hint">{t('admin.unroutedHint')}</p>
 			<ul class="user-list">
 				{#each data.unrouted as item (item.id)}
 					<li class="user-row">

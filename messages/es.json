@@ -425,7 +425,23 @@
 		"disconnectDevice": "¿Desconectar {name}?",
 		"thisBrowserSession": "esta sesión del navegador",
 		"couldNotDisconnect": "No se pudo desconectar ese dispositivo",
-		"disconnectNetwork": "Error de red al desconectar ese dispositivo"
+		"disconnectNetwork": "Error de red al desconectar ese dispositivo",
+		"displayName": "Nombre visible",
+		"saveName": "Guardar nombre",
+		"currentPassword": "Contraseña actual",
+		"newPassword": "Nueva contraseña",
+		"confirmNewPassword": "Confirmar la nueva contraseña",
+		"signsOutDevices": "Cierra la sesión en otros dispositivos y revoca tus claves API.",
+		"changePassword": "Cambiar contraseña",
+		"changing": "Cambiando…",
+		"passwordChanged": "Contraseña cambiada",
+		"passwordsDoNotMatch": "Las nuevas contraseñas no coinciden",
+		"fromNamePlaceholder": "Nombre del remitente",
+		"signaturePlaceholder": "Firma para esta dirección",
+		"addressPlaceholder": "Soporte",
+		"namePlaceholder": "Nombre",
+		"interfaceHint": "Zero es la interfaz de dos paneles; Classic es la disposición original.",
+		"languageAccountHint": "Se aplica a esta cuenta dondequiera que inicies sesión."
 	},
 	"install": {
 		"homeScreen": "Pantalla de inicio",
@@ -503,7 +519,10 @@
 		"mobileDevice": "Dispositivo móvil",
 		"noMobileDevices": "No hay dispositivos móviles conectados.",
 		"unrouted": "Correo no enrutado",
-		"unroutedHint": "Sin dirección coincidente ni catch-all."
+		"unroutedHint": "Sin dirección coincidente ni catch-all.",
+		"addressIsLogin": "La dirección es su inicio de sesión.",
+		"displayNamePlaceholder": "Nombre visible",
+		"tempPasswordPlaceholder": "Contraseña temporal"
 	},
 	"domains": {
 		"all": "Todos los dominios",

@@ -425,7 +425,23 @@
 		"disconnectDevice": "Déconnecter {name} ?",
 		"thisBrowserSession": "cette session de navigateur",
 		"couldNotDisconnect": "Impossible de déconnecter cet appareil",
-		"disconnectNetwork": "Erreur réseau lors de la déconnexion de cet appareil"
+		"disconnectNetwork": "Erreur réseau lors de la déconnexion de cet appareil",
+		"displayName": "Nom affiché",
+		"saveName": "Enregistrer le nom",
+		"currentPassword": "Mot de passe actuel",
+		"newPassword": "Nouveau mot de passe",
+		"confirmNewPassword": "Confirmer le nouveau mot de passe",
+		"signsOutDevices": "Déconnecte les autres appareils et révoque vos clés API.",
+		"changePassword": "Changer le mot de passe",
+		"changing": "Changement…",
+		"passwordChanged": "Mot de passe changé",
+		"passwordsDoNotMatch": "Les nouveaux mots de passe ne correspondent pas",
+		"fromNamePlaceholder": "Nom d’expéditeur",
+		"signaturePlaceholder": "Signature pour cette adresse",
+		"addressPlaceholder": "Support",
+		"namePlaceholder": "Nom",
+		"interfaceHint": "Zero est l’interface à deux volets ; Classic est la disposition d’origine.",
+		"languageAccountHint": "S’applique à ce compte partout où vous vous connectez."
 	},
 	"install": {
 		"homeScreen": "Écran d’accueil",
@@ -503,7 +519,10 @@
 		"mobileDevice": "Appareil mobile",
 		"noMobileDevices": "Aucun appareil mobile n’est actuellement connecté.",
 		"unrouted": "Courrier non routé",
-		"unroutedHint": "Aucune adresse correspondante ni catch-all."
+		"unroutedHint": "Aucune adresse correspondante ni catch-all.",
+		"addressIsLogin": "L’adresse est leur identifiant.",
+		"displayNamePlaceholder": "Nom affiché",
+		"tempPasswordPlaceholder": "Mot de passe temporaire"
 	},
 	"domains": {
 		"all": "Tous les domaines",

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { t } from '$lib/i18n';
 	import { invalidateAll } from '$app/navigation';
 	import Icon from './Icon.svelte';
 	import StackHeader from './StackHeader.svelte';
@@ -73,7 +74,7 @@
 			// The sidebar and header read the name from layout data.
 			await invalidateAll();
 		} catch {
-			accountError = 'Network error';
+			accountError = t('common.networkError');
 		} finally {
 			accountBusy = false;
 		}
@@ -92,7 +93,7 @@
 		passwordSaved = false;
 
 		if (newPassword !== confirmPassword) {
-			passwordError = 'New passwords do not match';
+			passwordError = t('settings.passwordsDoNotMatch');
 			return;
 		}
 		if (newPassword.length < MIN_PASSWORD_LENGTH) {
@@ -121,7 +122,7 @@
 			// Rotation revoked the old API keys, so drop them from the list.
 			await invalidateAll();
 		} catch {
-			passwordError = 'Network error';
+			passwordError = t('common.networkError');
 		} finally {
 			passwordBusy = false;
 		}
@@ -153,7 +154,7 @@
 			signature = body.signature;
 			signatureSaved = true;
 		} catch {
-			signatureError = 'Network error';
+			signatureError = t('common.networkError');
 		} finally {
 			signatureBusy = false;
 		}
@@ -242,7 +243,7 @@
 			copied = false;
 			keyName = '';
 		} catch {
-			keyError = 'Network error';
+			keyError = t('common.networkError');
 		} finally {
 			keyBusy = false;
 		}
@@ -312,7 +313,7 @@
 			localPart = '';
 			displayName = '';
 		} catch {
-			error = 'Network error';
+			error = t('common.networkError');
 		} finally {
 			busy = false;
 		}
@@ -337,7 +338,7 @@
 			}
 			edited = body.addresses;
 		} catch {
-			error = 'Network error';
+			error = t('common.networkError');
 		} finally {
 			savingId = '';
 		}
@@ -372,7 +373,7 @@
 			}
 			edited = body.addresses;
 		} catch {
-			error = 'Network error';
+			error = t('common.networkError');
 		} finally {
 			savingId = '';
 		}
@@ -396,7 +397,7 @@
 <svelte:window onkeydown={handleWindowKeydown} />
 
 <div class="settings-page">
-	<StackHeader title="Settings" back={false} />
+	<StackHeader title={t('nav.settings')} back={false} />
 
 	{#if show('general')}
 	<section class="surface-lg card">
@@ -407,7 +408,7 @@
 		</p>
 
 		<form class="account-form" onsubmit={saveAccountName}>
-			<label class="field-title" for="account-name">Display name</label>
+			<label class="field-title" for="account-name">{t('settings.displayName')}</label>
 			<input
 				id="account-name"
 				class="text-input"
@@ -420,16 +421,16 @@
 
 			<div class="account-actions">
 				<button type="submit" class="btn-primary" disabled={accountBusy}>
-					{accountBusy ? 'Saving…' : 'Save name'}
+					{accountBusy ? t('common.saving') : t('settings.saveName')}
 				</button>
 			</div>
 
 			{#if accountError}<p class="error">{accountError}</p>{/if}
-			{#if accountSaved}<p class="saved">Saved</p>{/if}
+			{#if accountSaved}<p class="saved">{t('common.saved')}</p>{/if}
 		</form>
 
 		<form class="account-form" onsubmit={changePassword}>
-			<label class="field-title" for="current-password">Current password</label>
+			<label class="field-title" for="current-password">{t('settings.currentPassword')}</label>
 			<input
 				id="current-password"
 				class="text-input"
@@ -439,7 +440,7 @@
 				required
 			/>
 
-			<label class="field-title" for="new-password">New password</label>
+			<label class="field-title" for="new-password">{t('settings.newPassword')}</label>
 			<input
 				id="new-password"
 				class="text-input"
@@ -450,7 +451,7 @@
 				required
 			/>
 
-			<label class="field-title" for="confirm-password">Confirm new password</label>
+			<label class="field-title" for="confirm-password">{t('settings.confirmNewPassword')}</label>
 			<input
 				id="confirm-password"
 				class="text-input"
@@ -462,14 +463,14 @@
 			/>
 
 			<div class="account-actions">
-				<span class="card-hint">Signs out other devices and revokes your API keys.</span>
+				<span class="card-hint">{t('settings.signsOutDevices')}</span>
 				<button type="submit" class="btn-primary" disabled={passwordBusy}>
-					{passwordBusy ? 'Changing…' : 'Change password'}
+					{passwordBusy ? t('settings.changing') : t('settings.changePassword')}
 				</button>
 			</div>
 
 			{#if passwordError}<p class="error">{passwordError}</p>{/if}
-			{#if passwordSaved}<p class="saved">Password changed</p>{/if}
+			{#if passwordSaved}<p class="saved">{t('settings.passwordChanged')}</p>{/if}
 		</form>
 	</section>
 	{/if}
@@ -496,7 +497,7 @@
 	{#if show('appearance')}
 	<section class="surface-lg card">
 		<h2><Icon name="layout-4-line" size={18} /> Interface</h2>
-		<p class="card-hint">Zero is the two-pane shell; Classic is the original layout.</p>
+		<p class="card-hint">{t('settings.interfaceHint')}</p>
 		<UiThemePicker />
 	</section>
 	{/if}
@@ -504,7 +505,7 @@
 	{#if show('appearance')}
 	<section class="surface-lg card">
 		<h2><Icon name="translate-2" size={18} /> Language</h2>
-		<p class="card-hint">Applies to this account everywhere you sign in.</p>
+		<p class="card-hint">{t('settings.languageAccountHint')}</p>
 		<LocalePicker />
 	</section>
 	{/if}
@@ -513,7 +514,7 @@
 	<section class="surface-lg card">
 		<h2><Icon name="contrast-2-line" size={18} /> Appearance</h2>
 
-		<div class="theme-options" role="radiogroup" aria-label="Theme">
+		<div class="theme-options" role="radiogroup" aria-label={t('settings.theme')}>
 			{#each THEME_OPTIONS as option (option.value)}
 				<button
 					type="button"
@@ -552,7 +553,7 @@
 	{#if show('general')}
 	<section class="surface-lg card">
 		<h2><Icon name="pencil-line" size={18} /> Signature</h2>
-		<p class="card-hint">Used when a mailbox has no signature of its own.</p>
+		<p class="card-hint">{t('settings.signatureHint')}</p>
 
 		<form class="signature-form" onsubmit={saveSignature}>
 			<textarea
@@ -567,12 +568,12 @@
 			<div class="signature-actions">
 				<span class="character-count">{signature.length}/{MAX_EMAIL_SIGNATURE_LENGTH}</span>
 				<button type="submit" class="btn-primary" disabled={signatureBusy}>
-					{signatureBusy ? 'Saving…' : 'Save'}
+					{signatureBusy ? t('common.saving') : t('common.save')}
 				</button>
 			</div>
 
 			{#if signatureError}<p class="error">{signatureError}</p>{/if}
-			{#if signatureSaved}<p class="saved">Saved</p>{/if}
+			{#if signatureSaved}<p class="saved">{t('common.saved')}</p>{/if}
 		</form>
 	</section>
 	{/if}
@@ -594,8 +595,8 @@
 								type="text"
 								class="name-input"
 								value={address.label ?? ''}
-								placeholder="From name"
-								aria-label="From name for {address.address}"
+								placeholder={t('settings.fromNamePlaceholder')}
+								aria-label={t('settings.fromNameFor', { address: address.address })}
 								disabled={savingId === address.id}
 								onchange={(event) => saveLabel(address.id, event.currentTarget.value)}
 							/>
@@ -603,7 +604,7 @@
 						</div>
 
 						{#if address.is_default}
-							<span class="badge">Default</span>
+							<span class="badge">{t('common.default')}</span>
 						{:else}
 							<button type="button" class="btn-ghost text-xs" onclick={() => makeDefault(address.id)}>
 								Make default
@@ -614,7 +615,7 @@
 							<button
 								type="button"
 								class="icon-btn"
-								aria-label="Remove {address.address}"
+								aria-label={t('settings.removeAddress', { address: address.address })}
 								onclick={() => remove(address.id)}
 							>
 								<Icon name="delete-bin-line" size={15} />
@@ -626,8 +627,8 @@
 						rows="2"
 						maxlength={MAX_EMAIL_SIGNATURE_LENGTH}
 						value={address.signature ?? ''}
-						placeholder="Signature for this address"
-						aria-label="Signature for {address.address}"
+						placeholder={t('settings.signaturePlaceholder')}
+						aria-label={t('settings.mailboxSignature')}
 						disabled={savingId === address.id}
 						onchange={(event) => saveMailboxSignature(address.id, event.currentTarget.value)}
 					></textarea>
@@ -637,12 +638,12 @@
 
 		<form class="add-form" onsubmit={addAddress}>
 			<div class="add-field">
-				<label class="field-title" for="new-display-name">From name</label>
+				<label class="field-title" for="new-display-name">{t('settings.fromName')}</label>
 				<input
 					id="new-display-name"
 					type="text"
 					bind:value={displayName}
-					placeholder="Support"
+					placeholder={t('settings.addressPlaceholder')}
 					class="name-add-input"
 					autocomplete="off"
 				/>
@@ -651,11 +652,11 @@
 					bind:domainId
 					domains={data.domains}
 					placeholder="another"
-					label="Address"
+					label={t('settings.addressLabel')}
 				/>
 			</div>
 			<button type="submit" class="btn-primary" disabled={busy || !localPart.trim()}>
-				{busy ? 'Adding…' : 'Add'}
+				{busy ? t('common.adding') : t('common.add')}
 			</button>
 		</form>
 
@@ -715,7 +716,7 @@
 						<button
 							type="button"
 							class="icon-btn"
-							aria-label="Revoke {token.name}"
+							aria-label={t('settings.revokeKey', { name: token.name })}
 							onclick={() => revokeKey(token.id)}
 						>
 							<Icon name="delete-bin-line" size={15} />
@@ -724,14 +725,14 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="empty">No keys</p>
+			<p class="empty">{t('settings.noKeys')}</p>
 		{/if}
 
 		{#if keyError && !creating}<p class="error">{keyError}</p>{/if}
 
 		<div class="install-row">
 			<code>{installCommand}</code>
-			<button type="button" class="icon-btn" aria-label="Copy install command" onclick={copyInstall}>
+			<button type="button" class="icon-btn" aria-label={t('settings.copyInstall')} onclick={copyInstall}>
 				<Icon name={installCopied ? 'check-line' : 'file-copy-line'} size={15} />
 			</button>
 		</div>
@@ -751,47 +752,47 @@
 			class="key-modal"
 			role="dialog"
 			aria-modal="true"
-			aria-label={revealed ? 'Copy API key' : 'New API key'}
+			aria-label={revealed ? t('settings.copyApiKey') : t('settings.newApiKey')}
 			tabindex="-1"
 		>
 			<div class="modal-head">
 				<h3>
 					<Icon name="key-2-line" size={16} />
-					{revealed ? 'Copy this key' : 'New API key'}
+					{revealed ? t('settings.copyThisKey') : t('settings.newApiKey')}
 				</h3>
-				<button type="button" class="icon-btn" aria-label="Close" onclick={closeCreate}>
+				<button type="button" class="icon-btn" aria-label={t('common.close')} onclick={closeCreate}>
 					<Icon name="close-line" size={16} />
 				</button>
 			</div>
 
 			{#if revealed}
-				<p class="modal-note">Shown once. Copy it now.</p>
+				<p class="modal-note">{t('settings.shownOnce')}</p>
 				<pre class="token-box">{revealed.token}</pre>
 				<div class="modal-actions">
 					<button type="button" class="btn-primary" onclick={copyKey}>
 						<Icon name={copied ? 'check-line' : 'file-copy-line'} size={15} />
-						{copied ? 'Copied' : 'Copy'}
+						{copied ? t('common.copied') : t('common.copy')}
 					</button>
-					<button type="button" class="btn-ghost" onclick={closeCreate}>Done</button>
+					<button type="button" class="btn-ghost" onclick={closeCreate}>{t('common.done')}</button>
 				</div>
 			{:else}
 				<form class="key-form" onsubmit={createKey}>
-					<label class="sr-only" for="apikey-name">Key name</label>
+					<label class="sr-only" for="apikey-name">{t('settings.keyName')}</label>
 					<input
 						id="apikey-name"
 						class="text-input"
-						placeholder="Name"
+						placeholder={t('settings.namePlaceholder')}
 						value={keyName}
 						autofocus
 						oninput={(event) => (keyName = event.currentTarget.value)}
 					/>
 
 					<div class="scope-row">
-						<Check label="Send mail" caption="send" checked={sendScope} onchange={(next) => (sendScope = next)} />
-						<Check label="Read mail" caption="read" checked={readScope} onchange={(next) => (readScope = next)} />
+						<Check label={t('settings.sendMail')} caption="send" checked={sendScope} onchange={(next) => (sendScope = next)} />
+						<Check label={t('settings.readMail')} caption="read" checked={readScope} onchange={(next) => (readScope = next)} />
 						{#if data.isAdmin}
 							<Check
-								label="Admin"
+								label={t('nav.admin')}
 								caption="admin"
 								checked={adminScope}
 								onchange={(next) => (adminScope = next)}
@@ -802,9 +803,9 @@
 					{#if keyError}<p class="error">{keyError}</p>{/if}
 
 					<div class="modal-actions">
-						<button type="button" class="btn-ghost" onclick={closeCreate}>Cancel</button>
+						<button type="button" class="btn-ghost" onclick={closeCreate}>{t('common.cancel')}</button>
 						<button type="submit" class="btn-primary" disabled={keyBusy || !canCreateKey}>
-							{keyBusy ? 'Creating…' : 'Create'}
+							{keyBusy ? t('common.creating') : t('common.create')}
 						</button>
 					</div>
 				</form>

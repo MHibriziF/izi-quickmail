@@ -425,7 +425,23 @@
 		"disconnectDevice": "断开 {name}？",
 		"thisBrowserSession": "此浏览器会话",
 		"couldNotDisconnect": "无法断开该设备",
-		"disconnectNetwork": "断开该设备时出现网络错误"
+		"disconnectNetwork": "断开该设备时出现网络错误",
+		"displayName": "显示名称",
+		"saveName": "保存名称",
+		"currentPassword": "当前密码",
+		"newPassword": "新密码",
+		"confirmNewPassword": "确认新密码",
+		"signsOutDevices": "会退出其他设备并吊销你的 API 密钥。",
+		"changePassword": "修改密码",
+		"changing": "修改中…",
+		"passwordChanged": "密码已修改",
+		"passwordsDoNotMatch": "两次输入的新密码不一致",
+		"fromNamePlaceholder": "发件人名称",
+		"signaturePlaceholder": "此地址的签名",
+		"addressPlaceholder": "support",
+		"namePlaceholder": "名称",
+		"interfaceHint": "Zero 是双栏界面；Classic 是原来的布局。",
+		"languageAccountHint": "适用于此账户，在任何地方登录都生效。"
 	},
 	"install": {
 		"homeScreen": "主屏幕",
@@ -503,7 +519,10 @@
 		"mobileDevice": "移动设备",
 		"noMobileDevices": "当前没有已连接的移动设备。",
 		"unrouted": "未路由邮件",
-		"unroutedHint": "没有匹配的地址或 catch-all。"
+		"unroutedHint": "没有匹配的地址或 catch-all。",
+		"addressIsLogin": "该地址即他们的登录账号。",
+		"displayNamePlaceholder": "显示名称",
+		"tempPasswordPlaceholder": "临时密码"
 	},
 	"domains": {
 		"all": "全部域名",
