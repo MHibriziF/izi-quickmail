@@ -19,7 +19,7 @@
 		{ kind: 'nav', href: '/archive', icon: 'Archive', label: t('nav.archive') },
 		{ kind: 'nav', href: '/trash', icon: 'Bin', label: t('nav.bin') },
 		{ kind: 'nav', href: '/starred', icon: 'Star2', label: t('nav.starred') },
-		{ kind: 'nav', href: '/settings/general', icon: 'SettingsGear', label: t('nav.settings') }
+		{ kind: 'nav', href: '/settings', icon: 'SettingsGear', label: t('nav.settings') }
 	]);
 
 	let query = $state('');

@@ -213,7 +213,7 @@
 				t: '/sent',
 				a: '/archive',
 				b: '/trash',
-				s: '/settings/general'
+				s: '/settings'
 			};
 			const href = map[event.key.toLowerCase()];
 			chord = '';
@@ -307,7 +307,7 @@
 			{#if !settings}
 				<Tooltip text={t('nav.settings')} side="right" enabled={collapsed && !mobileOpen} stretch>
 					<a
-						href="/settings/general"
+						href="/settings"
 						class="z-nav-link"
 						class:active={isActive('/settings')}
 						aria-label={collapsed && !mobileOpen ? t('nav.settings') : undefined}
@@ -350,7 +350,7 @@
 			<a href="/sent" aria-label={t('nav.sent')}><Icon name="Plane2" size={18} /></a>
 		</Tooltip>
 		<Tooltip text={t('nav.settings')} side="top">
-			<a href="/settings/general" aria-label={t('nav.settings')}><Icon name="SettingsGear" size={18} /></a>
+			<a href="/settings" aria-label={t('nav.settings')}><Icon name="SettingsGear" size={18} /></a>
 		</Tooltip>
 	</nav>
 </div>
