@@ -1,7 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import { page } from '$app/stores';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/logo.png';
 	import { watchSystemTheme } from '$lib/theme';
 	import {
 		captureInstallPrompt,
@@ -72,7 +72,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" type="image/png" href={favicon} />
 	{#if data.uiTheme === 'classic'}
 		<link
 			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
