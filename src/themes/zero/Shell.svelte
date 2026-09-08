@@ -340,7 +340,17 @@
 				</div>
 			</div>
 		{:else}
-			{@render children()}
+			<!--
+				Any route Zero has no pane for — /compose reached by recalling a
+				scheduled message, say. Without a wrapper it rendered straight into
+				the flex stage with no padding, width or scrolling, which on a phone
+				is unusable.
+			-->
+			<div class="z-settings-panel">
+				<div class="z-settings-scroll">
+					{@render children()}
+				</div>
+			</div>
 		{/if}
 	</div>
 
