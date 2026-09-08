@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { page } from '$app/stores';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import EmailBody from '$lib/components/EmailBody.svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
@@ -158,7 +158,14 @@
 		cancelError = '';
 		try {
 			const draftId = await cancelScheduledSend(scheduled.id);
-			window.location.href = `/compose?draft=${draftId}`;
+			// Zero composes in an overlay; sending the person to /compose would drop
+			// them on a page this shell has no pane for.
+			const url = new URL($page.url);
+			url.searchParams.set('compose', '1');
+			url.searchParams.set('draft', String(draftId));
+			url.searchParams.delete('thread');
+			await goto(`${url.pathname}?${url.searchParams.toString()}`);
+			await invalidateAll();
 		} catch (failure) {
 			cancelError = describeMailError(failure, t('common.networkError'));
 		} finally {
