@@ -17,6 +17,7 @@
 		MailboxFilters,
 		MailboxPage,
 		MailboxView,
+		ThreadParticipant,
 		ThreadSummary
 	} from '$lib/types';
 
@@ -100,12 +101,29 @@
 			return recipientOf(thread) || (view === 'drafts' ? t('mailbox.noRecipient') : t('common.unknown'));
 		}
 
-		return thread.participants.map((participant) => participant.label).join(', ');
+		return thread.participants.map(participantLabel).join(', ');
 	}
 
 	function recipientOf(thread: ThreadSummary): string {
 		const [first] = thread.participants;
-		return first?.address ? first.address.split('@')[0].replace(/[._-]+/g, ' ') : '';
+		return first?.address ? localPartWords(first.address) : '';
+	}
+
+	/** "hello.there@x.com" → "hello there"; the row capitalizes it in CSS. */
+	function localPartWords(address: string): string {
+		return address.split('@')[0].replace(/[._-]+/g, ' ');
+	}
+
+	/**
+	 * A participant with no known name falls back to their raw address — fine
+	 * anywhere else, but this row runs every label through CSS
+	 * `text-transform: capitalize`, and a full address survives that badly:
+	 * "noreply@sifpi.my.id" becomes "Noreply@Sifpi.My.Id". Humanize the same
+	 * fallback a nameless recipient already gets instead.
+	 */
+	function participantLabel(participant: ThreadParticipant): string {
+		if (participant.self || participant.label !== participant.address) return participant.label;
+		return localPartWords(participant.address);
 	}
 
 	function initial(thread: ThreadSummary): string {
