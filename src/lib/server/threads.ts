@@ -167,6 +167,12 @@ export async function resolveThreadId(
 				)
 				.join(' OR ');
 
+			// The candidate must be the *other* side of a conversation — this rule
+			// exists to reunite a reply with the message it answers, not to lump
+			// together every same-subject message from one address. Without this,
+			// a sender that reuses one subject for unrelated notices (a "noreply@"
+			// receipt or alert, say) merges them all into a single conversation,
+			// and reading one marks every other notice read with it.
 			const match = await db
 				.prepare(
 					`SELECT thread_id, id FROM emails
@@ -175,10 +181,18 @@ export async function resolveThreadId(
 					 ${domainClause}
 					 AND (status IS NULL OR status <> 'draft')
 					 AND datetime(created_at) > datetime('now', ?)
+					 AND direction <> ?
 					 AND (${overlap})
 					 ORDER BY datetime(created_at) DESC LIMIT 1`
 				)
-				.bind(userId, threadKey, ...domainBindings, `-${SUBJECT_MATCH_DAYS} day`, ...participants)
+				.bind(
+					userId,
+					threadKey,
+					...domainBindings,
+					`-${SUBJECT_MATCH_DAYS} day`,
+					input.direction,
+					...participants
+				)
 				.first<{ thread_id: string | null; id: string }>();
 
 			if (match) return match.thread_id ?? match.id;
