@@ -708,7 +708,12 @@
 	"meetings": {
 		"title": "会议 — {app}",
 		"heading": "会议",
-		"empty": "还没有会议。从新邮件开始一个。",
+		"hint": "发起视频通话并把链接分享给任何人——对方无需账号即可加入。",
+		"newMeeting": "新建会议",
+		"creating": "创建中…",
+		"readyTitle": "会议已就绪",
+		"readyHint": "复制此链接并发送给要与你会面的人。",
+		"empty": "还没有会议。",
 		"copyLink": "复制链接",
 		"linkCopied": "链接已复制",
 		"regenerateLink": "获取新链接",

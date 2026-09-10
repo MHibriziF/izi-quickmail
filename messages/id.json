@@ -708,7 +708,12 @@
 	"meetings": {
 		"title": "Rapat — {app}",
 		"heading": "Rapat",
-		"empty": "Belum ada rapat. Mulai satu dari pesan baru.",
+		"hint": "Mulai panggilan video dan bagikan tautannya ke siapa saja — mereka tidak perlu akun untuk bergabung.",
+		"newMeeting": "Rapat baru",
+		"creating": "Membuat…",
+		"readyTitle": "Rapat siap",
+		"readyHint": "Salin tautan ini dan kirim ke orang yang akan rapat denganmu.",
+		"empty": "Belum ada rapat.",
 		"copyLink": "Salin tautan",
 		"linkCopied": "Tautan disalin",
 		"regenerateLink": "Dapatkan tautan baru",

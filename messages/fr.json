@@ -708,7 +708,12 @@
 	"meetings": {
 		"title": "Réunions — {app}",
 		"heading": "Réunions",
-		"empty": "Aucune réunion pour l’instant. Démarrez-en une depuis un nouveau message.",
+		"hint": "Démarrez un appel vidéo et partagez le lien avec qui vous voulez — aucun compte n’est nécessaire pour rejoindre.",
+		"newMeeting": "Nouvelle réunion",
+		"creating": "Création…",
+		"readyTitle": "Réunion prête",
+		"readyHint": "Copiez ce lien et envoyez-le à la personne avec qui vous vous réunissez.",
+		"empty": "Aucune réunion pour l’instant.",
 		"copyLink": "Copier le lien",
 		"linkCopied": "Lien copié",
 		"regenerateLink": "Obtenir un nouveau lien",

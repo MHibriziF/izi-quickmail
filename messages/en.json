@@ -708,7 +708,12 @@
 	"meetings": {
 		"title": "Meetings — {app}",
 		"heading": "Meetings",
-		"empty": "No meetings yet. Start one from a new message.",
+		"hint": "Start a video call and share the link with anyone — they don't need an account to join.",
+		"newMeeting": "New meeting",
+		"creating": "Creating…",
+		"readyTitle": "Meeting ready",
+		"readyHint": "Copy this link and send it to whoever you're meeting with.",
+		"empty": "No meetings yet.",
 		"copyLink": "Copy link",
 		"linkCopied": "Link copied",
 		"regenerateLink": "Get new link",

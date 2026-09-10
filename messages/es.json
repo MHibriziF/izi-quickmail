@@ -708,7 +708,12 @@
 	"meetings": {
 		"title": "Reuniones — {app}",
 		"heading": "Reuniones",
-		"empty": "Aún no hay reuniones. Inicia una desde un mensaje nuevo.",
+		"hint": "Inicia una videollamada y comparte el enlace con quien quieras — no necesitan una cuenta para unirse.",
+		"newMeeting": "Nueva reunión",
+		"creating": "Creando…",
+		"readyTitle": "Reunión lista",
+		"readyHint": "Copia este enlace y envíalo a la persona con la que te vas a reunir.",
+		"empty": "Aún no hay reuniones.",
 		"copyLink": "Copiar enlace",
 		"linkCopied": "Enlace copiado",
 		"regenerateLink": "Obtener nuevo enlace",

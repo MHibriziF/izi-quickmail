@@ -1,13 +1,39 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import StackHeader from './StackHeader.svelte';
+	import Icon from './Icon.svelte';
+	import { startMeeting } from '$lib/mail/meetings';
+	import { describeMailError } from '$lib/mail/client';
 	import type { Meeting } from '$lib/server/meetings';
 
 	let { meetings }: { meetings: Meeting[] } = $props();
 
+	/** Meetings started from this page this session — prepended ahead of `meetings`. */
+	let created = $state<Meeting[]>([]);
+	const rows = $derived([...created, ...meetings]);
+
+	let starting = $state(false);
 	let busyId = $state('');
 	let copiedId = $state('');
 	let error = $state('');
+	/** The one link a person can actually copy — shown right after creation, since the raw token is never stored. */
+	let readyLink = $state<{ id: string; joinUrl: string } | null>(null);
+
+	async function startNewMeeting() {
+		if (starting) return;
+		starting = true;
+		error = '';
+
+		try {
+			const meeting = await startMeeting();
+			created = [{ id: meeting.id, title: meeting.title, created_at: new Date().toISOString() }, ...created];
+			readyLink = { id: meeting.id, joinUrl: meeting.joinUrl };
+		} catch (failure) {
+			error = describeMailError(failure, t('common.networkError'));
+		} finally {
+			starting = false;
+		}
+	}
 
 	async function regenerate(id: string) {
 		if (busyId) return;
@@ -21,7 +47,7 @@
 				error = body.error ?? t('meetings.couldNotRegenerate');
 				return;
 			}
-			await copyLink(id, body.joinUrl);
+			readyLink = { id, joinUrl: body.joinUrl };
 		} catch {
 			error = t('common.networkError');
 		} finally {
@@ -37,22 +63,45 @@
 				if (copiedId === id) copiedId = '';
 			}, 2000);
 		} catch {
-			// Clipboard access denied — the link was already regenerated, nothing more to do.
+			// Clipboard access denied — the link is still visible to copy by hand.
 		}
 	}
 </script>
 
 <StackHeader title={t('meetings.heading')}>
 	<div class="meetings-page">
+		<div class="meetings-intro">
+			<p class="meetings-hint">{t('meetings.hint')}</p>
+			<button type="button" class="meetings-new-btn" disabled={starting} onclick={startNewMeeting}>
+				<Icon name="video-add-line" size={18} />
+				{starting ? t('meetings.creating') : t('meetings.newMeeting')}
+			</button>
+		</div>
+
+		{#if readyLink}
+			<div class="meetings-ready">
+				<div class="meetings-ready-text">
+					<strong>{t('meetings.readyTitle')}</strong>
+					<span>{t('meetings.readyHint')}</span>
+				</div>
+				<div class="meetings-ready-row">
+					<input class="meetings-ready-input" type="text" readonly value={readyLink.joinUrl} onclick={(e) => e.currentTarget.select()} />
+					<button type="button" class="meetings-row-action" onclick={() => copyLink(readyLink!.id, readyLink!.joinUrl)}>
+						{copiedId === readyLink.id ? t('meetings.linkCopied') : t('meetings.copyLink')}
+					</button>
+				</div>
+			</div>
+		{/if}
+
 		{#if error}
 			<p class="meetings-error">{error}</p>
 		{/if}
 
-		{#if meetings.length === 0}
+		{#if rows.length === 0}
 			<p class="meetings-empty">{t('meetings.empty')}</p>
 		{:else}
 			<ul class="meetings-list">
-				{#each meetings as meeting (meeting.id)}
+				{#each rows as meeting (meeting.id)}
 					<li class="meetings-row">
 						<div class="meetings-row-info">
 							<span class="meetings-row-title">{meeting.title || meeting.id}</span>
@@ -64,7 +113,7 @@
 							disabled={busyId === meeting.id}
 							onclick={() => regenerate(meeting.id)}
 						>
-							{copiedId === meeting.id ? t('meetings.linkCopied') : t('meetings.regenerateLink')}
+							{t('meetings.regenerateLink')}
 						</button>
 					</li>
 				{/each}
@@ -79,6 +128,83 @@
 		flex-direction: column;
 		gap: 1rem;
 		padding: 1rem;
+	}
+
+	.meetings-intro {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.meetings-hint {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+	}
+
+	.meetings-new-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 0;
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		border: none;
+		border-radius: 0.5rem;
+		background: var(--color-accent);
+		color: var(--color-on-accent);
+		cursor: pointer;
+	}
+
+	.meetings-new-btn:hover {
+		background: var(--color-accent-hover);
+	}
+
+	.meetings-new-btn:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
+	.meetings-ready {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 0.875rem;
+		border: 1px solid var(--color-accent);
+		border-radius: 0.5rem;
+		background: var(--color-accent-soft);
+	}
+
+	.meetings-ready-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		font-size: 0.8125rem;
+		color: var(--color-text-secondary);
+	}
+
+	.meetings-ready-text strong {
+		font-size: 0.9rem;
+		color: var(--color-text);
+	}
+
+	.meetings-ready-row {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.meetings-ready-input {
+		flex: 1;
+		min-width: 0;
+		padding: 0.5rem 0.625rem;
+		font-size: 0.8125rem;
+		border: 1px solid var(--color-line);
+		border-radius: 0.375rem;
+		background: var(--color-surface);
+		color: var(--color-text);
 	}
 
 	.meetings-error {
