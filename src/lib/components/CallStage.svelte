@@ -4,6 +4,7 @@
 		Room,
 		RoomEvent,
 		Track,
+		type Participant,
 		type RemoteParticipant,
 		type RemoteTrack,
 		type RemoteTrackPublication
@@ -11,15 +12,47 @@
 	import { t } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
 
-	let { url, token, onleave }: { url: string; token: string; onleave: () => void } = $props();
+	let {
+		url,
+		token,
+		displayName,
+		onleave
+	}: { url: string; token: string; displayName: string; onleave: () => void } = $props();
 
 	let room: Room | null = null;
-	let localVideoEl = $state<HTMLDivElement>();
+	let localMediaEl = $state<HTMLDivElement>();
 	let remoteContainerEl = $state<HTMLDivElement>();
 	let connecting = $state(true);
 	let connectionError = $state('');
 	let micEnabled = $state(true);
 	let cameraEnabled = $state(true);
+	let remoteCount = $state(0);
+
+	type Tile = { el: HTMLDivElement; media: HTMLDivElement };
+	const remoteTiles = new Map<string, Tile>();
+
+	function createTile(label: string): Tile {
+		const el = document.createElement('div');
+		el.className = 'call-tile';
+		const media = document.createElement('div');
+		media.className = 'call-tile-media';
+		const name = document.createElement('span');
+		name.className = 'call-tile-name';
+		name.textContent = label;
+		el.append(media, name);
+		return { el, media };
+	}
+
+	function ensureRemoteTile(participant: Participant): Tile {
+		let tile = remoteTiles.get(participant.identity);
+		if (!tile) {
+			tile = createTile(participant.name || t('meet.guest'));
+			remoteContainerEl?.appendChild(tile.el);
+			remoteTiles.set(participant.identity, tile);
+			remoteCount = remoteTiles.size;
+		}
+		return tile;
+	}
 
 	function attachRemoteTrack(
 		track: RemoteTrack,
@@ -27,13 +60,20 @@
 		participant: RemoteParticipant
 	) {
 		if (track.kind !== Track.Kind.Video && track.kind !== Track.Kind.Audio) return;
-		const el = track.attach();
-		el.dataset.participant = participant.identity;
-		remoteContainerEl?.appendChild(el);
+		const tile = ensureRemoteTile(participant);
+		tile.media.appendChild(track.attach());
 	}
 
 	function detachRemoteTrack(track: RemoteTrack) {
 		for (const el of track.detach()) el.remove();
+	}
+
+	function removeParticipantTile(participant: RemoteParticipant) {
+		const tile = remoteTiles.get(participant.identity);
+		if (!tile) return;
+		tile.el.remove();
+		remoteTiles.delete(participant.identity);
+		remoteCount = remoteTiles.size;
 	}
 
 	onMount(() => {
@@ -42,6 +82,7 @@
 
 		instance.on(RoomEvent.TrackSubscribed, attachRemoteTrack);
 		instance.on(RoomEvent.TrackUnsubscribed, detachRemoteTrack);
+		instance.on(RoomEvent.ParticipantDisconnected, removeParticipantTile);
 		instance.on(RoomEvent.Disconnected, onleave);
 
 		(async () => {
@@ -53,7 +94,7 @@
 				if (track) {
 					const el = track.attach();
 					el.muted = true;
-					localVideoEl?.appendChild(el);
+					localMediaEl?.appendChild(el);
 				}
 			} catch (error) {
 				connectionError = error instanceof Error ? error.message : t('meet.connectionError');
@@ -65,6 +106,7 @@
 		return () => {
 			instance.off(RoomEvent.TrackSubscribed, attachRemoteTrack);
 			instance.off(RoomEvent.TrackUnsubscribed, detachRemoteTrack);
+			instance.off(RoomEvent.ParticipantDisconnected, removeParticipantTile);
 			instance.off(RoomEvent.Disconnected, onleave);
 		};
 	});
@@ -92,15 +134,26 @@
 </script>
 
 <div class="call-stage">
-	{#if connecting}
-		<p class="call-status">{t('meet.connecting')}</p>
-	{:else if connectionError}
-		<p class="call-status call-status-error">{connectionError}</p>
-	{/if}
+	<div class="call-header">
+		<span class="call-header-name">{displayName}</span>
+		{#if connecting}
+			<span class="call-header-status">{t('meet.connecting')}</span>
+		{:else if connectionError}
+			<span class="call-header-status call-header-status-error">{connectionError}</span>
+		{/if}
+	</div>
 
 	<div class="call-grid">
-		<div class="call-tile call-tile-local" bind:this={localVideoEl}></div>
+		<div class="call-tile call-tile-local">
+			<div class="call-tile-media" bind:this={localMediaEl}></div>
+			<span class="call-tile-name">{displayName} · {t('meet.you')}</span>
+		</div>
 		<div class="call-tile-group" bind:this={remoteContainerEl}></div>
+		{#if !connecting && !connectionError && remoteCount === 0}
+			<div class="call-tile call-tile-placeholder">
+				<span>{t('meet.waitingForOthers')}</span>
+			</div>
+		{/if}
 	</div>
 
 	<div class="call-controls">
@@ -125,7 +178,7 @@
 	.call-stage {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.75rem;
 		width: 100%;
 		height: 100%;
 		min-height: 100dvh;
@@ -135,13 +188,24 @@
 		box-sizing: border-box;
 	}
 
-	.call-status {
-		text-align: center;
-		font-size: 0.875rem;
-		color: rgba(255, 255, 255, 0.7);
+	.call-header {
+		display: flex;
+		align-items: baseline;
+		gap: 0.75rem;
+		padding: 0 0.25rem;
 	}
 
-	.call-status-error {
+	.call-header-name {
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+
+	.call-header-status {
+		font-size: 0.8125rem;
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	.call-header-status-error {
 		color: #f87171;
 	}
 
@@ -153,20 +217,52 @@
 		align-content: start;
 	}
 
-	.call-tile,
-	.call-tile-group :global(video) {
+	.call-tile {
+		position: relative;
 		aspect-ratio: 16 / 9;
 		width: 100%;
 		border-radius: 0.75rem;
 		background: #1c1c1f;
-		object-fit: cover;
+		overflow: hidden;
 	}
 
-	.call-tile :global(video) {
+	.call-tile-media {
 		width: 100%;
 		height: 100%;
-		border-radius: 0.75rem;
+	}
+
+	.call-tile-media :global(video) {
+		width: 100%;
+		height: 100%;
 		object-fit: cover;
+		display: block;
+	}
+
+	.call-tile-name {
+		position: absolute;
+		left: 0.5rem;
+		bottom: 0.5rem;
+		padding: 0.125rem 0.5rem;
+		font-size: 0.75rem;
+		border-radius: 999px;
+		background: rgba(0, 0, 0, 0.55);
+		color: #fff;
+		max-width: calc(100% - 1rem);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.call-tile-placeholder {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: 1rem;
+		font-size: 0.8125rem;
+		color: rgba(255, 255, 255, 0.5);
+		border: 1px dashed rgba(255, 255, 255, 0.15);
+		background: transparent;
 	}
 
 	.call-tile-group {

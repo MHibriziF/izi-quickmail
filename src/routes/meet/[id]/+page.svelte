@@ -7,10 +7,10 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let name = $state('');
+	let name = $state(data.userName ?? '');
 	let joining = $state(false);
 	let error = $state('');
-	let session = $state<{ url: string; token: string } | null>(null);
+	let session = $state<{ url: string; token: string; displayName: string } | null>(null);
 	let left = $state(false);
 
 	async function join(event: SubmitEvent) {
@@ -19,11 +19,13 @@
 		joining = true;
 		error = '';
 
+		const displayName = name.trim() || t('meet.guest');
+
 		try {
 			const response = await fetch(`/api/meetings/join/${encodeURIComponent(data.id)}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ token: data.token, name: name.trim() || undefined })
+				body: JSON.stringify({ token: data.token, name: displayName })
 			});
 			const body = (await response.json().catch(() => ({}))) as {
 				url?: string;
@@ -34,7 +36,7 @@
 				error = body.error ?? t('meet.invalidLink');
 				return;
 			}
-			session = { url: body.url, token: body.token };
+			session = { url: body.url, token: body.token, displayName };
 		} catch {
 			error = t('common.networkError');
 		} finally {
@@ -51,7 +53,7 @@
 <svelte:head><title>{t('meet.title', { app: APP_NAME })}</title></svelte:head>
 
 {#if session}
-	<CallStage url={session.url} token={session.token} {onleave} />
+	<CallStage url={session.url} token={session.token} displayName={session.displayName} {onleave} />
 {:else}
 	<div class="auth-shell">
 		<div class="auth-card">

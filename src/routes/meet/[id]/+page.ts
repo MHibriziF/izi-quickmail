@@ -5,9 +5,10 @@ import type { PageLoad } from './$types';
 // import.meta.glob incident (wrangler's esbuild would otherwise see it).
 export const ssr = false;
 
-export const load: PageLoad = ({ params, url }) => {
+export const load: PageLoad = ({ params, url, data }) => {
 	return {
 		id: params.id,
-		token: url.searchParams.get('token') ?? ''
+		token: url.searchParams.get('token') ?? '',
+		userName: data.userName
 	};
 };

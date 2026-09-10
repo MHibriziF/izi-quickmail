@@ -19,10 +19,13 @@
 	let { children, data }: { children: import('svelte').Snippet; data: LayoutData } = $props();
 
 	// Onboarding runs before the user has an address, so the shell would be empty.
+	// /meet is a call — even a signed-in host should see it full-screen, the way
+	// a Gmeet link opens on its own rather than inside Gmail's chrome.
 	const showShell = $derived(
 		Boolean(data.user) &&
 			$page.url.pathname !== '/onboarding' &&
-			$page.url.pathname !== '/account/setup'
+			$page.url.pathname !== '/account/setup' &&
+			!$page.url.pathname.startsWith('/meet/')
 	);
 
 	// The shell is the theme's — everything below it is the same routes either way.
