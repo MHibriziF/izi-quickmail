@@ -28,7 +28,13 @@ const PUBLIC_PREFIXES = [
 	'/api/auth',
 	'/api/setup',
 	'/api/webhooks',
-	'/install.sh'
+	'/install.sh',
+	// A meeting's join link is meant to work for invitees with no account at
+	// all — the hashed token in the URL is the only credential, checked (not
+	// consumed) on every visit. /api/meetings itself (creating a meeting)
+	// stays authenticated; only the join sub-path is public.
+	'/meet',
+	'/api/meetings/join'
 ];
 
 function isPublicPath(pathname: string): boolean {

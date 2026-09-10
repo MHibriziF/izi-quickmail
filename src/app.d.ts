@@ -26,6 +26,12 @@ declare global {
 				VAPID_PRIVATE_KEY?: string;
 				/** A mailto: or https: contact URI for Web Push. */
 				VAPID_SUBJECT?: string;
+				/** LiveKit Cloud API key — `wrangler secret put LIVEKIT_API_KEY`. */
+				LIVEKIT_API_KEY?: string;
+				/** LiveKit Cloud API secret. */
+				LIVEKIT_API_SECRET?: string;
+				/** LiveKit project's wss:// URL, e.g. https://your-project.livekit.cloud. */
+				LIVEKIT_URL?: string;
 			};
 		}
 		interface Locals {

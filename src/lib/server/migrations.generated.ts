@@ -104,5 +104,9 @@ export const MIGRATIONS: GeneratedMigration[] = [
 	{
 		name: "0025_first_login_setup.sql",
 		sql: "-- Accounts created by an admin start with a temporary password. Require the\n-- user to replace it before mailbox access; bootstrap owners remain complete.\n--\n-- Upstream carries this as 0019; ours is 0025.\nALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0;\n"
+	},
+	{
+		name: "0026_meetings.sql",
+		sql: "-- A \"start a meeting\" button in the composer creates a LiveKit room and\n-- inserts a join link into the email. The call itself lives entirely in\n-- LiveKit Cloud; this table only remembers who hosts each room and the\n-- hashed secret that gates the public join page -- anyone with the emailed\n-- link joins without a Quickinbox account, so the token (not a login check)\n-- is the whole safety boundary, checked (not consumed) on every visit since\n-- the same link is shared with and reused by multiple invitees.\nCREATE TABLE meetings (\n\tid TEXT PRIMARY KEY,\n\tuser_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n\tdomain_id TEXT REFERENCES domains(id) ON DELETE SET NULL,\n\ttitle TEXT,\n\ttoken_hash TEXT NOT NULL,\n\tcreated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n);\n\nCREATE INDEX meetings_user_id_idx ON meetings(user_id);\n"
 	}
 ];

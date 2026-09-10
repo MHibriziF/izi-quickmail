@@ -47,6 +47,7 @@
 		"trash": "垃圾箱",
 		"bin": "回收站",
 		"settings": "设置",
+		"meetings": "会议",
 		"admin": "管理",
 		"compose": "撰写",
 		"newEmail": "撰写",
@@ -272,6 +273,8 @@
 		"sendFrom": "发件地址",
 		"saveDraft": "保存草稿",
 		"discardDraft": "放弃草稿",
+		"startMeeting": "开始会议",
+		"couldNotStartMeeting": "无法开始会议",
 		"writeMessage": "请撰写邮件",
 		"writeMessagePlaceholder": "撰写邮件…",
 		"writeReplyPlaceholder": "撰写回复…",
@@ -686,5 +689,29 @@
 		"sending": "发送中…",
 		"removed": "恢复地址已删除。",
 		"confirmationSent": "确认已发送至 {address}。点击其中的链接即可完成。"
+	},
+	"meet": {
+		"title": "会议 — {app}",
+		"yourName": "你的姓名",
+		"namePlaceholder": "输入你的姓名",
+		"join": "加入会议",
+		"joining": "加入中…",
+		"leave": "离开",
+		"invalidLink": "该链接无效或已过期。",
+		"connecting": "连接中…",
+		"connectionError": "无法连接到会议。",
+		"micOn": "静音麦克风",
+		"micOff": "取消静音",
+		"cameraOn": "关闭摄像头",
+		"cameraOff": "打开摄像头"
+	},
+	"meetings": {
+		"title": "会议 — {app}",
+		"heading": "会议",
+		"empty": "还没有会议。从新邮件开始一个。",
+		"copyLink": "复制链接",
+		"linkCopied": "链接已复制",
+		"regenerateLink": "获取新链接",
+		"couldNotRegenerate": "无法创建新链接"
 	}
 }

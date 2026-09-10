@@ -33,6 +33,10 @@
   //   wrangler secret put RESEND_WEBHOOK_SECRET
   // Cloudflare Email uses the send_email binding below plus CLOUDFLARE_MAIL_DOMAINS.
   // Locally, put values in .dev.vars (copy .dev.vars.example).
+  // LiveKit meetings (optional — from https://cloud.livekit.io project settings):
+  //   wrangler secret put LIVEKIT_API_KEY
+  //   wrangler secret put LIVEKIT_API_SECRET
+  //   wrangler secret put LIVEKIT_URL
 
   "vars": {
     "EMAIL_PROVIDER": "resend",

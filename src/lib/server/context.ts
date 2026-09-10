@@ -10,6 +10,7 @@ import { ConfigError } from './errors';
 import { createCloudflareProvider } from './providers/cloudflare-provider';
 import { createResendProvider, getResendReceivingClient } from './providers/resend-provider';
 import type { ResendClient } from './resend';
+import { createLiveKitClient, type LiveKitClient } from './livekit';
 
 export { ConfigError } from './errors';
 export { ProviderError } from './email-provider';
@@ -100,6 +101,18 @@ export function getResendClient(platform: PlatformLike): ResendClient {
 
 export function getWebhookSecret(platform: PlatformLike): string | null {
 	return platform?.env.RESEND_WEBHOOK_SECRET ?? null;
+}
+
+export function getLiveKitClient(platform: PlatformLike): LiveKitClient {
+	const key = platform?.env.LIVEKIT_API_KEY;
+	const secret = platform?.env.LIVEKIT_API_SECRET;
+	const url = platform?.env.LIVEKIT_URL;
+	if (!key || !secret || !url) {
+		throw new ConfigError(
+			'LiveKit is not configured. Set LIVEKIT_API_KEY, LIVEKIT_API_SECRET and LIVEKIT_URL (wrangler secret put / .dev.vars).'
+		);
+	}
+	return createLiveKitClient(key, secret, url);
 }
 
 export function providerLoadError(kind: EmailProviderKind, error: unknown): string {

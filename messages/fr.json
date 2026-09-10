@@ -47,6 +47,7 @@
 		"trash": "Corbeille",
 		"bin": "Corbeille",
 		"settings": "Paramètres",
+		"meetings": "Réunions",
 		"admin": "Admin",
 		"compose": "Composer",
 		"newEmail": "Composer",
@@ -272,6 +273,8 @@
 		"sendFrom": "Envoyer depuis",
 		"saveDraft": "Enregistrer le brouillon",
 		"discardDraft": "Supprimer le brouillon",
+		"startMeeting": "Démarrer une réunion",
+		"couldNotStartMeeting": "Impossible de démarrer la réunion",
 		"writeMessage": "Rédigez un message",
 		"writeMessagePlaceholder": "Rédigez votre message…",
 		"writeReplyPlaceholder": "Rédigez votre réponse…",
@@ -686,5 +689,29 @@
 		"sending": "Envoi…",
 		"removed": "Adresse de récupération supprimée.",
 		"confirmationSent": "Confirmation envoyée à {address}. Cliquez sur le lien qu’elle contient pour terminer."
+	},
+	"meet": {
+		"title": "Réunion — {app}",
+		"yourName": "Votre nom",
+		"namePlaceholder": "Entrez votre nom",
+		"join": "Rejoindre la réunion",
+		"joining": "Connexion en cours…",
+		"leave": "Quitter",
+		"invalidLink": "Ce lien est invalide ou a expiré.",
+		"connecting": "Connexion…",
+		"connectionError": "Impossible de se connecter à la réunion.",
+		"micOn": "Couper le micro",
+		"micOff": "Activer le micro",
+		"cameraOn": "Désactiver la caméra",
+		"cameraOff": "Activer la caméra"
+	},
+	"meetings": {
+		"title": "Réunions — {app}",
+		"heading": "Réunions",
+		"empty": "Aucune réunion pour l’instant. Démarrez-en une depuis un nouveau message.",
+		"copyLink": "Copier le lien",
+		"linkCopied": "Lien copié",
+		"regenerateLink": "Obtenir un nouveau lien",
+		"couldNotRegenerate": "Impossible de créer un nouveau lien"
 	}
 }

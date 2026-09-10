@@ -25,3 +25,10 @@ RESEND_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # VAPID_PUBLIC_KEY=REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY
 # VAPID_PRIVATE_KEY=REPLACE_WITH_YOUR_VAPID_PRIVATE_KEY
 # VAPID_SUBJECT=mailto:admin@example.com
+
+# --- LiveKit meetings (optional) ---
+# From your project's Settings > Keys at https://cloud.livekit.io
+# Production values should be added with `wrangler secret put`, not committed.
+# LIVEKIT_API_KEY=REPLACE_WITH_YOUR_LIVEKIT_API_KEY
+# LIVEKIT_API_SECRET=REPLACE_WITH_YOUR_LIVEKIT_API_SECRET
+# LIVEKIT_URL=wss://your-project.livekit.cloud

@@ -47,6 +47,7 @@
 		"trash": "Sampah",
 		"bin": "Sampah",
 		"settings": "Pengaturan",
+		"meetings": "Rapat",
 		"admin": "Admin",
 		"compose": "Tulis",
 		"newEmail": "Tulis",
@@ -272,6 +273,8 @@
 		"sendFrom": "Kirim dari",
 		"saveDraft": "Simpan draf",
 		"discardDraft": "Buang draf",
+		"startMeeting": "Mulai rapat",
+		"couldNotStartMeeting": "Tidak dapat memulai rapat",
 		"writeMessage": "Tulis pesan",
 		"writeMessagePlaceholder": "Tulis pesan Anda…",
 		"writeReplyPlaceholder": "Tulis balasan Anda…",
@@ -686,5 +689,29 @@
 		"sending": "Mengirim…",
 		"removed": "Alamat pemulihan dihapus.",
 		"confirmationSent": "Konfirmasi dikirim ke {address}. Klik tautan di dalamnya untuk menyelesaikan."
+	},
+	"meet": {
+		"title": "Rapat — {app}",
+		"yourName": "Nama Anda",
+		"namePlaceholder": "Masukkan nama Anda",
+		"join": "Gabung rapat",
+		"joining": "Bergabung…",
+		"leave": "Keluar",
+		"invalidLink": "Tautan tersebut tidak valid atau telah kedaluwarsa.",
+		"connecting": "Menghubungkan…",
+		"connectionError": "Tidak dapat terhubung ke rapat.",
+		"micOn": "Bisukan mikrofon",
+		"micOff": "Aktifkan mikrofon",
+		"cameraOn": "Matikan kamera",
+		"cameraOff": "Nyalakan kamera"
+	},
+	"meetings": {
+		"title": "Rapat — {app}",
+		"heading": "Rapat",
+		"empty": "Belum ada rapat. Mulai satu dari pesan baru.",
+		"copyLink": "Salin tautan",
+		"linkCopied": "Tautan disalin",
+		"regenerateLink": "Dapatkan tautan baru",
+		"couldNotRegenerate": "Tidak dapat membuat tautan baru"
 	}
 }

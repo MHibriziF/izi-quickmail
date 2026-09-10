@@ -9,6 +9,7 @@
 	import SendButton from '$lib/components/SendButton.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
 	import { describeMailError, sendMessage } from '$lib/mail/client';
+	import { meetingLinkHtml, startMeeting } from '$lib/mail/meetings';
 	import { requestSkipViewTransition } from '$lib/app-chrome';
 	import { APP_NAME } from '$lib/constants';
 	import type { OutboundAttachmentInput } from '$lib/types';
@@ -40,8 +41,24 @@
 	let sending = $state(false);
 	let savingDraft = $state(false);
 	let savedAt = $state('');
+	let startingMeeting = $state(false);
 
 	const hasDraftText = $derived(Boolean(to.trim() || subject.trim() || !isHtmlEmpty(html)));
+
+	async function addMeetingLink() {
+		if (startingMeeting) return;
+		startingMeeting = true;
+		error = '';
+
+		try {
+			const meeting = await startMeeting(subject.trim() || undefined);
+			html += meetingLinkHtml(meeting.joinUrl);
+		} catch (failure) {
+			error = describeMailError(failure, t('common.networkError'));
+		} finally {
+			startingMeeting = false;
+		}
+	}
 
 	async function saveDraft(): Promise<boolean> {
 		if (savingDraft || !hasDraftText) return false;
@@ -252,6 +269,16 @@
 		<RichTextEditor bind:html fill minHeight={320}>
 			{#snippet toolbarEnd()}
 				<AttachmentPicker bind:attachments mode="button" />
+				<button
+					type="button"
+					class="icon-btn"
+					disabled={startingMeeting}
+					aria-label={t('compose.startMeeting')}
+					title={t('compose.startMeeting')}
+					onclick={addMeetingLink}
+				>
+					<Icon name="video-add-line" size={18} />
+				</button>
 				<button
 					type="button"
 					class="icon-btn"

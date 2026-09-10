@@ -310,6 +310,17 @@
 
 		<div class="z-sidebar-foot">
 			{#if !settings}
+				<Tooltip text={t('nav.meetings')} side="right" enabled={collapsed && !mobileOpen} stretch>
+					<a
+						href="/meetings"
+						class="z-nav-link"
+						class:active={isActive('/meetings')}
+						aria-label={collapsed && !mobileOpen ? t('nav.meetings') : undefined}
+					>
+						<Icon name="Users" size={16} />
+						{#if !collapsed || mobileOpen}<span>{t('nav.meetings')}</span>{/if}
+					</a>
+				</Tooltip>
 				<Tooltip text={t('nav.settings')} side="right" enabled={collapsed && !mobileOpen} stretch>
 					<a
 						href="/settings/general"

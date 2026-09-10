@@ -40,6 +40,7 @@
 	]);
 
 	const tools = $derived<NavItem[]>([
+		{ href: '/meetings', icon: 'vidicon-line', label: t('nav.meetings') },
 		{ href: '/settings', icon: 'user-settings-line', label: t('nav.settings') },
 		...(isAdmin ? [{ href: '/admin', icon: 'settings-3-line', label: t('nav.admin') }] : [])
 	]);

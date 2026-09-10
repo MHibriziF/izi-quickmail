@@ -47,6 +47,7 @@
 		"trash": "Papelera",
 		"bin": "Papelera",
 		"settings": "Ajustes",
+		"meetings": "Reuniones",
 		"admin": "Admin",
 		"compose": "Redactar",
 		"newEmail": "Redactar",
@@ -272,6 +273,8 @@
 		"sendFrom": "Enviar desde",
 		"saveDraft": "Guardar borrador",
 		"discardDraft": "Descartar borrador",
+		"startMeeting": "Iniciar reunión",
+		"couldNotStartMeeting": "No se pudo iniciar la reunión",
 		"writeMessage": "Escribe un mensaje",
 		"writeMessagePlaceholder": "Escribe tu mensaje…",
 		"writeReplyPlaceholder": "Escribe tu respuesta…",
@@ -686,5 +689,29 @@
 		"sending": "Enviando…",
 		"removed": "Dirección de recuperación eliminada.",
 		"confirmationSent": "Confirmación enviada a {address}. Haz clic en el enlace para terminar."
+	},
+	"meet": {
+		"title": "Reunión — {app}",
+		"yourName": "Tu nombre",
+		"namePlaceholder": "Ingresa tu nombre",
+		"join": "Unirse a la reunión",
+		"joining": "Uniéndose…",
+		"leave": "Salir",
+		"invalidLink": "Ese enlace no es válido o ha expirado.",
+		"connecting": "Conectando…",
+		"connectionError": "No se pudo conectar a la reunión.",
+		"micOn": "Silenciar micrófono",
+		"micOff": "Activar micrófono",
+		"cameraOn": "Apagar cámara",
+		"cameraOff": "Encender cámara"
+	},
+	"meetings": {
+		"title": "Reuniones — {app}",
+		"heading": "Reuniones",
+		"empty": "Aún no hay reuniones. Inicia una desde un mensaje nuevo.",
+		"copyLink": "Copiar enlace",
+		"linkCopied": "Enlace copiado",
+		"regenerateLink": "Obtener nuevo enlace",
+		"couldNotRegenerate": "No se pudo crear un nuevo enlace"
 	}
 }

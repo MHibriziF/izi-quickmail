@@ -6,6 +6,7 @@
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import { htmlToPlainText, isHtmlEmpty } from '$lib/utils/html';
 	import { describeMailError, sendMessage } from '$lib/mail/client';
+	import { meetingLinkHtml, startMeeting } from '$lib/mail/meetings';
 	import type { MailAddress, OutboundAttachmentInput } from '$lib/types';
 	import Icon from '../icons/Icon.svelte';
 	import ComposerActions from './ComposerActions.svelte';
@@ -80,6 +81,22 @@
 	});
 
 	const hasDraftText = $derived(Boolean(to.trim() || subject.trim() || !isHtmlEmpty(html)));
+	let startingMeeting = $state(false);
+
+	async function addMeetingLink() {
+		if (startingMeeting) return;
+		startingMeeting = true;
+		error = '';
+
+		try {
+			const meeting = await startMeeting(subject.trim() || undefined);
+			html += meetingLinkHtml(meeting.joinUrl);
+		} catch (failure) {
+			error = describeMailError(failure, t('common.networkError'));
+		} finally {
+			startingMeeting = false;
+		}
+	}
 
 	async function saveDraft(): Promise<boolean> {
 		if (savingDraft || !hasDraftText) return false;
@@ -248,6 +265,14 @@
 				onschedule={(iso) => void deliver(iso)}
 			>
 				{#snippet extra()}
+					<button
+						type="button"
+						class="z-text-btn"
+						onclick={addMeetingLink}
+						disabled={startingMeeting}
+					>
+						{t('compose.startMeeting')}
+					</button>
 					<button
 						type="button"
 						class="z-text-btn"

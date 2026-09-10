@@ -47,6 +47,7 @@
 		"trash": "Trash",
 		"bin": "Bin",
 		"settings": "Settings",
+		"meetings": "Meetings",
 		"admin": "Admin",
 		"compose": "Compose",
 		"newEmail": "Compose",
@@ -272,6 +273,8 @@
 		"sendFrom": "Send from",
 		"saveDraft": "Save draft",
 		"discardDraft": "Discard draft",
+		"startMeeting": "Start meeting",
+		"couldNotStartMeeting": "Could not start meeting",
 		"writeMessage": "Write a message",
 		"writeMessagePlaceholder": "Write your message…",
 		"writeReplyPlaceholder": "Write your reply…",
@@ -686,5 +689,29 @@
 		"sending": "Sending…",
 		"removed": "Recovery address removed.",
 		"confirmationSent": "Confirmation sent to {address}. Click the link in it to finish."
+	},
+	"meet": {
+		"title": "Meeting — {app}",
+		"yourName": "Your name",
+		"namePlaceholder": "Enter your name",
+		"join": "Join meeting",
+		"joining": "Joining…",
+		"leave": "Leave",
+		"invalidLink": "That link is invalid or has expired.",
+		"connecting": "Connecting…",
+		"connectionError": "Could not connect to the meeting.",
+		"micOn": "Mute microphone",
+		"micOff": "Unmute microphone",
+		"cameraOn": "Turn off camera",
+		"cameraOff": "Turn on camera"
+	},
+	"meetings": {
+		"title": "Meetings — {app}",
+		"heading": "Meetings",
+		"empty": "No meetings yet. Start one from a new message.",
+		"copyLink": "Copy link",
+		"linkCopied": "Link copied",
+		"regenerateLink": "Get new link",
+		"couldNotRegenerate": "Could not create a new link"
 	}
 }
