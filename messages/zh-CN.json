@@ -706,7 +706,13 @@
 		"micOn": "静音麦克风",
 		"micOff": "取消静音",
 		"cameraOn": "关闭摄像头",
-		"cameraOff": "打开摄像头"
+		"cameraOff": "打开摄像头",
+		"participants": "参与者",
+		"chat": "聊天",
+		"chatPlaceholder": "发送消息",
+		"send": "发送",
+		"noMessages": "还没有消息。",
+		"close": "关闭"
 	},
 	"meetings": {
 		"title": "会议 — {app}",

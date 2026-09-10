@@ -706,7 +706,13 @@
 		"micOn": "Couper le micro",
 		"micOff": "Activer le micro",
 		"cameraOn": "Désactiver la caméra",
-		"cameraOff": "Activer la caméra"
+		"cameraOff": "Activer la caméra",
+		"participants": "Participants",
+		"chat": "Discussion",
+		"chatPlaceholder": "Message",
+		"send": "Envoyer",
+		"noMessages": "Aucun message pour l’instant.",
+		"close": "Fermer"
 	},
 	"meetings": {
 		"title": "Réunions — {app}",

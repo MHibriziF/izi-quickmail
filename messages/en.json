@@ -706,7 +706,13 @@
 		"micOn": "Mute microphone",
 		"micOff": "Unmute microphone",
 		"cameraOn": "Turn off camera",
-		"cameraOff": "Turn on camera"
+		"cameraOff": "Turn on camera",
+		"participants": "Participants",
+		"chat": "Chat",
+		"chatPlaceholder": "Message",
+		"send": "Send",
+		"noMessages": "No messages yet.",
+		"close": "Close"
 	},
 	"meetings": {
 		"title": "Meetings — {app}",

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import {
 		Room,
 		RoomEvent,
@@ -19,6 +19,8 @@
 		onleave
 	}: { url: string; token: string; displayName: string; onleave: () => void } = $props();
 
+	const CHAT_TOPIC = 'chat';
+
 	let room: Room | null = null;
 	let localMediaEl = $state<HTMLDivElement>();
 	let remoteContainerEl = $state<HTMLDivElement>();
@@ -28,25 +30,62 @@
 	let cameraEnabled = $state(true);
 	let remoteCount = $state(0);
 
+	let panel = $state<'none' | 'participants' | 'chat'>('none');
+	let roster = $state<{ identity: string; name: string; isLocal: boolean }[]>([]);
+	let messages = $state<{ id: string; from: string; text: string; isLocal: boolean }[]>([]);
+	let unread = $state(0);
+	let chatInput = $state('');
+	let chatBodyEl = $state<HTMLDivElement>();
+
+	function initialsFor(name: string): string {
+		return (
+			name
+				.trim()
+				.split(/\s+/)
+				.filter(Boolean)
+				.slice(0, 2)
+				.map((part) => part[0]!.toUpperCase())
+				.join('') || '?'
+		);
+	}
+
+	/** A stable color per identity, so returning to a tile always looks the same. */
+	function colorFor(seed: string): string {
+		let hash = 0;
+		for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+		return `hsl(${Math.abs(hash) % 360}, 45%, 38%)`;
+	}
+
+	const localInitials = $derived(initialsFor(displayName));
+	const localColor = $derived(colorFor(displayName || 'me'));
+
 	type Tile = { el: HTMLDivElement; media: HTMLDivElement };
 	const remoteTiles = new Map<string, Tile>();
 
-	function createTile(label: string): Tile {
+	function createTile(identity: string, label: string): Tile {
 		const el = document.createElement('div');
 		el.className = 'call-tile';
+
+		const avatar = document.createElement('div');
+		avatar.className = 'call-tile-avatar';
+		avatar.style.background = colorFor(identity);
+		avatar.textContent = initialsFor(label);
+
 		const media = document.createElement('div');
 		media.className = 'call-tile-media';
+
 		const name = document.createElement('span');
 		name.className = 'call-tile-name';
 		name.textContent = label;
-		el.append(media, name);
+
+		el.append(avatar, media, name);
 		return { el, media };
 	}
 
 	function ensureRemoteTile(participant: Participant): Tile {
 		let tile = remoteTiles.get(participant.identity);
 		if (!tile) {
-			tile = createTile(participant.name || t('meet.guest'));
+			tile = createTile(participant.identity, participant.name || t('meet.guest'));
 			remoteContainerEl?.appendChild(tile.el);
 			remoteTiles.set(participant.identity, tile);
 			remoteCount = remoteTiles.size;
@@ -65,15 +104,41 @@
 	}
 
 	function detachRemoteTrack(track: RemoteTrack) {
+		// The avatar layer sits behind the media layer, so emptying it (camera
+		// off, or a full unpublish) is all it takes for the avatar to show again.
 		for (const el of track.detach()) el.remove();
 	}
 
 	function removeParticipantTile(participant: RemoteParticipant) {
 		const tile = remoteTiles.get(participant.identity);
-		if (!tile) return;
-		tile.el.remove();
-		remoteTiles.delete(participant.identity);
-		remoteCount = remoteTiles.size;
+		if (tile) {
+			tile.el.remove();
+			remoteTiles.delete(participant.identity);
+			remoteCount = remoteTiles.size;
+		}
+		refreshRoster();
+	}
+
+	function refreshRoster() {
+		if (!room) return;
+		const remote = Array.from(room.remoteParticipants.values()).map((p) => ({
+			identity: p.identity,
+			name: p.name || t('meet.guest'),
+			isLocal: false
+		}));
+		roster = [{ identity: room.localParticipant.identity, name: displayName, isLocal: true }, ...remote];
+	}
+
+	async function scrollChatToEnd() {
+		await tick();
+		chatBodyEl?.scrollTo({ top: chatBodyEl.scrollHeight });
+	}
+
+	function receiveChatMessage(text: string, identity: string) {
+		const from = roster.find((p) => p.identity === identity)?.name || t('meet.guest');
+		messages = [...messages, { id: crypto.randomUUID(), from, text, isLocal: false }];
+		if (panel !== 'chat') unread += 1;
+		void scrollChatToEnd();
 	}
 
 	onMount(() => {
@@ -82,8 +147,14 @@
 
 		instance.on(RoomEvent.TrackSubscribed, attachRemoteTrack);
 		instance.on(RoomEvent.TrackUnsubscribed, detachRemoteTrack);
+		instance.on(RoomEvent.ParticipantConnected, refreshRoster);
 		instance.on(RoomEvent.ParticipantDisconnected, removeParticipantTile);
 		instance.on(RoomEvent.Disconnected, onleave);
+
+		instance.registerTextStreamHandler(CHAT_TOPIC, async (reader, participantInfo) => {
+			const text = await reader.readAll();
+			receiveChatMessage(text, participantInfo.identity);
+		});
 
 		(async () => {
 			try {
@@ -96,6 +167,7 @@
 					el.muted = true;
 					localMediaEl?.appendChild(el);
 				}
+				refreshRoster();
 			} catch (error) {
 				connectionError = error instanceof Error ? error.message : t('meet.connectionError');
 			} finally {
@@ -106,8 +178,10 @@
 		return () => {
 			instance.off(RoomEvent.TrackSubscribed, attachRemoteTrack);
 			instance.off(RoomEvent.TrackUnsubscribed, detachRemoteTrack);
+			instance.off(RoomEvent.ParticipantConnected, refreshRoster);
 			instance.off(RoomEvent.ParticipantDisconnected, removeParticipantTile);
 			instance.off(RoomEvent.Disconnected, onleave);
+			instance.unregisterTextStreamHandler(CHAT_TOPIC);
 		};
 	});
 
@@ -124,7 +198,41 @@
 	async function toggleCamera() {
 		if (!room) return;
 		cameraEnabled = !cameraEnabled;
-		await room.localParticipant.setCameraEnabled(cameraEnabled);
+		if (cameraEnabled) {
+			const publication = await room.localParticipant.setCameraEnabled(true);
+			const track = publication?.track;
+			if (track && localMediaEl) {
+				localMediaEl.innerHTML = '';
+				const el = track.attach();
+				el.muted = true;
+				localMediaEl.appendChild(el);
+			}
+		} else {
+			await room.localParticipant.setCameraEnabled(false);
+			if (localMediaEl) localMediaEl.innerHTML = '';
+		}
+	}
+
+	function togglePanel(next: 'participants' | 'chat') {
+		panel = panel === next ? 'none' : next;
+		if (panel === 'chat') {
+			unread = 0;
+			void scrollChatToEnd();
+		}
+	}
+
+	async function sendChatMessage(event: SubmitEvent) {
+		event.preventDefault();
+		const text = chatInput.trim();
+		if (!text || !room) return;
+		chatInput = '';
+		messages = [...messages, { id: crypto.randomUUID(), from: displayName, text, isLocal: true }];
+		void scrollChatToEnd();
+		try {
+			await room.localParticipant.sendText(text, { topic: CHAT_TOPIC });
+		} catch {
+			// The message still shows locally; a dropped send isn't worth blocking the call over.
+		}
 	}
 
 	function leave() {
@@ -143,15 +251,70 @@
 		{/if}
 	</div>
 
-	<div class="call-grid">
-		<div class="call-tile call-tile-local">
-			<div class="call-tile-media" bind:this={localMediaEl}></div>
-			<span class="call-tile-name">{displayName} · {t('meet.you')}</span>
+	<div class="call-body">
+		<div class="call-grid">
+			<div class="call-tile call-tile-local">
+				<div class="call-tile-avatar" style="background: {localColor}">{localInitials}</div>
+				<div class="call-tile-media" bind:this={localMediaEl}></div>
+				<span class="call-tile-name">{displayName} · {t('meet.you')}</span>
+			</div>
+			<div class="call-tile-group" bind:this={remoteContainerEl}></div>
+			{#if !connecting && !connectionError && remoteCount === 0}
+				<div class="call-tile call-tile-placeholder">
+					<span>{t('meet.waitingForOthers')}</span>
+				</div>
+			{/if}
 		</div>
-		<div class="call-tile-group" bind:this={remoteContainerEl}></div>
-		{#if !connecting && !connectionError && remoteCount === 0}
-			<div class="call-tile call-tile-placeholder">
-				<span>{t('meet.waitingForOthers')}</span>
+
+		{#if panel === 'participants'}
+			<div class="call-panel">
+				<div class="call-panel-head">
+					<strong>{t('meet.participants')} ({roster.length})</strong>
+					<button type="button" class="call-panel-close" onclick={() => (panel = 'none')} aria-label={t('meet.close')}>
+						<Icon name="close-line" size={18} />
+					</button>
+				</div>
+				<ul class="call-panel-list">
+					{#each roster as person (person.identity)}
+						<li class="call-participant-row">
+							<span class="call-participant-avatar" style="background: {colorFor(person.identity)}">
+								{initialsFor(person.name)}
+							</span>
+							<span>{person.name}{person.isLocal ? ` · ${t('meet.you')}` : ''}</span>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		{:else if panel === 'chat'}
+			<div class="call-panel">
+				<div class="call-panel-head">
+					<strong>{t('meet.chat')}</strong>
+					<button type="button" class="call-panel-close" onclick={() => (panel = 'none')} aria-label={t('meet.close')}>
+						<Icon name="close-line" size={18} />
+					</button>
+				</div>
+				<div class="call-chat-body" bind:this={chatBodyEl}>
+					{#if messages.length === 0}
+						<p class="call-chat-empty">{t('meet.noMessages')}</p>
+					{:else}
+						{#each messages as message (message.id)}
+							<div class="call-chat-message" class:own={message.isLocal}>
+								{#if !message.isLocal}<span class="call-chat-from">{message.from}</span>{/if}
+								<span class="call-chat-text">{message.text}</span>
+							</div>
+						{/each}
+					{/if}
+				</div>
+				<form class="call-chat-form" onsubmit={sendChatMessage}>
+					<input
+						class="call-chat-input"
+						type="text"
+						bind:value={chatInput}
+						maxlength={500}
+						placeholder={t('meet.chatPlaceholder')}
+					/>
+					<button type="submit" class="call-chat-send" disabled={!chatInput.trim()}>{t('meet.send')}</button>
+				</form>
 			</div>
 		{/if}
 	</div>
@@ -167,6 +330,26 @@
 			aria-label={cameraEnabled ? t('meet.cameraOn') : t('meet.cameraOff')}
 		>
 			<Icon name={cameraEnabled ? 'camera-line' : 'camera-off-line'} size={20} />
+		</button>
+		<button
+			type="button"
+			class="call-btn"
+			class:call-btn-active={panel === 'participants'}
+			onclick={() => togglePanel('participants')}
+			aria-label={t('meet.participants')}
+		>
+			<Icon name="group-line" size={20} />
+			{#if roster.length > 0}<span class="call-btn-badge">{roster.length}</span>{/if}
+		</button>
+		<button
+			type="button"
+			class="call-btn"
+			class:call-btn-active={panel === 'chat'}
+			onclick={() => togglePanel('chat')}
+			aria-label={t('meet.chat')}
+		>
+			<Icon name="chat-3-line" size={20} />
+			{#if unread > 0}<span class="call-btn-badge call-btn-badge-alert">{unread}</span>{/if}
 		</button>
 		<button type="button" class="call-btn call-btn-leave" onclick={leave} aria-label={t('meet.leave')}>
 			<Icon name="phone-line" size={20} />
@@ -209,15 +392,30 @@
 		color: #f87171;
 	}
 
+	.call-body {
+		flex: 1;
+		display: flex;
+		gap: 0.75rem;
+		min-height: 0;
+	}
+
 	.call-grid {
 		flex: 1;
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 		gap: 0.75rem;
 		align-content: start;
+		min-width: 0;
 	}
 
-	.call-tile {
+	/*
+	 * Remote tiles are created with document.createElement, not written in this
+	 * component's template — Svelte never sees them, so it never tags them with
+	 * its scoping class. Every rule a tile needs must be :global() or it silently
+	 * no-ops on remote participants (a mobile camera's portrait video then renders
+	 * at its native size with nothing constraining it).
+	 */
+	:global(.call-tile) {
 		position: relative;
 		aspect-ratio: 16 / 9;
 		width: 100%;
@@ -226,19 +424,31 @@
 		overflow: hidden;
 	}
 
-	.call-tile-media {
+	:global(.call-tile-avatar) {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.5rem;
+		font-weight: 600;
+		color: rgba(255, 255, 255, 0.9);
+	}
+
+	:global(.call-tile-media) {
+		position: relative;
 		width: 100%;
 		height: 100%;
 	}
 
-	.call-tile-media :global(video) {
+	:global(.call-tile-media video) {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 		display: block;
 	}
 
-	.call-tile-name {
+	:global(.call-tile-name) {
 		position: absolute;
 		left: 0.5rem;
 		bottom: 0.5rem;
@@ -253,7 +463,7 @@
 		white-space: nowrap;
 	}
 
-	.call-tile-placeholder {
+	:global(.call-tile-placeholder) {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -269,6 +479,136 @@
 		display: contents;
 	}
 
+	.call-panel {
+		display: flex;
+		flex-direction: column;
+		width: 300px;
+		flex-shrink: 0;
+		border-radius: 0.75rem;
+		background: #17171a;
+		overflow: hidden;
+	}
+
+	.call-panel-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 1rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+		font-size: 0.875rem;
+	}
+
+	.call-panel-close {
+		display: flex;
+		border: none;
+		background: transparent;
+		color: rgba(255, 255, 255, 0.7);
+		cursor: pointer;
+	}
+
+	.call-panel-list {
+		flex: 1;
+		list-style: none;
+		margin: 0;
+		padding: 0.5rem;
+		overflow-y: auto;
+	}
+
+	.call-participant-row {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		padding: 0.5rem 0.5rem;
+		font-size: 0.8125rem;
+		border-radius: 0.5rem;
+	}
+
+	.call-participant-avatar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		border-radius: 999px;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		flex-shrink: 0;
+	}
+
+	.call-chat-body {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		overflow-y: auto;
+	}
+
+	.call-chat-empty {
+		margin: auto;
+		font-size: 0.8125rem;
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	.call-chat-message {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		max-width: 85%;
+		padding: 0.375rem 0.625rem;
+		border-radius: 0.75rem;
+		background: rgba(255, 255, 255, 0.08);
+		font-size: 0.8125rem;
+		align-self: flex-start;
+		word-break: break-word;
+	}
+
+	.call-chat-message.own {
+		align-self: flex-end;
+		background: var(--color-accent, #3b82f6);
+	}
+
+	.call-chat-from {
+		font-size: 0.6875rem;
+		font-weight: 600;
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	.call-chat-form {
+		display: flex;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	.call-chat-input {
+		flex: 1;
+		min-width: 0;
+		padding: 0.5rem 0.625rem;
+		font-size: 0.8125rem;
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		border-radius: 0.5rem;
+		background: rgba(255, 255, 255, 0.06);
+		color: #fff;
+	}
+
+	.call-chat-send {
+		flex-shrink: 0;
+		padding: 0.5rem 0.875rem;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		border: none;
+		border-radius: 0.5rem;
+		background: #26262b;
+		color: #fff;
+		cursor: pointer;
+	}
+
+	.call-chat-send:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+
 	.call-controls {
 		display: flex;
 		justify-content: center;
@@ -277,6 +617,7 @@
 	}
 
 	.call-btn {
+		position: relative;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -293,11 +634,47 @@
 		background: #34343a;
 	}
 
+	.call-btn-active {
+		background: #3f3f46;
+		box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+	}
+
+	.call-btn-badge {
+		position: absolute;
+		top: -2px;
+		right: -2px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.1rem;
+		height: 1.1rem;
+		padding: 0 0.25rem;
+		border-radius: 999px;
+		background: #52525b;
+		font-size: 0.625rem;
+		font-weight: 600;
+	}
+
+	.call-btn-badge-alert {
+		background: #dc2626;
+	}
+
 	.call-btn-leave {
 		background: #dc2626;
 	}
 
 	.call-btn-leave:hover {
 		background: #ef4444;
+	}
+
+	@media (max-width: 640px) {
+		.call-body {
+			flex-direction: column;
+		}
+
+		.call-panel {
+			width: 100%;
+			max-height: 45vh;
+		}
 	}
 </style>

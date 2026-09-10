@@ -706,7 +706,13 @@
 		"micOn": "Silenciar micrófono",
 		"micOff": "Activar micrófono",
 		"cameraOn": "Apagar cámara",
-		"cameraOff": "Encender cámara"
+		"cameraOff": "Encender cámara",
+		"participants": "Participantes",
+		"chat": "Chat",
+		"chatPlaceholder": "Mensaje",
+		"send": "Enviar",
+		"noMessages": "Aún no hay mensajes.",
+		"close": "Cerrar"
 	},
 	"meetings": {
 		"title": "Reuniones — {app}",
