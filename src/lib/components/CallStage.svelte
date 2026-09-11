@@ -315,12 +315,10 @@
 
 	<div class="call-body">
 		<div class="call-grid">
-			{#if screenShareEnabled}
-				<div class="call-tile call-tile-screen">
-					<div class="call-tile-media" bind:this={localScreenMediaEl}></div>
-					<span class="call-tile-name">{t('meet.you')} · {t('meet.screenShare')}</span>
-				</div>
-			{/if}
+			<div class="call-tile call-tile-screen" hidden={!screenShareEnabled}>
+				<div class="call-tile-media" bind:this={localScreenMediaEl}></div>
+				<span class="call-tile-name">{t('meet.you')} · {t('meet.screenShare')}</span>
+			</div>
 			<div class="call-tile call-tile-local">
 				<div class="call-tile-avatar" style="background: {localColor}">{localInitials}</div>
 				<div class="call-tile-media" bind:this={localMediaEl}></div>
