@@ -863,18 +863,18 @@
 		padding-bottom: 0.5rem;
 	}
 
-	/* One pill, one background — the device-picker chevron is a segment inside it, not a separate circle. */
+	/*
+	 * One pill made of two adjacent segments — the device-picker chevron and
+	 * the main toggle each paint their own background and their own outer
+	 * corner, rather than the pill clipping them with overflow:hidden, which
+	 * would also clip the chevron's dropdown menu (it opens outside this box).
+	 */
 	.call-btn-pill {
 		display: flex;
 		align-items: stretch;
 		height: 48px;
-		border-radius: 999px;
-		overflow: hidden;
-		background: #26262b;
-	}
-
-	.call-btn-pill:hover {
-		background: #2c2c31;
+		--device-select-bg: #3a3a40;
+		--device-select-bg-hover: #46464e;
 	}
 
 	.call-btn-pill-main {
@@ -883,13 +883,14 @@
 		justify-content: center;
 		width: 48px;
 		border: none;
-		background: transparent;
+		border-radius: 0 999px 999px 0;
+		background: #26262b;
 		color: #fff;
 		cursor: pointer;
 	}
 
 	.call-btn-pill-main:hover {
-		background: rgba(255, 255, 255, 0.1);
+		background: #2c2c31;
 	}
 
 	.call-btn {

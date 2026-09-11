@@ -335,21 +335,23 @@
 		gap: 0.625rem;
 	}
 
-	/* One pill, one background — the device-picker chevron is a segment inside it, not a separate circle. */
+	/*
+	 * One pill made of two adjacent segments — see the matching comment in
+	 * CallStage.svelte for why the pill itself can't use overflow:hidden.
+	 */
 	.lobby-btn-pill {
 		display: flex;
 		align-items: stretch;
 		height: 40px;
 		flex-shrink: 0;
-		border-radius: 999px;
-		overflow: hidden;
-		background: var(--color-surface-2, #26262b);
 		color: var(--color-text-primary, #fff);
+		--device-select-bg: #3a3a40;
+		--device-select-bg-hover: #46464e;
 	}
 
 	.lobby-btn-pill-off {
-		background: #dc2626;
-		color: #fff;
+		--device-select-bg: #b91c1c;
+		--device-select-bg-hover: #c22323;
 	}
 
 	.lobby-btn-pill-main {
@@ -358,9 +360,14 @@
 		justify-content: center;
 		width: 40px;
 		border: none;
-		background: transparent;
+		border-radius: 0 999px 999px 0;
+		background: var(--color-surface-2, #26262b);
 		color: inherit;
 		cursor: pointer;
+	}
+
+	.lobby-btn-pill-off .lobby-btn-pill-main {
+		background: #dc2626;
 	}
 
 	.lobby-btn-pill-main:hover {

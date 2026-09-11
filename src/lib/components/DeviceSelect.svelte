@@ -81,10 +81,11 @@
 <style>
 	/*
 	 * A left-hand segment inside the same pill as the mic/camera toggle
-	 * (see .call-btn-pill / .lobby-btn-pill) — one continuous chip and
-	 * background, not a separate floating circle, matching Meet's layout.
-	 * The parent pill supplies the shared background, rounding and the
-	 * on/off color; this stays transparent so it always matches.
+	 * (see .call-btn-pill / .lobby-btn-pill) — one continuous chip, not a
+	 * separate floating circle, matching Meet's layout. Each segment paints
+	 * its own rounded corner on its outer edge (nothing here relies on the
+	 * parent's overflow:hidden) because that would also clip this menu,
+	 * which needs to render outside the pill's own box when it opens.
 	 */
 	.device-select {
 		position: relative;
@@ -98,14 +99,14 @@
 		width: 32px;
 		height: 100%;
 		border: none;
-		border-right: 1px solid rgba(255, 255, 255, 0.14);
-		background: transparent;
+		border-radius: 999px 0 0 999px;
+		background: var(--device-select-bg, #45454d);
 		color: #fff;
 		cursor: pointer;
 	}
 
 	.device-select-toggle:hover {
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--device-select-bg-hover, #525260);
 	}
 
 	.device-select-menu {
