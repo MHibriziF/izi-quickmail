@@ -718,6 +718,8 @@
 		"screenShareOff": "Stop sharing your screen",
 		"screenShare": "Screen share",
 		"screenShareOf": "{name}'s screen",
+		"pipOn": "Pop out",
+		"pipOff": "Return video here",
 		"participants": "Participants",
 		"chat": "Chat",
 		"chatPlaceholder": "Message",

@@ -718,6 +718,8 @@
 		"screenShareOff": "Arrêter le partage d’écran",
 		"screenShare": "Partage d’écran",
 		"screenShareOf": "Écran de {name}",
+		"pipOn": "Ouvrir en fenêtre flottante",
+		"pipOff": "Revenir ici",
 		"participants": "Participants",
 		"chat": "Discussion",
 		"chatPlaceholder": "Message",

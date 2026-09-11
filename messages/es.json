@@ -718,6 +718,8 @@
 		"screenShareOff": "Dejar de compartir tu pantalla",
 		"screenShare": "Compartir pantalla",
 		"screenShareOf": "Pantalla de {name}",
+		"pipOn": "Abrir ventana flotante",
+		"pipOff": "Volver a mostrar aquí",
 		"participants": "Participantes",
 		"chat": "Chat",
 		"chatPlaceholder": "Mensaje",

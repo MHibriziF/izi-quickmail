@@ -718,6 +718,8 @@
 		"screenShareOff": "停止共享屏幕",
 		"screenShare": "屏幕共享",
 		"screenShareOf": "{name} 的屏幕",
+		"pipOn": "弹出小窗",
+		"pipOff": "收回视频",
 		"participants": "参与者",
 		"chat": "聊天",
 		"chatPlaceholder": "发送消息",
