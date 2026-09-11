@@ -54,7 +54,7 @@
 
 <div class="device-select" bind:this={rootEl}>
 	<button type="button" class="device-select-toggle" onclick={toggle} aria-label={label}>
-		<Icon name="arrow-up-s-line" size={10} />
+		<Icon name="arrow-up-s-line" size={14} />
 	</button>
 	{#if open}
 		<ul class="device-select-menu" class:align-start={menuAlign === 'start'} class:align-end={menuAlign === 'end'}>
@@ -80,32 +80,32 @@
 
 <style>
 	/*
-	 * Sits as a small corner badge on top of the button it's paired with
-	 * (the parent must be `position: relative` and sized to that button) —
-	 * a second full-size circle next to the mic/camera buttons broke the
-	 * row's rhythm, so this rides on the same button instead, Meet/Zoom-style.
+	 * A left-hand segment inside the same pill as the mic/camera toggle
+	 * (see .call-btn-pill / .lobby-btn-pill) — one continuous chip and
+	 * background, not a separate floating circle, matching Meet's layout.
+	 * The parent pill supplies the shared background, rounding and the
+	 * on/off color; this stays transparent so it always matches.
 	 */
 	.device-select {
-		position: absolute;
-		right: -3px;
-		bottom: -3px;
+		position: relative;
+		height: 100%;
 	}
 
 	.device-select-toggle {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 16px;
-		height: 16px;
-		border: 2px solid var(--call-bar-bg, #0b0b0d);
-		border-radius: 999px;
-		background: #52525b;
+		width: 32px;
+		height: 100%;
+		border: none;
+		border-right: 1px solid rgba(255, 255, 255, 0.14);
+		background: transparent;
 		color: #fff;
 		cursor: pointer;
 	}
 
 	.device-select-toggle:hover {
-		background: #6b6b74;
+		background: rgba(255, 255, 255, 0.1);
 	}
 
 	.device-select-menu {

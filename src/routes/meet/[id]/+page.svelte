@@ -212,32 +212,30 @@
 						{/if}
 					</div>
 					<div class="lobby-controls">
-						<div class="lobby-btn-group">
+						<div class="lobby-btn-pill" class:lobby-btn-pill-off={!micOn}>
+							<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
 							<button
 								type="button"
-								class="lobby-btn"
-								class:lobby-btn-off={!micOn}
+								class="lobby-btn-pill-main"
 								onclick={toggleMic}
 								aria-label={micOn ? t('meet.micOn') : t('meet.micOff')}
 							>
 								<Icon name={micOn ? 'mic-line' : 'mic-off-line'} size={18} />
 							</button>
-							<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
 						</div>
 						<div class="lobby-meter" aria-hidden="true">
 							<div class="lobby-meter-fill" style="transform: scaleX({micOn ? micLevel : 0})"></div>
 						</div>
-						<div class="lobby-btn-group">
+						<div class="lobby-btn-pill" class:lobby-btn-pill-off={!cameraOn}>
+							<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="start" />
 							<button
 								type="button"
-								class="lobby-btn"
-								class:lobby-btn-off={!cameraOn}
+								class="lobby-btn-pill-main"
 								onclick={toggleCamera}
 								aria-label={cameraOn ? t('meet.cameraOn') : t('meet.cameraOff')}
 							>
 								<Icon name={cameraOn ? 'camera-line' : 'camera-off-line'} size={18} />
 							</button>
-							<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="end" />
 						</div>
 					</div>
 					{#if deviceError}<p class="note lobby-error">{deviceError}</p>{/if}
@@ -337,28 +335,36 @@
 		gap: 0.625rem;
 	}
 
-	.lobby-btn-group {
-		position: relative;
-		--call-bar-bg: var(--color-surface-2, #26262b);
+	/* One pill, one background — the device-picker chevron is a segment inside it, not a separate circle. */
+	.lobby-btn-pill {
+		display: flex;
+		align-items: stretch;
+		height: 40px;
+		flex-shrink: 0;
+		border-radius: 999px;
+		overflow: hidden;
+		background: var(--color-surface-2, #26262b);
+		color: var(--color-text-primary, #fff);
 	}
 
-	.lobby-btn {
+	.lobby-btn-pill-off {
+		background: #dc2626;
+		color: #fff;
+	}
+
+	.lobby-btn-pill-main {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		width: 40px;
-		height: 40px;
-		flex-shrink: 0;
 		border: none;
-		border-radius: 999px;
-		background: var(--color-surface-2, #26262b);
-		color: var(--color-text-primary, #fff);
+		background: transparent;
+		color: inherit;
 		cursor: pointer;
 	}
 
-	.lobby-btn-off {
-		background: #dc2626;
-		color: #fff;
+	.lobby-btn-pill-main:hover {
+		background: rgba(255, 255, 255, 0.1);
 	}
 
 	.lobby-meter {

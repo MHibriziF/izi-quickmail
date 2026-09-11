@@ -515,22 +515,27 @@
 	</div>
 
 	<div class="call-controls">
-		<div class="call-btn-group">
-			<button type="button" class="call-btn" onclick={toggleMic} aria-label={micEnabled ? t('meet.micOn') : t('meet.micOff')}>
-				<Icon name={micEnabled ? 'mic-line' : 'mic-off-line'} size={20} />
-			</button>
+		<div class="call-btn-pill">
 			<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
-		</div>
-		<div class="call-btn-group">
 			<button
 				type="button"
-				class="call-btn"
+				class="call-btn-pill-main"
+				onclick={toggleMic}
+				aria-label={micEnabled ? t('meet.micOn') : t('meet.micOff')}
+			>
+				<Icon name={micEnabled ? 'mic-line' : 'mic-off-line'} size={20} />
+			</button>
+		</div>
+		<div class="call-btn-pill">
+			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="start" />
+			<button
+				type="button"
+				class="call-btn-pill-main"
 				onclick={toggleCamera}
 				aria-label={cameraEnabled ? t('meet.cameraOn') : t('meet.cameraOff')}
 			>
 				<Icon name={cameraEnabled ? 'camera-line' : 'camera-off-line'} size={20} />
 			</button>
-			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="end" />
 		</div>
 		{#if screenShareSupported}
 			<button
@@ -858,9 +863,33 @@
 		padding-bottom: 0.5rem;
 	}
 
-	.call-btn-group {
-		position: relative;
-		--call-bar-bg: #26262b;
+	/* One pill, one background — the device-picker chevron is a segment inside it, not a separate circle. */
+	.call-btn-pill {
+		display: flex;
+		align-items: stretch;
+		height: 48px;
+		border-radius: 999px;
+		overflow: hidden;
+		background: #26262b;
+	}
+
+	.call-btn-pill:hover {
+		background: #2c2c31;
+	}
+
+	.call-btn-pill-main {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 48px;
+		border: none;
+		background: transparent;
+		color: #fff;
+		cursor: pointer;
+	}
+
+	.call-btn-pill-main:hover {
+		background: rgba(255, 255, 255, 0.1);
 	}
 
 	.call-btn {
