@@ -169,6 +169,11 @@
 		session = null;
 		left = true;
 	}
+
+	function rejoin() {
+		left = false;
+		void startPreview();
+	}
 </script>
 
 <svelte:head><title>{t('meet.title', { app: APP_NAME })}</title></svelte:head>
@@ -189,13 +194,16 @@
 		<div class="auth-card">
 			<div class="auth-brand">
 				<div class="brand-icon"><Logo size={48} /></div>
-				<h1>{left ? t('meet.leave') : t('meet.title', { app: APP_NAME })}</h1>
+				<h1>{left ? t('meet.leftTitle') : t('meet.title', { app: APP_NAME })}</h1>
 			</div>
 
 			{#if !data.token}
 				<p class="note">{t('meet.invalidLink')}</p>
 			{:else if left}
-				<p class="note">{t('meet.leave')}</p>
+				<div class="left-actions">
+					<button type="button" class="btn-secondary" onclick={rejoin}>{t('meet.rejoin')}</button>
+					<a href="/" class="btn-primary">{t('meet.returnHome')}</a>
+				</div>
 			{:else}
 				<div class="lobby-preview">
 					<div class="lobby-video">
@@ -345,13 +353,19 @@
 		height: 40px;
 		flex-shrink: 0;
 		color: var(--color-text-primary, #fff);
-		--device-select-bg: #3a3a40;
-		--device-select-bg-hover: #46464e;
+		/* The chevron is secondary to the main toggle, so it sits darker
+		   rather than blending into (or outshining) the main segment. */
+		--seg-main-bg: #3f3f46;
+		--seg-main-bg-hover: #4b4b54;
+		--device-select-bg: #232327;
+		--device-select-bg-hover: #2b2b30;
 	}
 
 	.lobby-btn-pill-off {
-		--device-select-bg: #b91c1c;
-		--device-select-bg-hover: #c22323;
+		--seg-main-bg: #dc2626;
+		--seg-main-bg-hover: #ef4444;
+		--device-select-bg: #7f1d1d;
+		--device-select-bg-hover: #932222;
 	}
 
 	.lobby-btn-pill-main {
@@ -361,17 +375,13 @@
 		width: 40px;
 		border: none;
 		border-radius: 0 999px 999px 0;
-		background: var(--color-surface-2, #26262b);
+		background: var(--seg-main-bg);
 		color: inherit;
 		cursor: pointer;
 	}
 
-	.lobby-btn-pill-off .lobby-btn-pill-main {
-		background: #dc2626;
-	}
-
 	.lobby-btn-pill-main:hover {
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--seg-main-bg-hover);
 	}
 
 	.lobby-meter {
@@ -392,5 +402,30 @@
 
 	.lobby-error {
 		margin-top: 0;
+	}
+
+	.left-actions {
+		display: flex;
+		justify-content: center;
+		gap: 0.625rem;
+		margin-top: 1.5rem;
+	}
+
+	.btn-secondary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--color-line, rgba(255, 255, 255, 0.15));
+		border-radius: 0.625rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-primary, #fff);
+		background: transparent;
+		cursor: pointer;
+	}
+
+	.btn-secondary:hover {
+		background: var(--color-surface-2, rgba(255, 255, 255, 0.06));
 	}
 </style>

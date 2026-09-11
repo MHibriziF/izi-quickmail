@@ -543,7 +543,7 @@
 	</div>
 
 	<div class="call-controls">
-		<div class="call-btn-pill">
+		<div class="call-btn-pill" class:call-btn-pill-off={!micEnabled}>
 			<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
 			<button
 				type="button"
@@ -554,7 +554,7 @@
 				<Icon name={micEnabled ? 'mic-line' : 'mic-off-line'} size={20} />
 			</button>
 		</div>
-		<div class="call-btn-pill">
+		<div class="call-btn-pill" class:call-btn-pill-off={!cameraEnabled}>
 			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="start" />
 			<button
 				type="button"
@@ -912,8 +912,20 @@
 		display: flex;
 		align-items: stretch;
 		height: 48px;
-		--device-select-bg: #3a3a40;
-		--device-select-bg-hover: #46464e;
+		/* Main segment matches the other round buttons in this bar (screen
+		   share, participants, chat); the chevron is secondary, so it sits
+		   darker rather than blending into the main segment. */
+		--seg-main-bg: #26262b;
+		--seg-main-bg-hover: #2c2c31;
+		--device-select-bg: #18181b;
+		--device-select-bg-hover: #202024;
+	}
+
+	.call-btn-pill-off {
+		--seg-main-bg: #dc2626;
+		--seg-main-bg-hover: #ef4444;
+		--device-select-bg: #7f1d1d;
+		--device-select-bg-hover: #932222;
 	}
 
 	.call-btn-pill-main {
@@ -923,13 +935,13 @@
 		width: 48px;
 		border: none;
 		border-radius: 0 999px 999px 0;
-		background: #26262b;
+		background: var(--seg-main-bg);
 		color: #fff;
 		cursor: pointer;
 	}
 
 	.call-btn-pill-main:hover {
-		background: #2c2c31;
+		background: var(--seg-main-bg-hover);
 	}
 
 	.call-btn {
