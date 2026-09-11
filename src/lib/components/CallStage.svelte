@@ -95,8 +95,8 @@
 	let cameraDeviceId = $state(untrack(() => initialCameraDeviceId));
 	let speakerDeviceId = $state('');
 	let backgroundOption = $state('none');
-	let backgroundMenuOpen = $state(false);
-	let backgroundMenuEl = $state<HTMLDivElement>();
+	let previousBackgroundOption = 'none';
+	let backgroundConfirmPending = $state(false);
 	let backgroundFileInput = $state<HTMLInputElement>();
 	let customBackgroundUrl: string | null = null;
 	let screenShareEnabled = $state(false);
@@ -481,7 +481,12 @@
 		if (localScreenMediaEl) localScreenMediaEl.innerHTML = '';
 	}
 
-	/** Re-applies the chosen background to whatever the current camera track is — needed after every camera (re)publish, since each is a fresh track. */
+	/**
+	 * GPU delegate and a capped frame rate cut segmentation cost noticeably —
+	 * the default (CPU delegate, 30fps) is what was causing visible lag.
+	 * Re-applied to whatever the current camera track is on every camera
+	 * (re)publish, since each publish is a fresh track.
+	 */
 	async function reapplyBackground() {
 		if (!room || !backgroundSupported || backgroundOption === 'none') return;
 		const track = room.localParticipant.getTrackPublication(Track.Source.Camera)?.track as
@@ -489,10 +494,13 @@
 			| undefined;
 		if (!track) return;
 		try {
+			const common = { maxFps: 20, segmenterOptions: { delegate: 'GPU' as const } };
 			if (backgroundOption === 'blur') {
-				await track.setProcessor(BackgroundProcessor({ mode: 'background-blur', blurRadius: 10 }));
+				await track.setProcessor(BackgroundProcessor({ ...common, mode: 'background-blur', blurRadius: 10 }));
 			} else {
-				await track.setProcessor(BackgroundProcessor({ mode: 'virtual-background', imagePath: backgroundOption }));
+				await track.setProcessor(
+					BackgroundProcessor({ ...common, mode: 'virtual-background', imagePath: backgroundOption })
+				);
 			}
 		} catch {
 			// Segmentation model failed to load (offline, blocked CDN) — camera keeps working unprocessed.
@@ -501,7 +509,6 @@
 
 	async function applyBackground(option: string) {
 		backgroundOption = option;
-		backgroundMenuOpen = false;
 		if (!room) return;
 		const track = room.localParticipant.getTrackPublication(Track.Source.Camera)?.track as
 			| LocalVideoTrack
@@ -514,18 +521,28 @@
 		await reapplyBackground();
 	}
 
+	/** Applies the pick live (the local tile itself is the preview) and asks for confirmation before it's considered final. */
+	async function tryBackground(option: string) {
+		previousBackgroundOption = backgroundOption;
+		await applyBackground(option);
+		backgroundConfirmPending = true;
+	}
+
+	function keepBackground() {
+		backgroundConfirmPending = false;
+	}
+
+	async function cancelBackground() {
+		backgroundConfirmPending = false;
+		await applyBackground(previousBackgroundOption);
+	}
+
 	function handleBackgroundFile(event: Event) {
 		const file = (event.target as HTMLInputElement).files?.[0];
 		if (!file) return;
 		if (customBackgroundUrl) URL.revokeObjectURL(customBackgroundUrl);
 		customBackgroundUrl = URL.createObjectURL(file);
-		void applyBackground(customBackgroundUrl);
-	}
-
-	function onBackgroundWindowClick(event: MouseEvent) {
-		if (backgroundMenuOpen && backgroundMenuEl && !backgroundMenuEl.contains(event.target as Node)) {
-			backgroundMenuOpen = false;
-		}
+		void tryBackground(customBackgroundUrl);
 	}
 
 	// The PiP window's controls are hand-built DOM outside Svelte's reach, so
@@ -702,8 +719,6 @@
 	}
 </script>
 
-<svelte:window onclick={onBackgroundWindowClick} />
-
 <div class="call-stage">
 	<div class="call-header">
 		<span class="call-header-name">{displayName}</span>
@@ -728,6 +743,13 @@
 					{#if !cameraEnabled}<Icon name="camera-off-line" size={14} class="call-tile-status-icon" />{/if}
 				</div>
 				<span class="call-tile-name">{displayName} · {t('meet.you')}</span>
+				{#if backgroundConfirmPending}
+					<div class="background-confirm">
+						<span>{t('meet.backgroundPreviewing')}</span>
+						<button type="button" class="background-confirm-btn" onclick={cancelBackground}>{t('meet.backgroundCancel')}</button>
+						<button type="button" class="background-confirm-btn primary" onclick={keepBackground}>{t('meet.backgroundKeep')}</button>
+					</div>
+				{/if}
 			</div>
 			<div class="call-tile-group" bind:this={remoteContainerEl}></div>
 			{#if !connecting && !connectionError && remoteCount === 0}
@@ -803,7 +825,58 @@
 			</button>
 		</div>
 		<div class="call-btn-pill" class:call-btn-pill-off={!cameraEnabled}>
-			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="start" />
+			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="start">
+				{#snippet extra()}
+					{#if backgroundSupported}
+						<div class="background-section">
+							<span class="background-section-label">{t('meet.background')}</span>
+							<button
+								type="button"
+								class="background-option"
+								class:selected={backgroundOption === 'none'}
+								onclick={() => tryBackground('none')}
+							>
+								{t('meet.backgroundNone')}
+							</button>
+							<button
+								type="button"
+								class="background-option"
+								class:selected={backgroundOption === 'blur'}
+								onclick={() => tryBackground('blur')}
+							>
+								{t('meet.backgroundBlur')}
+							</button>
+							<div class="background-swatches">
+								{#each backgroundPresets as preset (preset.url)}
+									<button
+										type="button"
+										class="background-swatch"
+										class:selected={backgroundOption === preset.url}
+										style="background: {preset.swatch}"
+										onclick={() => tryBackground(preset.url)}
+										aria-label={t('meet.backgroundPreset')}
+									></button>
+								{/each}
+								<button
+									type="button"
+									class="background-swatch background-swatch-upload"
+									onclick={() => backgroundFileInput?.click()}
+									aria-label={t('meet.backgroundUpload')}
+								>
+									<Icon name="upload-2-line" size={16} />
+								</button>
+							</div>
+							<input
+								type="file"
+								accept="image/*"
+								hidden
+								bind:this={backgroundFileInput}
+								onchange={handleBackgroundFile}
+							/>
+						</div>
+					{/if}
+				{/snippet}
+			</DeviceSelect>
 			<button
 				type="button"
 				class="call-btn-pill-main"
@@ -823,66 +896,6 @@
 				standalone
 				icon="volume-up-line"
 			/>
-		{/if}
-		{#if backgroundSupported}
-			<div class="background-picker" bind:this={backgroundMenuEl}>
-				<button
-					type="button"
-					class="call-btn"
-					class:call-btn-active={backgroundOption !== 'none'}
-					onclick={() => (backgroundMenuOpen = !backgroundMenuOpen)}
-					aria-label={t('meet.background')}
-				>
-					<Icon name="image-edit-line" size={20} />
-				</button>
-				{#if backgroundMenuOpen}
-					<div class="background-menu">
-						<button
-							type="button"
-							class="background-option"
-							class:selected={backgroundOption === 'none'}
-							onclick={() => applyBackground('none')}
-						>
-							{t('meet.backgroundNone')}
-						</button>
-						<button
-							type="button"
-							class="background-option"
-							class:selected={backgroundOption === 'blur'}
-							onclick={() => applyBackground('blur')}
-						>
-							{t('meet.backgroundBlur')}
-						</button>
-						<div class="background-swatches">
-							{#each backgroundPresets as preset (preset.url)}
-								<button
-									type="button"
-									class="background-swatch"
-									class:selected={backgroundOption === preset.url}
-									style="background: {preset.swatch}"
-									onclick={() => applyBackground(preset.url)}
-									aria-label={t('meet.backgroundPreset')}
-								></button>
-							{/each}
-							<button
-								type="button"
-								class="background-swatch background-swatch-upload"
-								onclick={() => backgroundFileInput?.click()}
-								aria-label={t('meet.backgroundUpload')}
-							>
-								<Icon name="upload-2-line" size={16} />
-							</button>
-						</div>
-						<input
-							type="file"
-							accept="image/*"
-							hidden
-							bind:this={backgroundFileInput}
-							onchange={handleBackgroundFile}
-						/>
-					</div>
-				{/if}
-			</div>
 		{/if}
 		{#if screenShareSupported}
 			<button
@@ -1314,24 +1327,21 @@
 		background: #ef4444;
 	}
 
-	.background-picker {
-		position: relative;
-	}
-
-	.background-menu {
-		position: absolute;
-		bottom: calc(100% + 0.5rem);
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 20;
+	/* Lives inside the camera picker's own popup (see DeviceSelect's `extra` slot) rather than a separate button, so it doesn't add to the control bar. */
+	.background-section {
 		display: flex;
 		flex-direction: column;
-		gap: 0.375rem;
-		width: 200px;
-		padding: 0.5rem;
-		border-radius: 0.75rem;
-		background: #1c1c1f;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+		gap: 0.25rem;
+		width: 180px;
+	}
+
+	.background-section-label {
+		padding: 0.25rem 0.5rem 0;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		color: rgba(255, 255, 255, 0.5);
 	}
 
 	.background-option {
@@ -1383,6 +1393,52 @@
 
 	.background-swatch-upload:hover {
 		background: rgba(255, 255, 255, 0.18);
+	}
+
+	.background-confirm {
+		position: absolute;
+		left: 0.5rem;
+		right: 0.5rem;
+		bottom: 2rem;
+		z-index: 5;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.625rem;
+		border-radius: 0.625rem;
+		background: rgba(0, 0, 0, 0.75);
+		backdrop-filter: blur(4px);
+		font-size: 0.75rem;
+		color: #fff;
+	}
+
+	.background-confirm span {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.background-confirm-btn {
+		flex-shrink: 0;
+		padding: 0.3125rem 0.625rem;
+		border: none;
+		border-radius: 0.375rem;
+		background: rgba(255, 255, 255, 0.14);
+		color: #fff;
+		font-size: 0.75rem;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.background-confirm-btn:hover {
+		background: rgba(255, 255, 255, 0.22);
+	}
+
+	.background-confirm-btn.primary {
+		background: var(--color-accent, #3b82f6);
+	}
+
+	.background-confirm-btn.primary:hover {
+		opacity: 0.9;
 	}
 
 	@media (max-width: 640px) {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
 
 	let {
@@ -8,7 +9,8 @@
 		onselect,
 		menuAlign = 'center',
 		standalone = false,
-		icon = 'arrow-up-s-line'
+		icon = 'arrow-up-s-line',
+		extra
 	}: {
 		kind: 'audioinput' | 'videoinput' | 'audiooutput';
 		deviceId?: string;
@@ -19,6 +21,8 @@
 		/** Renders as its own full-size round button (e.g. speaker choice) instead of a chevron segment paired with a toggle button. */
 		standalone?: boolean;
 		icon?: string;
+		/** Extra content appended below the device list in the same popup — e.g. the camera picker's background options, so they don't need their own separate button. */
+		extra?: Snippet;
 	} = $props();
 
 	let open = $state(false);
@@ -68,24 +72,31 @@
 		<Icon name={icon} size={standalone ? 18 : 14} />
 	</button>
 	{#if open}
-		<ul class="device-select-menu" class:align-start={menuAlign === 'start'} class:align-end={menuAlign === 'end'}>
-			{#if devices.length === 0}
-				<li class="device-select-empty">{label}</li>
-			{:else}
-				{#each devices as device (device.deviceId)}
-					<li>
-						<button
-							type="button"
-							class="device-select-option"
-							class:selected={device.deviceId === deviceId}
-							onclick={() => select(device.deviceId)}
-						>
-							{device.label || label}
-						</button>
-					</li>
-				{/each}
+		<div class="device-select-menu" class:align-start={menuAlign === 'start'} class:align-end={menuAlign === 'end'}>
+			<ul class="device-select-list">
+				{#if devices.length === 0}
+					<li class="device-select-empty">{label}</li>
+				{:else}
+					{#each devices as device (device.deviceId)}
+						<li>
+							<button
+								type="button"
+								class="device-select-option"
+								class:selected={device.deviceId === deviceId}
+								onclick={() => select(device.deviceId)}
+							>
+								{device.label || label}
+							</button>
+						</li>
+					{/each}
+				{/if}
+			</ul>
+			{#if extra}
+				<div class="device-select-extra">
+					{@render extra()}
+				</div>
 			{/if}
-		</ul>
+		</div>
 	{/if}
 </div>
 
@@ -142,14 +153,9 @@
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 20;
-		display: flex;
-		flex-direction: column;
-		gap: 0.125rem;
 		min-width: 200px;
 		max-width: 280px;
-		margin: 0;
 		padding: 0.375rem;
-		list-style: none;
 		border-radius: 0.625rem;
 		background: #1c1c1f;
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -164,6 +170,21 @@
 		left: auto;
 		right: 0;
 		transform: none;
+	}
+
+	.device-select-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.device-select-extra {
+		margin-top: 0.375rem;
+		padding-top: 0.375rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
 	}
 
 	.device-select-empty {
