@@ -8,7 +8,8 @@
 		type Participant,
 		type RemoteParticipant,
 		type RemoteTrack,
-		type RemoteTrackPublication
+		type RemoteTrackPublication,
+		type TrackPublication
 	} from 'livekit-client';
 	import { t } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
@@ -71,7 +72,46 @@
 	const localInitials = $derived(initialsFor(displayName));
 	const localColor = $derived(colorFor(displayName || 'me'));
 
-	type Tile = { el: HTMLDivElement; media: HTMLDivElement };
+	// A short beep synthesized on the fly — no audio asset to ship, and it works
+	// the instant a call starts instead of waiting on a file to load.
+	let soundCtx: AudioContext | null = null;
+
+	function ensureSoundCtx(): AudioContext {
+		if (!soundCtx) soundCtx = new AudioContext();
+		if (soundCtx.state === 'suspended') void soundCtx.resume();
+		return soundCtx;
+	}
+
+	function playTone(frequency: number, startOffset: number, duration = 0.09) {
+		const ctx = ensureSoundCtx();
+		const start = ctx.currentTime + startOffset;
+		const oscillator = ctx.createOscillator();
+		const gain = ctx.createGain();
+		oscillator.frequency.value = frequency;
+		gain.gain.setValueAtTime(0, start);
+		gain.gain.linearRampToValueAtTime(0.2, start + 0.01);
+		gain.gain.linearRampToValueAtTime(0, start + duration);
+		oscillator.connect(gain);
+		gain.connect(ctx.destination);
+		oscillator.start(start);
+		oscillator.stop(start + duration + 0.02);
+	}
+
+	function playJoinChime() {
+		playTone(523.25, 0);
+		playTone(659.25, 0.09);
+	}
+
+	function playLeaveChime() {
+		playTone(659.25, 0);
+		playTone(523.25, 0.09);
+	}
+
+	function playToggleTone(on: boolean) {
+		playTone(on ? 880 : 440, 0, 0.08);
+	}
+
+	type Tile = { el: HTMLDivElement; media: HTMLDivElement; micIcon: HTMLElement; cameraIcon: HTMLElement };
 	const remoteTiles = new Map<string, Tile>();
 	const screenTiles = new Map<string, Tile>();
 
@@ -87,12 +127,28 @@
 		const media = document.createElement('div');
 		media.className = 'call-tile-media';
 
+		const status = document.createElement('div');
+		status.className = 'call-tile-status';
+		const micIcon = document.createElement('i');
+		micIcon.className = 'ri-mic-off-line call-tile-status-icon';
+		micIcon.hidden = true;
+		const cameraIcon = document.createElement('i');
+		cameraIcon.className = 'ri-camera-off-line call-tile-status-icon';
+		cameraIcon.hidden = true;
+		status.append(micIcon, cameraIcon);
+
 		const name = document.createElement('span');
 		name.className = 'call-tile-name';
 		name.textContent = label;
 
-		el.append(avatar, media, name);
-		return { el, media };
+		el.append(avatar, media, status, name);
+		return { el, media, micIcon, cameraIcon };
+	}
+
+	/** Reflects a participant's current mute state on their tile's status badges. */
+	function updateTileStatus(tile: Tile, participant: Participant) {
+		tile.micIcon.hidden = participant.isMicrophoneEnabled;
+		tile.cameraIcon.hidden = participant.isCameraEnabled;
 	}
 
 	function ensureRemoteTile(participant: Participant): Tile {
@@ -103,7 +159,13 @@
 			remoteTiles.set(participant.identity, tile);
 			remoteCount = remoteTiles.size;
 		}
+		updateTileStatus(tile, participant);
 		return tile;
+	}
+
+	function handleTrackMuteChanged(_publication: TrackPublication, participant: Participant) {
+		const tile = remoteTiles.get(participant.identity);
+		if (tile) updateTileStatus(tile, participant);
 	}
 
 	function ensureScreenTile(participant: Participant): Tile {
@@ -151,7 +213,14 @@
 		if (track.source === Track.Source.ScreenShare) removeScreenTile(participant.identity);
 	}
 
+	function handleParticipantConnected(participant: RemoteParticipant) {
+		playJoinChime();
+		ensureRemoteTile(participant);
+		refreshRoster();
+	}
+
 	function removeParticipantTile(participant: RemoteParticipant) {
+		playLeaveChime();
 		const tile = remoteTiles.get(participant.identity);
 		if (tile) {
 			tile.el.remove();
@@ -203,11 +272,13 @@
 
 		instance.on(RoomEvent.TrackSubscribed, attachRemoteTrack);
 		instance.on(RoomEvent.TrackUnsubscribed, detachRemoteTrack);
-		instance.on(RoomEvent.ParticipantConnected, refreshRoster);
+		instance.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
 		instance.on(RoomEvent.ParticipantDisconnected, removeParticipantTile);
 		instance.on(RoomEvent.Disconnected, onleave);
 		instance.on(RoomEvent.LocalTrackPublished, handleLocalTrackPublished);
 		instance.on(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished);
+		instance.on(RoomEvent.TrackMuted, handleTrackMuteChanged);
+		instance.on(RoomEvent.TrackUnmuted, handleTrackMuteChanged);
 
 		instance.registerTextStreamHandler(CHAT_TOPIC, async (reader, participantInfo) => {
 			const text = await reader.readAll();
@@ -225,7 +296,9 @@
 					el.muted = true;
 					localMediaEl?.appendChild(el);
 				}
+				for (const participant of instance.remoteParticipants.values()) ensureRemoteTile(participant);
 				refreshRoster();
+				playJoinChime();
 			} catch (error) {
 				connectionError = error instanceof Error ? error.message : t('meet.connectionError');
 			} finally {
@@ -236,28 +309,37 @@
 		return () => {
 			instance.off(RoomEvent.TrackSubscribed, attachRemoteTrack);
 			instance.off(RoomEvent.TrackUnsubscribed, detachRemoteTrack);
-			instance.off(RoomEvent.ParticipantConnected, refreshRoster);
+			instance.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
 			instance.off(RoomEvent.ParticipantDisconnected, removeParticipantTile);
 			instance.off(RoomEvent.Disconnected, onleave);
 			instance.off(RoomEvent.LocalTrackPublished, handleLocalTrackPublished);
 			instance.off(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished);
+			instance.off(RoomEvent.TrackMuted, handleTrackMuteChanged);
+			instance.off(RoomEvent.TrackUnmuted, handleTrackMuteChanged);
 			instance.unregisterTextStreamHandler(CHAT_TOPIC);
 		};
 	});
 
 	onDestroy(() => {
 		room?.disconnect();
+		// Give the leave chime time to finish before the context that plays it dies.
+		if (soundCtx) {
+			const ctx = soundCtx;
+			setTimeout(() => void ctx.close(), 300);
+		}
 	});
 
 	async function toggleMic() {
 		if (!room) return;
 		micEnabled = !micEnabled;
+		playToggleTone(micEnabled);
 		await room.localParticipant.setMicrophoneEnabled(micEnabled);
 	}
 
 	async function toggleCamera() {
 		if (!room) return;
 		cameraEnabled = !cameraEnabled;
+		playToggleTone(cameraEnabled);
 		if (cameraEnabled) {
 			const publication = await room.localParticipant.setCameraEnabled(true);
 			const track = publication?.track;
@@ -307,6 +389,7 @@
 	}
 
 	function leave() {
+		playLeaveChime();
 		room?.disconnect();
 		onleave();
 	}
@@ -331,6 +414,10 @@
 			<div class="call-tile call-tile-local">
 				<div class="call-tile-avatar" style="background: {localColor}">{localInitials}</div>
 				<div class="call-tile-media" bind:this={localMediaEl}></div>
+				<div class="call-tile-status">
+					{#if !micEnabled}<Icon name="mic-off-line" size={14} class="call-tile-status-icon" />{/if}
+					{#if !cameraEnabled}<Icon name="camera-off-line" size={14} class="call-tile-status-icon" />{/if}
+				</div>
 				<span class="call-tile-name">{displayName} · {t('meet.you')}</span>
 			</div>
 			<div class="call-tile-group" bind:this={remoteContainerEl}></div>
@@ -556,6 +643,25 @@
 
 	:global(.call-tile-screen .call-tile-media video) {
 		object-fit: contain;
+	}
+
+	:global(.call-tile-status) {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		display: flex;
+		gap: 0.25rem;
+	}
+
+	:global(.call-tile-status-icon) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: 999px;
+		background: rgba(0, 0, 0, 0.55);
+		color: #f87171;
 	}
 
 	:global(.call-tile-placeholder) {
