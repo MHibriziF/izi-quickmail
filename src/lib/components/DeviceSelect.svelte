@@ -5,12 +5,15 @@
 		kind,
 		deviceId = '',
 		label,
-		onselect
+		onselect,
+		menuAlign = 'center'
 	}: {
 		kind: 'audioinput' | 'videoinput';
 		deviceId?: string;
 		label: string;
 		onselect: (deviceId: string) => void;
+		/** Which side the popup menu opens from, so it never spills past the call bar's edge. */
+		menuAlign?: 'center' | 'start' | 'end';
 	} = $props();
 
 	let open = $state(false);
@@ -51,10 +54,10 @@
 
 <div class="device-select" bind:this={rootEl}>
 	<button type="button" class="device-select-toggle" onclick={toggle} aria-label={label}>
-		<Icon name="arrow-down-s-line" size={12} />
+		<Icon name="arrow-up-s-line" size={10} />
 	</button>
 	{#if open}
-		<ul class="device-select-menu">
+		<ul class="device-select-menu" class:align-start={menuAlign === 'start'} class:align-end={menuAlign === 'end'}>
 			{#if devices.length === 0}
 				<li class="device-select-empty">{label}</li>
 			{:else}
@@ -76,30 +79,38 @@
 </div>
 
 <style>
+	/*
+	 * Sits as a small corner badge on top of the button it's paired with
+	 * (the parent must be `position: relative` and sized to that button) —
+	 * a second full-size circle next to the mic/camera buttons broke the
+	 * row's rhythm, so this rides on the same button instead, Meet/Zoom-style.
+	 */
 	.device-select {
-		position: relative;
+		position: absolute;
+		right: -3px;
+		bottom: -3px;
 	}
 
 	.device-select-toggle {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 20px;
-		height: 20px;
-		border: none;
+		width: 16px;
+		height: 16px;
+		border: 2px solid var(--call-bar-bg, #0b0b0d);
 		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.12);
+		background: #52525b;
 		color: #fff;
 		cursor: pointer;
 	}
 
 	.device-select-toggle:hover {
-		background: rgba(255, 255, 255, 0.22);
+		background: #6b6b74;
 	}
 
 	.device-select-menu {
 		position: absolute;
-		bottom: calc(100% + 0.375rem);
+		bottom: calc(100% + 0.5rem);
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 20;
@@ -114,6 +125,17 @@
 		border-radius: 0.625rem;
 		background: #1c1c1f;
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+	}
+
+	.device-select-menu.align-start {
+		left: 0;
+		transform: none;
+	}
+
+	.device-select-menu.align-end {
+		left: auto;
+		right: 0;
+		transform: none;
 	}
 
 	.device-select-empty {

@@ -222,7 +222,7 @@
 							>
 								<Icon name={micOn ? 'mic-line' : 'mic-off-line'} size={18} />
 							</button>
-							<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} />
+							<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
 						</div>
 						<div class="lobby-meter" aria-hidden="true">
 							<div class="lobby-meter-fill" style="transform: scaleX({micOn ? micLevel : 0})"></div>
@@ -237,7 +237,7 @@
 							>
 								<Icon name={cameraOn ? 'camera-line' : 'camera-off-line'} size={18} />
 							</button>
-							<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} />
+							<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="end" />
 						</div>
 					</div>
 					{#if deviceError}<p class="note lobby-error">{deviceError}</p>{/if}
@@ -339,9 +339,7 @@
 
 	.lobby-btn-group {
 		position: relative;
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
+		--call-bar-bg: var(--color-surface-2, #26262b);
 	}
 
 	.lobby-btn {

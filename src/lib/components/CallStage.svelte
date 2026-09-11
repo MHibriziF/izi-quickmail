@@ -519,7 +519,7 @@
 			<button type="button" class="call-btn" onclick={toggleMic} aria-label={micEnabled ? t('meet.micOn') : t('meet.micOff')}>
 				<Icon name={micEnabled ? 'mic-line' : 'mic-off-line'} size={20} />
 			</button>
-			<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} />
+			<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
 		</div>
 		<div class="call-btn-group">
 			<button
@@ -530,7 +530,7 @@
 			>
 				<Icon name={cameraEnabled ? 'camera-line' : 'camera-off-line'} size={20} />
 			</button>
-			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} />
+			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="end" />
 		</div>
 		{#if screenShareSupported}
 			<button
@@ -860,9 +860,7 @@
 
 	.call-btn-group {
 		position: relative;
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
+		--call-bar-bg: #26262b;
 	}
 
 	.call-btn {
