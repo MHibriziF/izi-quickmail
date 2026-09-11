@@ -5,12 +5,14 @@
 		RoomEvent,
 		Track,
 		type LocalTrackPublication,
+		type LocalVideoTrack,
 		type Participant,
 		type RemoteParticipant,
 		type RemoteTrack,
 		type RemoteTrackPublication,
 		type TrackPublication
 	} from 'livekit-client';
+	import { BackgroundProcessor, supportsBackgroundProcessors } from '@livekit/track-processors';
 	import { t } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
 	import DeviceSelect from '$lib/components/DeviceSelect.svelte';
@@ -52,6 +54,34 @@
 	// working controls instead of that raw, control-less video.
 	const pipSupported = typeof window !== 'undefined' && 'documentPictureInPicture' in window;
 
+	// Background blur/replacement needs WebAssembly + (ideally) Insertable
+	// Streams; the library itself knows exactly what that requires per browser.
+	const backgroundSupported = typeof navigator !== 'undefined' && supportsBackgroundProcessors();
+
+	function gradientDataUrl(from: string, to: string): string {
+		const canvas = document.createElement('canvas');
+		canvas.width = 320;
+		canvas.height = 180;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return '';
+		const gradient = ctx.createLinearGradient(0, 0, 320, 180);
+		gradient.addColorStop(0, from);
+		gradient.addColorStop(1, to);
+		ctx.fillStyle = gradient;
+		ctx.fillRect(0, 0, 320, 180);
+		return canvas.toDataURL('image/png');
+	}
+
+	/** Generated so there's no photo asset to source, host, or ship in the bundle. */
+	const backgroundPresets = backgroundSupported
+		? [
+				{ url: gradientDataUrl('#1d4ed8', '#38bdf8'), swatch: 'linear-gradient(135deg, #1d4ed8, #38bdf8)' },
+				{ url: gradientDataUrl('#15803d', '#4ade80'), swatch: 'linear-gradient(135deg, #15803d, #4ade80)' },
+				{ url: gradientDataUrl('#c2410c', '#fbbf24'), swatch: 'linear-gradient(135deg, #c2410c, #fbbf24)' },
+				{ url: gradientDataUrl('#27272a', '#71717a'), swatch: 'linear-gradient(135deg, #27272a, #71717a)' }
+			]
+		: [];
+
 	const CHAT_TOPIC = 'chat';
 
 	let room: Room | null = null;
@@ -64,6 +94,11 @@
 	let micDeviceId = $state(untrack(() => initialMicDeviceId));
 	let cameraDeviceId = $state(untrack(() => initialCameraDeviceId));
 	let speakerDeviceId = $state('');
+	let backgroundOption = $state('none');
+	let backgroundMenuOpen = $state(false);
+	let backgroundMenuEl = $state<HTMLDivElement>();
+	let backgroundFileInput = $state<HTMLInputElement>();
+	let customBackgroundUrl: string | null = null;
 	let screenShareEnabled = $state(false);
 	let remoteCount = $state(0);
 	let localScreenMediaEl = $state<HTMLDivElement>();
@@ -446,6 +481,53 @@
 		if (localScreenMediaEl) localScreenMediaEl.innerHTML = '';
 	}
 
+	/** Re-applies the chosen background to whatever the current camera track is — needed after every camera (re)publish, since each is a fresh track. */
+	async function reapplyBackground() {
+		if (!room || !backgroundSupported || backgroundOption === 'none') return;
+		const track = room.localParticipant.getTrackPublication(Track.Source.Camera)?.track as
+			| LocalVideoTrack
+			| undefined;
+		if (!track) return;
+		try {
+			if (backgroundOption === 'blur') {
+				await track.setProcessor(BackgroundProcessor({ mode: 'background-blur', blurRadius: 10 }));
+			} else {
+				await track.setProcessor(BackgroundProcessor({ mode: 'virtual-background', imagePath: backgroundOption }));
+			}
+		} catch {
+			// Segmentation model failed to load (offline, blocked CDN) — camera keeps working unprocessed.
+		}
+	}
+
+	async function applyBackground(option: string) {
+		backgroundOption = option;
+		backgroundMenuOpen = false;
+		if (!room) return;
+		const track = room.localParticipant.getTrackPublication(Track.Source.Camera)?.track as
+			| LocalVideoTrack
+			| undefined;
+		if (!track) return;
+		if (option === 'none') {
+			await track.stopProcessor();
+			return;
+		}
+		await reapplyBackground();
+	}
+
+	function handleBackgroundFile(event: Event) {
+		const file = (event.target as HTMLInputElement).files?.[0];
+		if (!file) return;
+		if (customBackgroundUrl) URL.revokeObjectURL(customBackgroundUrl);
+		customBackgroundUrl = URL.createObjectURL(file);
+		void applyBackground(customBackgroundUrl);
+	}
+
+	function onBackgroundWindowClick(event: MouseEvent) {
+		if (backgroundMenuOpen && backgroundMenuEl && !backgroundMenuEl.contains(event.target as Node)) {
+			backgroundMenuOpen = false;
+		}
+	}
+
 	// The PiP window's controls are hand-built DOM outside Svelte's reach, so
 	// their state has to be pushed in imperatively whenever it changes.
 	$effect(() => {
@@ -521,6 +603,7 @@
 	onDestroy(() => {
 		room?.disconnect();
 		pipWindow?.close();
+		if (customBackgroundUrl) URL.revokeObjectURL(customBackgroundUrl);
 		// Give the leave chime time to finish before the context that plays it dies.
 		if (soundCtx) {
 			const ctx = soundCtx;
@@ -552,6 +635,7 @@
 				el.style.transform = 'scaleX(-1)';
 				localMediaEl.appendChild(el);
 			}
+			void reapplyBackground();
 		} else {
 			await room.localParticipant.setCameraEnabled(false);
 			if (localMediaEl) localMediaEl.innerHTML = '';
@@ -617,6 +701,8 @@
 		onleave();
 	}
 </script>
+
+<svelte:window onclick={onBackgroundWindowClick} />
 
 <div class="call-stage">
 	<div class="call-header">
@@ -737,6 +823,66 @@
 				standalone
 				icon="volume-up-line"
 			/>
+		{/if}
+		{#if backgroundSupported}
+			<div class="background-picker" bind:this={backgroundMenuEl}>
+				<button
+					type="button"
+					class="call-btn"
+					class:call-btn-active={backgroundOption !== 'none'}
+					onclick={() => (backgroundMenuOpen = !backgroundMenuOpen)}
+					aria-label={t('meet.background')}
+				>
+					<Icon name="image-edit-line" size={20} />
+				</button>
+				{#if backgroundMenuOpen}
+					<div class="background-menu">
+						<button
+							type="button"
+							class="background-option"
+							class:selected={backgroundOption === 'none'}
+							onclick={() => applyBackground('none')}
+						>
+							{t('meet.backgroundNone')}
+						</button>
+						<button
+							type="button"
+							class="background-option"
+							class:selected={backgroundOption === 'blur'}
+							onclick={() => applyBackground('blur')}
+						>
+							{t('meet.backgroundBlur')}
+						</button>
+						<div class="background-swatches">
+							{#each backgroundPresets as preset (preset.url)}
+								<button
+									type="button"
+									class="background-swatch"
+									class:selected={backgroundOption === preset.url}
+									style="background: {preset.swatch}"
+									onclick={() => applyBackground(preset.url)}
+									aria-label={t('meet.backgroundPreset')}
+								></button>
+							{/each}
+							<button
+								type="button"
+								class="background-swatch background-swatch-upload"
+								onclick={() => backgroundFileInput?.click()}
+								aria-label={t('meet.backgroundUpload')}
+							>
+								<Icon name="upload-2-line" size={16} />
+							</button>
+						</div>
+						<input
+							type="file"
+							accept="image/*"
+							hidden
+							bind:this={backgroundFileInput}
+							onchange={handleBackgroundFile}
+						/>
+					</div>
+				{/if}
+			</div>
 		{/if}
 		{#if screenShareSupported}
 			<button
@@ -1166,6 +1312,77 @@
 
 	.call-btn-leave:hover {
 		background: #ef4444;
+	}
+
+	.background-picker {
+		position: relative;
+	}
+
+	.background-menu {
+		position: absolute;
+		bottom: calc(100% + 0.5rem);
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 20;
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+		width: 200px;
+		padding: 0.5rem;
+		border-radius: 0.75rem;
+		background: #1c1c1f;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+	}
+
+	.background-option {
+		width: 100%;
+		padding: 0.375rem 0.5rem;
+		border: none;
+		border-radius: 0.375rem;
+		background: transparent;
+		color: #fff;
+		font-size: 0.8125rem;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.background-option:hover {
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	.background-option.selected {
+		background: rgba(255, 255, 255, 0.16);
+		font-weight: 600;
+	}
+
+	.background-swatches {
+		display: grid;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 0.375rem;
+		padding: 0.125rem 0.5rem 0.25rem;
+	}
+
+	.background-swatch {
+		aspect-ratio: 1;
+		border: 2px solid transparent;
+		border-radius: 0.5rem;
+		cursor: pointer;
+	}
+
+	.background-swatch.selected {
+		border-color: #fff;
+	}
+
+	.background-swatch-upload {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(255, 255, 255, 0.1);
+		color: #fff;
+	}
+
+	.background-swatch-upload:hover {
+		background: rgba(255, 255, 255, 0.18);
 	}
 
 	@media (max-width: 640px) {
