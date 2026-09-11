@@ -13,7 +13,8 @@ no servers to maintain.
 > credit for it goes there. This fork adds the features listed under
 > [What this fork adds](#what-this-fork-adds).
 >
-> Prefer the original? [![Deploy the original](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/DivinPrince/quickinbox)
+> Prefer the original?
+> [![Deploy the original](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/DivinPrince/quickinbox)
 
 ## Features
 
