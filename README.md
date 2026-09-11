@@ -40,6 +40,7 @@ On top of everything upstream ships:
 - **Broader deletion** — trash that empties itself on a retention period you choose, plus a sweep that moves mail older than a given age to the trash. Drafts and scheduled messages are never swept, and a count is always shown before anything moves. **Settings → Cleanup**.
 - **Bahasa Indonesia**, alongside English, French, Spanish and Simplified Chinese. **Settings → Language**.
 - **Two interfaces** — Zero, the two-pane shell with a command palette and keyboard shortcuts, or Classic, the original stacked layout. Per account, in **Settings → Interface**.
+- **[Video meetings](#video-meetings-optional)** — start a LiveKit call and share the link; guests join from it with no account. Camera and mic preview before joining, screen sharing, a participants list and chat. **Compose → New meeting**, or the **Meetings** view.
 - **[Migrations that apply themselves](#database-migrations)** — the Deploy to Cloudflare button never runs them, so upstream's one-click deploy lands on an empty database. Here the Worker brings its own schema up to date.
 
 ## Quick start
@@ -227,6 +228,26 @@ bun run deploy
 
 Users opt in under **Settings → Desktop notifications**. Don't rotate the key
 pair after users subscribe, or they'll have to re-enable.
+
+### Video meetings (optional)
+
+Zimail can start LiveKit video calls from **Compose** or the **Meetings**
+view — guests join from the shared link with no account, with a camera/mic
+preview, screen sharing, a participants list, and chat.
+
+1. Create a project at [LiveKit Cloud](https://cloud.livekit.io) and copy its
+   API key, API secret, and `wss://` URL from **Settings → Keys**.
+2. Set them as Worker secrets:
+
+```bash
+bunx wrangler secret put LIVEKIT_API_KEY
+bunx wrangler secret put LIVEKIT_API_SECRET
+bunx wrangler secret put LIVEKIT_URL
+```
+
+Skip this and meetings just don't show up — nothing else depends on it. The
+**Deploy this fork** button prompts for these three too, and they're optional
+there as well: leave them blank and add them later the same way.
 
 ## Database migrations
 
