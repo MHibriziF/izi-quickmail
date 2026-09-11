@@ -703,6 +703,7 @@
 		"invalidLink": "Ce lien est invalide ou a expiré.",
 		"connecting": "Connexion…",
 		"connectionError": "Impossible de se connecter à la réunion.",
+		"deviceError": "Impossible d’accéder à votre caméra ou micro. Vous pouvez quand même rejoindre.",
 		"micOn": "Couper le micro",
 		"micOff": "Activer le micro",
 		"cameraOn": "Désactiver la caméra",

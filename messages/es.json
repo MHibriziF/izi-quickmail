@@ -703,6 +703,7 @@
 		"invalidLink": "Ese enlace no es válido o ha expirado.",
 		"connecting": "Conectando…",
 		"connectionError": "No se pudo conectar a la reunión.",
+		"deviceError": "No se pudo acceder a tu cámara o micrófono. Aún puedes unirte.",
 		"micOn": "Silenciar micrófono",
 		"micOff": "Activar micrófono",
 		"cameraOn": "Apagar cámara",

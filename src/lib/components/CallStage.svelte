@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount, tick } from 'svelte';
+	import { onDestroy, onMount, tick, untrack } from 'svelte';
 	import {
 		Room,
 		RoomEvent,
@@ -17,8 +17,17 @@
 		url,
 		token,
 		displayName,
+		initialMicEnabled = true,
+		initialCameraEnabled = true,
 		onleave
-	}: { url: string; token: string; displayName: string; onleave: () => void } = $props();
+	}: {
+		url: string;
+		token: string;
+		displayName: string;
+		initialMicEnabled?: boolean;
+		initialCameraEnabled?: boolean;
+		onleave: () => void;
+	} = $props();
 
 	const CHAT_TOPIC = 'chat';
 
@@ -27,8 +36,8 @@
 	let remoteContainerEl = $state<HTMLDivElement>();
 	let connecting = $state(true);
 	let connectionError = $state('');
-	let micEnabled = $state(true);
-	let cameraEnabled = $state(true);
+	let micEnabled = $state(untrack(() => initialMicEnabled));
+	let cameraEnabled = $state(untrack(() => initialCameraEnabled));
 	let screenShareEnabled = $state(false);
 	let remoteCount = $state(0);
 	let localScreenMediaEl = $state<HTMLDivElement>();
@@ -208,8 +217,8 @@
 		(async () => {
 			try {
 				await instance.connect(url, token);
-				await instance.localParticipant.setMicrophoneEnabled(true);
-				const cameraPublication = await instance.localParticipant.setCameraEnabled(true);
+				await instance.localParticipant.setMicrophoneEnabled(micEnabled);
+				const cameraPublication = await instance.localParticipant.setCameraEnabled(cameraEnabled);
 				const track = cameraPublication?.track;
 				if (track) {
 					const el = track.attach();

@@ -703,6 +703,7 @@
 		"invalidLink": "Tautan tersebut tidak valid atau telah kedaluwarsa.",
 		"connecting": "Menghubungkan…",
 		"connectionError": "Tidak dapat terhubung ke rapat.",
+		"deviceError": "Tidak dapat mengakses kamera atau mikrofon Anda. Anda tetap bisa bergabung.",
 		"micOn": "Bisukan mikrofon",
 		"micOff": "Aktifkan mikrofon",
 		"cameraOn": "Matikan kamera",

@@ -703,6 +703,7 @@
 		"invalidLink": "That link is invalid or has expired.",
 		"connecting": "Connecting…",
 		"connectionError": "Could not connect to the meeting.",
+		"deviceError": "Could not access your camera or microphone. You can still join.",
 		"micOn": "Mute microphone",
 		"micOff": "Unmute microphone",
 		"cameraOn": "Turn off camera",

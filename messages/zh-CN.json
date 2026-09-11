@@ -703,6 +703,7 @@
 		"invalidLink": "该链接无效或已过期。",
 		"connecting": "连接中…",
 		"connectionError": "无法连接到会议。",
+		"deviceError": "无法访问摄像头或麦克风。您仍然可以加入会议。",
 		"micOn": "静音麦克风",
 		"micOff": "取消静音",
 		"cameraOn": "关闭摄像头",
