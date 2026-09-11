@@ -1,4 +1,4 @@
-export const APP_NAME = 'Quickinbox';
+export const APP_NAME = 'Zimail';
 /**
  * Mail domains are discovered from the configured provider during onboarding
  * and stored in the `domains` table.

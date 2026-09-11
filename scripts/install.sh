@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install the Quickinbox CLI from GitHub (no npm).
-#   curl -fsSL https://raw.githubusercontent.com/MHibriziF/izi-quickmail/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/MHibriziF/zimail/main/scripts/install.sh | sh
 # Default QUICKINBOX_REF is main; QUICKMAIL_REF still works from before the rename.
 # Piped `sh` is often dash; re-exec with bash before any bash-only syntax.
 if [ -z "${BASH_VERSION:-}" ]; then
@@ -17,7 +17,7 @@ ok() { printf '  ✓ %s\n' "$*"; }
 warn() { printf '  ! %s\n' "$*"; }
 
 # This fork. Upstream is DivinPrince/quickinbox; override to install from there.
-REPO="${QUICKINBOX_REPO:-MHibriziF/izi-quickmail}"
+REPO="${QUICKINBOX_REPO:-MHibriziF/zimail}"
 REF="${QUICKINBOX_REF:-${QUICKMAIL_REF:-main}}"
 
 case "$REF" in

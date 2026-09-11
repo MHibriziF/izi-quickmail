@@ -1,6 +1,6 @@
-# Quickinbox
+# Zimail
 
-[![Deploy this fork](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/MHibriziF/izi-quickmail)
+[![Deploy this fork](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/MHibriziF/zimail)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 
 Self-hosted email for your own domain, running on Cloudflare Workers.
@@ -214,7 +214,7 @@ Send yourself a message from another account — it should land within seconds.
 
 ### Desktop notifications (optional)
 
-Quickinbox can push-notify users about new mail even with no tab open:
+Zimail can push-notify users about new mail even with no tab open:
 
 ```bash
 bunx web-push generate-vapid-keys
@@ -324,7 +324,7 @@ shown once. Revoking a key takes effect immediately. New keys start with
 ## CLI and MCP
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MHibriziF/izi-quickmail/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/MHibriziF/zimail/main/scripts/install.sh | sh
 quickinbox login --url https://<your-instance> --token <key from Settings>
 quickinbox inbox
 quickinbox send --to someone@example.com --subject "Hi" --body "Hello"

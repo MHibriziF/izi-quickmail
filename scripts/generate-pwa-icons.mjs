@@ -250,7 +250,7 @@ function writeFaviconSvg(imagePng, dest) {
 	const href = `data:image/png;base64,${imagePng.toString('base64')}`;
 	writeFileSync(
 		dest,
-		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Quickinbox">
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Zimail">
 	<defs>
 		<clipPath id="tile"><rect width="64" height="64" rx="16.5" /></clipPath>
 	</defs>
