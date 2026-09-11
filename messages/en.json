@@ -708,6 +708,8 @@
 		"micOff": "Unmute microphone",
 		"cameraOn": "Turn off camera",
 		"cameraOff": "Turn on camera",
+		"chooseMic": "Choose microphone",
+		"chooseCamera": "Choose camera",
 		"screenShareOn": "Share your screen",
 		"screenShareOff": "Stop sharing your screen",
 		"screenShare": "Screen share",

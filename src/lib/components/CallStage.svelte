@@ -13,6 +13,7 @@
 	} from 'livekit-client';
 	import { t } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
+	import DeviceSelect from '$lib/components/DeviceSelect.svelte';
 
 	let {
 		url,
@@ -20,6 +21,8 @@
 		displayName,
 		initialMicEnabled = true,
 		initialCameraEnabled = true,
+		initialMicDeviceId = '',
+		initialCameraDeviceId = '',
 		onleave
 	}: {
 		url: string;
@@ -27,8 +30,15 @@
 		displayName: string;
 		initialMicEnabled?: boolean;
 		initialCameraEnabled?: boolean;
+		initialMicDeviceId?: string;
+		initialCameraDeviceId?: string;
 		onleave: () => void;
 	} = $props();
+
+	// getDisplayMedia has no mobile browser support (iOS/WebKit or Chrome
+	// Android) as of 2026 — hide the control rather than fail silently on tap.
+	const screenShareSupported =
+		typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getDisplayMedia === 'function';
 
 	const CHAT_TOPIC = 'chat';
 
@@ -39,6 +49,8 @@
 	let connectionError = $state('');
 	let micEnabled = $state(untrack(() => initialMicEnabled));
 	let cameraEnabled = $state(untrack(() => initialCameraEnabled));
+	let micDeviceId = $state(untrack(() => initialMicDeviceId));
+	let cameraDeviceId = $state(untrack(() => initialCameraDeviceId));
 	let screenShareEnabled = $state(false);
 	let remoteCount = $state(0);
 	let localScreenMediaEl = $state<HTMLDivElement>();
@@ -288,12 +300,19 @@
 		(async () => {
 			try {
 				await instance.connect(url, token);
-				await instance.localParticipant.setMicrophoneEnabled(micEnabled);
-				const cameraPublication = await instance.localParticipant.setCameraEnabled(cameraEnabled);
+				await instance.localParticipant.setMicrophoneEnabled(
+					micEnabled,
+					micDeviceId ? { deviceId: micDeviceId } : undefined
+				);
+				const cameraPublication = await instance.localParticipant.setCameraEnabled(
+					cameraEnabled,
+					cameraDeviceId ? { deviceId: cameraDeviceId } : undefined
+				);
 				const track = cameraPublication?.track;
 				if (track) {
 					const el = track.attach();
 					el.muted = true;
+					el.style.transform = 'scaleX(-1)';
 					localMediaEl?.appendChild(el);
 				}
 				for (const participant of instance.remoteParticipants.values()) ensureRemoteTile(participant);
@@ -341,18 +360,32 @@
 		cameraEnabled = !cameraEnabled;
 		playToggleTone(cameraEnabled);
 		if (cameraEnabled) {
-			const publication = await room.localParticipant.setCameraEnabled(true);
+			const publication = await room.localParticipant.setCameraEnabled(
+				true,
+				cameraDeviceId ? { deviceId: cameraDeviceId } : undefined
+			);
 			const track = publication?.track;
 			if (track && localMediaEl) {
 				localMediaEl.innerHTML = '';
 				const el = track.attach();
 				el.muted = true;
+				el.style.transform = 'scaleX(-1)';
 				localMediaEl.appendChild(el);
 			}
 		} else {
 			await room.localParticipant.setCameraEnabled(false);
 			if (localMediaEl) localMediaEl.innerHTML = '';
 		}
+	}
+
+	async function selectMic(id: string) {
+		micDeviceId = id;
+		if (room) await room.switchActiveDevice('audioinput', id);
+	}
+
+	async function selectCamera(id: string) {
+		cameraDeviceId = id;
+		if (room) await room.switchActiveDevice('videoinput', id);
 	}
 
 	async function toggleScreenShare() {
@@ -482,26 +515,34 @@
 	</div>
 
 	<div class="call-controls">
-		<button type="button" class="call-btn" onclick={toggleMic} aria-label={micEnabled ? t('meet.micOn') : t('meet.micOff')}>
-			<Icon name={micEnabled ? 'mic-line' : 'mic-off-line'} size={20} />
-		</button>
-		<button
-			type="button"
-			class="call-btn"
-			onclick={toggleCamera}
-			aria-label={cameraEnabled ? t('meet.cameraOn') : t('meet.cameraOff')}
-		>
-			<Icon name={cameraEnabled ? 'camera-line' : 'camera-off-line'} size={20} />
-		</button>
-		<button
-			type="button"
-			class="call-btn"
-			class:call-btn-active={screenShareEnabled}
-			onclick={toggleScreenShare}
-			aria-label={screenShareEnabled ? t('meet.screenShareOff') : t('meet.screenShareOn')}
-		>
-			<Icon name="computer-line" size={20} />
-		</button>
+		<div class="call-btn-group">
+			<button type="button" class="call-btn" onclick={toggleMic} aria-label={micEnabled ? t('meet.micOn') : t('meet.micOff')}>
+				<Icon name={micEnabled ? 'mic-line' : 'mic-off-line'} size={20} />
+			</button>
+			<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} />
+		</div>
+		<div class="call-btn-group">
+			<button
+				type="button"
+				class="call-btn"
+				onclick={toggleCamera}
+				aria-label={cameraEnabled ? t('meet.cameraOn') : t('meet.cameraOff')}
+			>
+				<Icon name={cameraEnabled ? 'camera-line' : 'camera-off-line'} size={20} />
+			</button>
+			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} />
+		</div>
+		{#if screenShareSupported}
+			<button
+				type="button"
+				class="call-btn"
+				class:call-btn-active={screenShareEnabled}
+				onclick={toggleScreenShare}
+				aria-label={screenShareEnabled ? t('meet.screenShareOff') : t('meet.screenShareOn')}
+			>
+				<Icon name="computer-line" size={20} />
+			</button>
+		{/if}
 		<button
 			type="button"
 			class="call-btn"
@@ -815,6 +856,13 @@
 		justify-content: center;
 		gap: 0.75rem;
 		padding-bottom: 0.5rem;
+	}
+
+	.call-btn-group {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 	}
 
 	.call-btn {

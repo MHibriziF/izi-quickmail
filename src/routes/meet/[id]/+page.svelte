@@ -4,6 +4,7 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import CallStage from '$lib/components/CallStage.svelte';
+	import DeviceSelect from '$lib/components/DeviceSelect.svelte';
 	import { APP_NAME } from '$lib/constants';
 	import { initials } from '$lib/mail/folders';
 	import type { PageData } from './$types';
@@ -22,6 +23,8 @@
 	let previewVideoEl = $state<HTMLVideoElement>();
 	let micOn = $state(true);
 	let cameraOn = $state(true);
+	let micDeviceId = $state('');
+	let cameraDeviceId = $state('');
 	let micLevel = $state(0);
 	let deviceError = $state('');
 
@@ -103,6 +106,32 @@
 		previewStream?.getVideoTracks().forEach((track) => (track.enabled = cameraOn));
 	}
 
+	/** Re-requests both devices so the picked one actually takes effect in the preview. */
+	async function applyDeviceSelection() {
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({
+				video: cameraDeviceId ? { deviceId: { exact: cameraDeviceId } } : true,
+				audio: micDeviceId ? { deviceId: { exact: micDeviceId } } : true
+			});
+			stopPreview();
+			attachPreview(stream);
+			stream.getAudioTracks().forEach((track) => (track.enabled = micOn));
+			stream.getVideoTracks().forEach((track) => (track.enabled = cameraOn));
+		} catch {
+			deviceError = t('meet.deviceError');
+		}
+	}
+
+	function selectMic(id: string) {
+		micDeviceId = id;
+		void applyDeviceSelection();
+	}
+
+	function selectCamera(id: string) {
+		cameraDeviceId = id;
+		void applyDeviceSelection();
+	}
+
 	async function join(event: SubmitEvent) {
 		event.preventDefault();
 		if (joining) return;
@@ -151,6 +180,8 @@
 		displayName={session.displayName}
 		initialMicEnabled={micOn}
 		initialCameraEnabled={cameraOn}
+		initialMicDeviceId={micDeviceId}
+		initialCameraDeviceId={cameraDeviceId}
 		{onleave}
 	/>
 {:else}
@@ -181,27 +212,33 @@
 						{/if}
 					</div>
 					<div class="lobby-controls">
-						<button
-							type="button"
-							class="lobby-btn"
-							class:lobby-btn-off={!micOn}
-							onclick={toggleMic}
-							aria-label={micOn ? t('meet.micOn') : t('meet.micOff')}
-						>
-							<Icon name={micOn ? 'mic-line' : 'mic-off-line'} size={18} />
-						</button>
+						<div class="lobby-btn-group">
+							<button
+								type="button"
+								class="lobby-btn"
+								class:lobby-btn-off={!micOn}
+								onclick={toggleMic}
+								aria-label={micOn ? t('meet.micOn') : t('meet.micOff')}
+							>
+								<Icon name={micOn ? 'mic-line' : 'mic-off-line'} size={18} />
+							</button>
+							<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} />
+						</div>
 						<div class="lobby-meter" aria-hidden="true">
 							<div class="lobby-meter-fill" style="transform: scaleX({micOn ? micLevel : 0})"></div>
 						</div>
-						<button
-							type="button"
-							class="lobby-btn"
-							class:lobby-btn-off={!cameraOn}
-							onclick={toggleCamera}
-							aria-label={cameraOn ? t('meet.cameraOn') : t('meet.cameraOff')}
-						>
-							<Icon name={cameraOn ? 'camera-line' : 'camera-off-line'} size={18} />
-						</button>
+						<div class="lobby-btn-group">
+							<button
+								type="button"
+								class="lobby-btn"
+								class:lobby-btn-off={!cameraOn}
+								onclick={toggleCamera}
+								aria-label={cameraOn ? t('meet.cameraOn') : t('meet.cameraOff')}
+							>
+								<Icon name={cameraOn ? 'camera-line' : 'camera-off-line'} size={18} />
+							</button>
+							<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} />
+						</div>
 					</div>
 					{#if deviceError}<p class="note lobby-error">{deviceError}</p>{/if}
 				</div>
@@ -298,6 +335,13 @@
 		display: flex;
 		align-items: center;
 		gap: 0.625rem;
+	}
+
+	.lobby-btn-group {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 	}
 
 	.lobby-btn {
