@@ -4,6 +4,7 @@
 		Room,
 		RoomEvent,
 		Track,
+		type LocalTrackPublication,
 		type Participant,
 		type RemoteParticipant,
 		type RemoteTrack,
@@ -28,7 +29,9 @@
 	let connectionError = $state('');
 	let micEnabled = $state(true);
 	let cameraEnabled = $state(true);
+	let screenShareEnabled = $state(false);
 	let remoteCount = $state(0);
+	let localScreenMediaEl = $state<HTMLDivElement>();
 
 	let panel = $state<'none' | 'participants' | 'chat'>('none');
 	let roster = $state<{ identity: string; name: string; isLocal: boolean }[]>([]);
@@ -61,10 +64,11 @@
 
 	type Tile = { el: HTMLDivElement; media: HTMLDivElement };
 	const remoteTiles = new Map<string, Tile>();
+	const screenTiles = new Map<string, Tile>();
 
-	function createTile(identity: string, label: string): Tile {
+	function createTile(identity: string, label: string, extraClass = ''): Tile {
 		const el = document.createElement('div');
-		el.className = 'call-tile';
+		el.className = extraClass ? `call-tile ${extraClass}` : 'call-tile';
 
 		const avatar = document.createElement('div');
 		avatar.className = 'call-tile-avatar';
@@ -93,20 +97,49 @@
 		return tile;
 	}
 
+	function ensureScreenTile(participant: Participant): Tile {
+		let tile = screenTiles.get(participant.identity);
+		if (!tile) {
+			tile = createTile(participant.identity, t('meet.screenShareOf', { name: participant.name || t('meet.guest') }), 'call-tile-screen');
+			remoteContainerEl?.appendChild(tile.el);
+			screenTiles.set(participant.identity, tile);
+		}
+		return tile;
+	}
+
+	function removeScreenTile(identity: string) {
+		const tile = screenTiles.get(identity);
+		if (tile) {
+			tile.el.remove();
+			screenTiles.delete(identity);
+		}
+	}
+
 	function attachRemoteTrack(
 		track: RemoteTrack,
 		_publication: RemoteTrackPublication,
 		participant: RemoteParticipant
 	) {
 		if (track.kind !== Track.Kind.Video && track.kind !== Track.Kind.Audio) return;
+		if (track.source === Track.Source.ScreenShare || track.source === Track.Source.ScreenShareAudio) {
+			const tile = ensureScreenTile(participant);
+			tile.media.appendChild(track.attach());
+			return;
+		}
 		const tile = ensureRemoteTile(participant);
 		tile.media.appendChild(track.attach());
 	}
 
-	function detachRemoteTrack(track: RemoteTrack) {
+	function detachRemoteTrack(
+		track: RemoteTrack,
+		_publication: RemoteTrackPublication,
+		participant: RemoteParticipant
+	) {
 		// The avatar layer sits behind the media layer, so emptying it (camera
 		// off, or a full unpublish) is all it takes for the avatar to show again.
 		for (const el of track.detach()) el.remove();
+		// The screen tile has no avatar fallback, so it only makes sense while sharing.
+		if (track.source === Track.Source.ScreenShare) removeScreenTile(participant.identity);
 	}
 
 	function removeParticipantTile(participant: RemoteParticipant) {
@@ -116,6 +149,7 @@
 			remoteTiles.delete(participant.identity);
 			remoteCount = remoteTiles.size;
 		}
+		removeScreenTile(participant.identity);
 		refreshRoster();
 	}
 
@@ -141,6 +175,19 @@
 		void scrollChatToEnd();
 	}
 
+	function handleLocalTrackPublished(publication: LocalTrackPublication) {
+		if (publication.source !== Track.Source.ScreenShare || !publication.track) return;
+		screenShareEnabled = true;
+		const el = publication.track.attach();
+		localScreenMediaEl?.appendChild(el);
+	}
+
+	function handleLocalTrackUnpublished(publication: LocalTrackPublication) {
+		if (publication.source !== Track.Source.ScreenShare) return;
+		screenShareEnabled = false;
+		if (localScreenMediaEl) localScreenMediaEl.innerHTML = '';
+	}
+
 	onMount(() => {
 		const instance = new Room();
 		room = instance;
@@ -150,6 +197,8 @@
 		instance.on(RoomEvent.ParticipantConnected, refreshRoster);
 		instance.on(RoomEvent.ParticipantDisconnected, removeParticipantTile);
 		instance.on(RoomEvent.Disconnected, onleave);
+		instance.on(RoomEvent.LocalTrackPublished, handleLocalTrackPublished);
+		instance.on(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished);
 
 		instance.registerTextStreamHandler(CHAT_TOPIC, async (reader, participantInfo) => {
 			const text = await reader.readAll();
@@ -181,6 +230,8 @@
 			instance.off(RoomEvent.ParticipantConnected, refreshRoster);
 			instance.off(RoomEvent.ParticipantDisconnected, removeParticipantTile);
 			instance.off(RoomEvent.Disconnected, onleave);
+			instance.off(RoomEvent.LocalTrackPublished, handleLocalTrackPublished);
+			instance.off(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished);
 			instance.unregisterTextStreamHandler(CHAT_TOPIC);
 		};
 	});
@@ -210,6 +261,17 @@
 		} else {
 			await room.localParticipant.setCameraEnabled(false);
 			if (localMediaEl) localMediaEl.innerHTML = '';
+		}
+	}
+
+	async function toggleScreenShare() {
+		if (!room) return;
+		try {
+			// LiveKit shows the browser's own screen/window picker and, if the user
+			// cancels it, rejects here without ever publishing — nothing to undo.
+			await room.localParticipant.setScreenShareEnabled(!screenShareEnabled, { audio: true });
+		} catch {
+			// Picker dismissed or permission denied; state already reflects "off".
 		}
 	}
 
@@ -253,6 +315,12 @@
 
 	<div class="call-body">
 		<div class="call-grid">
+			{#if screenShareEnabled}
+				<div class="call-tile call-tile-screen">
+					<div class="call-tile-media" bind:this={localScreenMediaEl}></div>
+					<span class="call-tile-name">{t('meet.you')} · {t('meet.screenShare')}</span>
+				</div>
+			{/if}
 			<div class="call-tile call-tile-local">
 				<div class="call-tile-avatar" style="background: {localColor}">{localInitials}</div>
 				<div class="call-tile-media" bind:this={localMediaEl}></div>
@@ -330,6 +398,15 @@
 			aria-label={cameraEnabled ? t('meet.cameraOn') : t('meet.cameraOff')}
 		>
 			<Icon name={cameraEnabled ? 'camera-line' : 'camera-off-line'} size={20} />
+		</button>
+		<button
+			type="button"
+			class="call-btn"
+			class:call-btn-active={screenShareEnabled}
+			onclick={toggleScreenShare}
+			aria-label={screenShareEnabled ? t('meet.screenShareOff') : t('meet.screenShareOn')}
+		>
+			<Icon name="computer-line" size={20} />
 		</button>
 		<button
 			type="button"
@@ -461,6 +538,17 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	:global(.call-tile-screen) {
+		grid-column: 1 / -1;
+		aspect-ratio: 16 / 9;
+		max-height: 65vh;
+		background: #000;
+	}
+
+	:global(.call-tile-screen .call-tile-media video) {
+		object-fit: contain;
 	}
 
 	:global(.call-tile-placeholder) {
