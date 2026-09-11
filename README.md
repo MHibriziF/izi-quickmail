@@ -229,6 +229,10 @@ bun run deploy
 Users opt in under **Settings → Desktop notifications**. Don't rotate the key
 pair after users subscribe, or they'll have to re-enable.
 
+Skip this and notifications just don't show up — nothing else depends on it.
+The **Deploy this fork** button prompts for these three too, and they're
+optional there as well: leave them blank and add them later the same way.
+
 ### Video meetings (optional)
 
 Zimail can start LiveKit video calls from **Compose** or the **Meetings**
