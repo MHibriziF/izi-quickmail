@@ -22,13 +22,18 @@ RESEND_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # --- Desktop notifications (optional) ---
 # Generate once with: bunx web-push generate-vapid-keys
 # Production values should be added with `wrangler secret put`, not committed.
-# VAPID_PUBLIC_KEY=REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY
-# VAPID_PRIVATE_KEY=REPLACE_WITH_YOUR_VAPID_PRIVATE_KEY
-# VAPID_SUBJECT=mailto:admin@example.com
+# Left blank on purpose: an empty value keeps the feature off until you set
+# one, but still shows up as a field on the Deploy to Cloudflare button (it
+# scans this file for uncommented keys — a commented-out line is invisible to it).
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=
 
 # --- LiveKit meetings (optional) ---
 # From your project's Settings > Keys at https://cloud.livekit.io
+# LIVEKIT_URL is a wss:// URL, e.g. wss://your-project.livekit.cloud
 # Production values should be added with `wrangler secret put`, not committed.
-# LIVEKIT_API_KEY=REPLACE_WITH_YOUR_LIVEKIT_API_KEY
-# LIVEKIT_API_SECRET=REPLACE_WITH_YOUR_LIVEKIT_API_SECRET
-# LIVEKIT_URL=wss://your-project.livekit.cloud
+# Left blank on purpose — see the note above.
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=
+LIVEKIT_URL=
