@@ -40,6 +40,11 @@
 	const screenShareSupported =
 		typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getDisplayMedia === 'function';
 
+	// setSinkId (routing audio to a chosen output device) is unsupported in
+	// Safari as of 2026 — hide the speaker picker there rather than fail on tap.
+	const speakerSelectionSupported =
+		typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype;
+
 	const CHAT_TOPIC = 'chat';
 
 	let room: Room | null = null;
@@ -51,6 +56,7 @@
 	let cameraEnabled = $state(untrack(() => initialCameraEnabled));
 	let micDeviceId = $state(untrack(() => initialMicDeviceId));
 	let cameraDeviceId = $state(untrack(() => initialCameraDeviceId));
+	let speakerDeviceId = $state('');
 	let screenShareEnabled = $state(false);
 	let remoteCount = $state(0);
 	let localScreenMediaEl = $state<HTMLDivElement>();
@@ -198,6 +204,14 @@
 		}
 	}
 
+	/** Routes one attached remote element to the chosen output device, if a non-default one is picked. */
+	function applySinkId(el: HTMLMediaElement) {
+		if (!speakerSelectionSupported || !speakerDeviceId) return;
+		void (el as HTMLMediaElement & { setSinkId(id: string): Promise<void> }).setSinkId(speakerDeviceId).catch(() => {
+			// Device may have disappeared since selection — the default output still plays.
+		});
+	}
+
 	function attachRemoteTrack(
 		track: RemoteTrack,
 		_publication: RemoteTrackPublication,
@@ -206,11 +220,15 @@
 		if (track.kind !== Track.Kind.Video && track.kind !== Track.Kind.Audio) return;
 		if (track.source === Track.Source.ScreenShare || track.source === Track.Source.ScreenShareAudio) {
 			const tile = ensureScreenTile(participant);
-			tile.media.appendChild(track.attach());
+			const el = track.attach();
+			applySinkId(el);
+			tile.media.appendChild(el);
 			return;
 		}
 		const tile = ensureRemoteTile(participant);
-		tile.media.appendChild(track.attach());
+		const el = track.attach();
+		applySinkId(el);
+		tile.media.appendChild(el);
 	}
 
 	function detachRemoteTrack(
@@ -388,6 +406,16 @@
 		if (room) await room.switchActiveDevice('videoinput', id);
 	}
 
+	function selectSpeaker(id: string) {
+		speakerDeviceId = id;
+		if (!room) return;
+		for (const participant of room.remoteParticipants.values()) {
+			for (const publication of [...participant.audioTrackPublications.values(), ...participant.videoTrackPublications.values()]) {
+				for (const el of publication.track?.attachedElements ?? []) applySinkId(el);
+			}
+		}
+	}
+
 	async function toggleScreenShare() {
 		if (!room) return;
 		try {
@@ -537,6 +565,17 @@
 				<Icon name={cameraEnabled ? 'camera-line' : 'camera-off-line'} size={20} />
 			</button>
 		</div>
+		{#if speakerSelectionSupported}
+			<DeviceSelect
+				kind="audiooutput"
+				deviceId={speakerDeviceId}
+				label={t('meet.chooseSpeaker')}
+				onselect={selectSpeaker}
+				menuAlign="start"
+				standalone
+				icon="volume-up-line"
+			/>
+		{/if}
 		{#if screenShareSupported}
 			<button
 				type="button"
