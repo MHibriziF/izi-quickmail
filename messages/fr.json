@@ -704,6 +704,8 @@
 		"rejoin": "Rejoindre",
 		"returnHome": "Retour à l'écran d'accueil",
 		"invalidLink": "Ce code ou ce lien ne correspond à aucune réunion.",
+		"waitingForHost": "En attente que l'hôte vous laisse entrer…",
+		"admissionDenied": "L'hôte ne vous a pas laissé entrer dans cette réunion.",
 		"connecting": "Connexion…",
 		"connectionError": "Impossible de se connecter à la réunion.",
 		"deviceError": "Impossible d’accéder à votre caméra ou micro. Vous pouvez quand même rejoindre.",
@@ -734,6 +736,11 @@
 		"deafenedStatus": "Audio coupé",
 		"participants": "Participants",
 		"chat": "Discussion",
+		"settings": "Paramètres de la réunion",
+		"waitingToJoin": "En attente pour rejoindre",
+		"noOneWaiting": "Personne n'attend.",
+		"admit": "Laisser entrer",
+		"deny": "Refuser",
 		"chatPlaceholder": "Message",
 		"send": "Envoyer",
 		"noMessages": "Aucun message pour l’instant.",
@@ -752,6 +759,13 @@
 		"copyLink": "Copier le lien",
 		"linkCopied": "Lien copié",
 		"regenerateCode": "Obtenir un nouveau code",
-		"couldNotRegenerate": "Impossible de créer un nouveau code"
+		"couldNotRegenerate": "Impossible de créer un nouveau code",
+		"edit": "Modifier",
+		"titleLabel": "Titre",
+		"admissionLabel": "Qui peut rejoindre",
+		"admissionOpen": "Toute personne avec le code ou le lien",
+		"admissionApproval": "Je dois laisser entrer les gens",
+		"admissionBadge": "Admission requise",
+		"couldNotSave": "Impossible d'enregistrer les modifications"
 	}
 }

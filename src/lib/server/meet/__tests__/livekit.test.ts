@@ -48,6 +48,22 @@ describe('minting a LiveKit access token', () => {
 		});
 	});
 
+	test('attributes are a top-level claim, absent when not given', async () => {
+		const client = createLiveKitClient('the-key', 'the-secret', 'wss://example.livekit.cloud');
+
+		const withRole = await client.createAccessToken({
+			identity: 'user-1',
+			room: 'room-1',
+			attributes: { role: 'host' }
+		});
+		const [, withRolePayload] = withRole.split('.');
+		assert.deepEqual(decodeJson(withRolePayload).attributes, { role: 'host' });
+
+		const withoutRole = await client.createAccessToken({ identity: 'user-1', room: 'room-1' });
+		const [, withoutRolePayload] = withoutRole.split('.');
+		assert.equal('attributes' in decodeJson(withoutRolePayload), false);
+	});
+
 	test('exp reflects a custom ttlSeconds', async () => {
 		const client = createLiveKitClient('key', 'secret', 'wss://example.livekit.cloud');
 		const jwt = await client.createAccessToken({ identity: 'user-1', room: 'room-1', ttlSeconds: 60 });

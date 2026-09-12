@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { t } from '$lib/i18n';
 	import Logo from '$lib/components/Logo.svelte';
 	import Icon from '$lib/components/Icon.svelte';
@@ -16,8 +16,11 @@
 	let name = $state(data.userName ?? '');
 	let joining = $state(false);
 	let error = $state('');
-	let session = $state<{ url: string; token: string; displayName: string } | null>(null);
+	let session = $state<{ url: string; token: string; displayName: string; meetingId: string } | null>(null);
 	let left = $state(false);
+	let waitingAdmissionId = $state('');
+	let waitingDenied = $state(false);
+	let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 	// Local device check before joining — lets people fix a muted mic or a
 	// covered camera instead of discovering it once everyone can already see them.
@@ -44,6 +47,8 @@
 		void startPreview();
 		return stopPreview;
 	});
+
+	onDestroy(stopWaiting);
 
 	function attachPreview(stream: MediaStream) {
 		previewStream = stream;
@@ -169,20 +174,63 @@
 			const body = (await response.json().catch(() => ({}))) as {
 				url?: string;
 				token?: string;
+				roomName?: string;
+				pending?: boolean;
+				admissionId?: string;
 				error?: string;
 			};
-			if (!response.ok || !body.url || !body.token) {
+			if (body.pending && body.admissionId) {
+				waitingAdmissionId = body.admissionId;
+				pollAdmission(body.admissionId, displayName);
+				return;
+			}
+			if (!response.ok || !body.url || !body.token || !body.roomName) {
 				error = body.error ?? t('meet.invalidLink');
 				return;
 			}
 			// Hand the devices off to LiveKit's own capture rather than holding two readers open.
 			stopPreview();
-			session = { url: body.url, token: body.token, displayName };
+			session = { url: body.url, token: body.token, displayName, meetingId: body.roomName };
 		} catch {
 			error = t('common.networkError');
 		} finally {
 			joining = false;
 		}
+	}
+
+	/** Polls until the host admits or denies this request — see join/[code]/admission/[admissionId]. */
+	function pollAdmission(admissionId: string, displayName: string) {
+		const check = async () => {
+			try {
+				const response = await fetch(
+					`/api/meetings/join/${encodeURIComponent(data.code)}/admission/${encodeURIComponent(admissionId)}?name=${encodeURIComponent(displayName)}`
+				);
+				const body = (await response.json().catch(() => ({}))) as {
+					status?: 'pending' | 'admitted' | 'denied';
+					url?: string;
+					token?: string;
+					roomName?: string;
+				};
+				if (body.status === 'admitted' && body.url && body.token && body.roomName) {
+					stopWaiting();
+					stopPreview();
+					session = { url: body.url, token: body.token, displayName, meetingId: body.roomName };
+				} else if (body.status === 'denied') {
+					stopWaiting();
+					waitingDenied = true;
+				}
+			} catch {
+				// A dropped poll just retries on the next tick — the request stays pending either way.
+			}
+		};
+		void check();
+		pollTimer = setInterval(() => void check(), 3000);
+	}
+
+	function stopWaiting() {
+		if (pollTimer) clearInterval(pollTimer);
+		pollTimer = null;
+		waitingAdmissionId = '';
 	}
 
 	function onleave() {
@@ -192,6 +240,7 @@
 
 	function rejoin() {
 		left = false;
+		waitingDenied = false;
 		void startPreview();
 	}
 </script>
@@ -210,6 +259,7 @@
 		initialBackgroundOption={backgroundOption}
 		initialDeafened={deafened}
 		isLoggedIn={data.isLoggedIn}
+		meetingId={session.meetingId}
 		{onleave}
 	/>
 {:else}
@@ -225,6 +275,13 @@
 			{:else if left}
 				<div class="left-actions">
 					<button type="button" class="btn-secondary" onclick={rejoin}>{t('meet.rejoin')}</button>
+					<a href="/" class="btn-primary">{t('meet.returnHome')}</a>
+				</div>
+			{:else if waitingAdmissionId}
+				<p class="note">{t('meet.waitingForHost')}</p>
+			{:else if waitingDenied}
+				<p class="note">{t('meet.admissionDenied')}</p>
+				<div class="left-actions">
 					<a href="/" class="btn-primary">{t('meet.returnHome')}</a>
 				</div>
 			{:else}

@@ -704,6 +704,8 @@
 		"rejoin": "Rejoin",
 		"returnHome": "Return to home screen",
 		"invalidLink": "That code or link doesn't match any meeting.",
+		"waitingForHost": "Waiting for the host to let you in…",
+		"admissionDenied": "The host didn't let you into this meeting.",
 		"connecting": "Connecting…",
 		"connectionError": "Could not connect to the meeting.",
 		"deviceError": "Could not access your camera or microphone. You can still join.",
@@ -734,6 +736,11 @@
 		"deafenedStatus": "Deafened",
 		"participants": "Participants",
 		"chat": "Chat",
+		"settings": "Meeting settings",
+		"waitingToJoin": "Waiting to join",
+		"noOneWaiting": "No one is waiting.",
+		"admit": "Let in",
+		"deny": "Deny",
 		"chatPlaceholder": "Message",
 		"send": "Send",
 		"noMessages": "No messages yet.",
@@ -752,6 +759,13 @@
 		"copyLink": "Copy link",
 		"linkCopied": "Link copied",
 		"regenerateCode": "Get new code",
-		"couldNotRegenerate": "Could not create a new code"
+		"couldNotRegenerate": "Could not create a new code",
+		"edit": "Edit",
+		"titleLabel": "Title",
+		"admissionLabel": "Who can join",
+		"admissionOpen": "Anyone with the code or link",
+		"admissionApproval": "I need to let people in",
+		"admissionBadge": "Admission required",
+		"couldNotSave": "Could not save changes"
 	}
 }

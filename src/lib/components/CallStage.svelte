@@ -30,6 +30,7 @@
 		initialBackgroundOption = 'none',
 		initialDeafened = false,
 		isLoggedIn = false,
+		meetingId = '',
 		onleave
 	}: {
 		url: string;
@@ -42,6 +43,8 @@
 		initialBackgroundOption?: string;
 		initialDeafened?: boolean;
 		isLoggedIn?: boolean;
+		/** The meeting's internal id (LiveKit room name) — needed for the host-only settings/admissions endpoints. */
+		meetingId?: string;
 		onleave: () => void;
 	} = $props();
 
@@ -95,7 +98,15 @@
 	let pipMicBtn: HTMLButtonElement | null = null;
 	let pipCameraBtn: HTMLButtonElement | null = null;
 
-	let panel = $state<'none' | 'participants' | 'chat'>('none');
+	let isHost = $state(false);
+	let requireApproval = $state(false);
+	let settingsBusy = $state(false);
+	let settingsError = $state('');
+	let pendingAdmissions = $state<{ id: string; name: string }[]>([]);
+	let admissionsBusyId = $state('');
+	let admissionsPollTimer: ReturnType<typeof setInterval> | null = null;
+
+	let panel = $state<'none' | 'participants' | 'chat' | 'settings'>('none');
 	let roster = $state<{ identity: string; name: string; isLocal: boolean }[]>([]);
 	let messages = $state<{ id: string; from: string; text: string; isLocal: boolean }[]>([]);
 	let unread = $state(0);
@@ -602,6 +613,8 @@
 		(async () => {
 			try {
 				await instance.connect(url, token);
+				isHost = instance.localParticipant.attributes.role === 'host';
+				if (isHost) void loadMeetingSettings();
 				if (deafened) syncDeafenedAttribute('1');
 				await instance.localParticipant.setMicrophoneEnabled(
 					micEnabled,
@@ -648,6 +661,7 @@
 	onDestroy(() => {
 		room?.disconnect();
 		pipWindow?.close();
+		stopAdmissionsPolling();
 		// Give the leave chime time to finish before the context that plays it dies.
 		if (soundCtx) {
 			const ctx = soundCtx;
@@ -761,7 +775,7 @@
 		}
 	}
 
-	function togglePanel(next: 'participants' | 'chat') {
+	function togglePanel(next: 'participants' | 'chat' | 'settings') {
 		panel = panel === next ? 'none' : next;
 		if (panel === 'chat') {
 			unread = 0;
@@ -783,8 +797,89 @@
 		}
 	}
 
+	async function loadMeetingSettings() {
+		if (!meetingId) return;
+		try {
+			const response = await fetch(`/api/meetings/${encodeURIComponent(meetingId)}`);
+			const body = (await response.json().catch(() => ({}))) as {
+				meeting?: { require_approval: boolean };
+			};
+			if (response.ok && body.meeting) {
+				requireApproval = body.meeting.require_approval;
+				if (requireApproval) startAdmissionsPolling();
+			}
+		} catch {
+			// The settings panel just shows the last-known (default) value — not worth surfacing an error for.
+		}
+	}
+
+	async function setAdmissionMode(next: boolean) {
+		if (!meetingId || settingsBusy) return;
+		settingsBusy = true;
+		settingsError = '';
+		try {
+			const response = await fetch(`/api/meetings/${encodeURIComponent(meetingId)}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ requireApproval: next })
+			});
+			if (!response.ok) {
+				settingsError = t('meetings.couldNotSave');
+				return;
+			}
+			requireApproval = next;
+			if (next) startAdmissionsPolling();
+			else stopAdmissionsPolling();
+		} catch {
+			settingsError = t('common.networkError');
+		} finally {
+			settingsBusy = false;
+		}
+	}
+
+	function startAdmissionsPolling() {
+		if (admissionsPollTimer || !meetingId) return;
+		const check = async () => {
+			try {
+				const response = await fetch(`/api/meetings/${encodeURIComponent(meetingId)}/admissions`);
+				const body = (await response.json().catch(() => ({}))) as {
+					admissions?: { id: string; name: string }[];
+				};
+				if (response.ok && body.admissions) pendingAdmissions = body.admissions;
+			} catch {
+				// A dropped poll just retries on the next tick.
+			}
+		};
+		void check();
+		admissionsPollTimer = setInterval(() => void check(), 4000);
+	}
+
+	function stopAdmissionsPolling() {
+		if (admissionsPollTimer) clearInterval(admissionsPollTimer);
+		admissionsPollTimer = null;
+		pendingAdmissions = [];
+	}
+
+	async function respondToAdmission(admissionId: string, action: 'admit' | 'deny') {
+		if (!meetingId || admissionsBusyId) return;
+		admissionsBusyId = admissionId;
+		try {
+			await fetch(`/api/meetings/${encodeURIComponent(meetingId)}/admissions/${encodeURIComponent(admissionId)}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ action })
+			});
+			pendingAdmissions = pendingAdmissions.filter((admission) => admission.id !== admissionId);
+		} catch {
+			settingsError = t('common.networkError');
+		} finally {
+			admissionsBusyId = '';
+		}
+	}
+
 	function leave() {
 		playLeaveChime();
+		stopAdmissionsPolling();
 		room?.disconnect();
 		onleave();
 	}
@@ -873,6 +968,79 @@
 					/>
 					<button type="submit" class="call-chat-send" disabled={!chatInput.trim()}>{t('meet.send')}</button>
 				</form>
+			</div>
+		{:else if panel === 'settings'}
+			<div class="call-panel">
+				<div class="call-panel-head">
+					<strong>{t('meet.settings')}</strong>
+					<button type="button" class="call-panel-close" onclick={() => (panel = 'none')} aria-label={t('meet.close')}>
+						<Icon name="close-line" size={18} />
+					</button>
+				</div>
+				<div class="call-settings-body">
+					<fieldset class="call-settings-field">
+						<legend>{t('meetings.admissionLabel')}</legend>
+						<label class="call-settings-radio">
+							<input
+								type="radio"
+								name="call-admission"
+								checked={!requireApproval}
+								disabled={settingsBusy}
+								onchange={() => setAdmissionMode(false)}
+							/>
+							{t('meetings.admissionOpen')}
+						</label>
+						<label class="call-settings-radio">
+							<input
+								type="radio"
+								name="call-admission"
+								checked={requireApproval}
+								disabled={settingsBusy}
+								onchange={() => setAdmissionMode(true)}
+							/>
+							{t('meetings.admissionApproval')}
+						</label>
+					</fieldset>
+
+					{#if settingsError}<p class="call-settings-error">{settingsError}</p>{/if}
+
+					{#if requireApproval}
+						<div class="call-settings-field">
+							<span class="call-settings-label">{t('meet.waitingToJoin')}</span>
+							{#if pendingAdmissions.length === 0}
+								<p class="call-settings-empty">{t('meet.noOneWaiting')}</p>
+							{:else}
+								<ul class="call-panel-list">
+									{#each pendingAdmissions as admission (admission.id)}
+										<li class="call-admission-row">
+											<span>{admission.name}</span>
+											<div class="call-admission-actions">
+												<button
+													type="button"
+													class="call-admission-btn"
+													disabled={admissionsBusyId === admission.id}
+													onclick={() => respondToAdmission(admission.id, 'deny')}
+													aria-label={t('meet.deny')}
+												>
+													<Icon name="close-line" size={16} />
+												</button>
+												<button
+													type="button"
+													class="call-admission-btn call-admission-admit"
+													disabled={admissionsBusyId === admission.id}
+													onclick={() => respondToAdmission(admission.id, 'admit')}
+													aria-label={t('meet.admit')}
+												>
+													<Icon name="check-line" size={16} />
+												</button>
+											</div>
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+				</div>
 			</div>
 		{/if}
 	</div>
@@ -992,6 +1160,18 @@
 			<Icon name="chat-3-line" size={20} />
 			{#if unread > 0}<span class="call-btn-badge call-btn-badge-alert">{unread}</span>{/if}
 		</button>
+		{#if isHost}
+			<button
+				type="button"
+				class="call-btn"
+				class:call-btn-active={panel === 'settings'}
+				onclick={() => togglePanel('settings')}
+				aria-label={t('meet.settings')}
+			>
+				<Icon name="settings-3-line" size={20} />
+				{#if pendingAdmissions.length > 0}<span class="call-btn-badge">{pendingAdmissions.length}</span>{/if}
+			</button>
+		{/if}
 		<button type="button" class="call-btn call-btn-leave" onclick={leave} aria-label={t('meet.leave')}>
 			<Icon name="phone-line" size={20} />
 		</button>
@@ -1214,6 +1394,97 @@
 		font-size: 0.6875rem;
 		font-weight: 600;
 		flex-shrink: 0;
+	}
+
+	.call-settings-body {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: 0.75rem;
+		overflow-y: auto;
+	}
+
+	.call-settings-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin: 0;
+		padding: 0;
+		border: none;
+	}
+
+	.call-settings-field legend,
+	.call-settings-label {
+		padding: 0;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	.call-settings-radio {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.8125rem;
+	}
+
+	.call-settings-error {
+		margin: 0;
+		font-size: 0.75rem;
+		color: #f87171;
+	}
+
+	.call-settings-empty {
+		margin: 0;
+		font-size: 0.8125rem;
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	.call-admission-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.5rem 0.5rem;
+		font-size: 0.8125rem;
+		border-radius: 0.5rem;
+	}
+
+	.call-admission-row:hover {
+		background: rgba(255, 255, 255, 0.06);
+	}
+
+	.call-admission-actions {
+		display: flex;
+		gap: 0.375rem;
+		flex-shrink: 0;
+	}
+
+	.call-admission-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		border: none;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.12);
+		color: #fff;
+		cursor: pointer;
+	}
+
+	.call-admission-btn:hover {
+		background: rgba(255, 255, 255, 0.2);
+	}
+
+	.call-admission-admit {
+		background: #15803d;
+	}
+
+	.call-admission-admit:hover {
+		background: #16a34a;
 	}
 
 	.call-chat-body {

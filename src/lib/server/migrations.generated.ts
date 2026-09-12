@@ -116,5 +116,9 @@ export const MIGRATIONS: GeneratedMigration[] = [
 	{
 		name: "0028_meeting_codes.sql",
 		sql: "-- The join code is what gets shared and typed now, not a separate hidden token --\n-- see meetings.ts. A partial unique index (rather than NOT NULL) lets existing\n-- rows keep code = NULL until their owner regenerates one; nothing reads\n-- token_hash anymore so it's dropped outright.\nALTER TABLE meetings ADD COLUMN code TEXT;\nCREATE UNIQUE INDEX meetings_code_idx ON meetings(code) WHERE code IS NOT NULL;\nALTER TABLE meetings DROP COLUMN token_hash;\n"
+	},
+	{
+		name: "0029_meeting_admission.sql",
+		sql: "-- Anyone-can-join is the existing behavior and stays the default; opting a\n-- meeting into \"host must let people in\" is a per-meeting choice, not global.\nALTER TABLE meetings ADD COLUMN require_approval INTEGER NOT NULL DEFAULT 0;\n\n-- A pending join request when a meeting requires approval. Short-lived by\n-- nature (a meeting session's lifetime) -- no cleanup job needed yet, but see\n-- the note in admissions.ts if this table ever grows unbounded.\nCREATE TABLE meeting_admissions (\n\tid TEXT PRIMARY KEY,\n\tmeeting_id TEXT NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,\n\tname TEXT NOT NULL,\n\tstatus TEXT NOT NULL DEFAULT 'pending',\n\tcreated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n);\n\nCREATE INDEX meeting_admissions_meeting_id_idx ON meeting_admissions(meeting_id);\n"
 	}
 ];

@@ -704,6 +704,8 @@
 		"rejoin": "Gabung lagi",
 		"returnHome": "Kembali ke layar utama",
 		"invalidLink": "Kode atau tautan itu tidak cocok dengan rapat mana pun.",
+		"waitingForHost": "Menunggu tuan rumah mengizinkan Anda masuk…",
+		"admissionDenied": "Tuan rumah tidak mengizinkan Anda masuk ke rapat ini.",
 		"connecting": "Menghubungkan…",
 		"connectionError": "Tidak dapat terhubung ke rapat.",
 		"deviceError": "Tidak dapat mengakses kamera atau mikrofon Anda. Anda tetap bisa bergabung.",
@@ -734,6 +736,11 @@
 		"deafenedStatus": "Audio nonaktif",
 		"participants": "Peserta",
 		"chat": "Obrolan",
+		"settings": "Pengaturan rapat",
+		"waitingToJoin": "Menunggu untuk bergabung",
+		"noOneWaiting": "Tidak ada yang menunggu.",
+		"admit": "Izinkan masuk",
+		"deny": "Tolak",
 		"chatPlaceholder": "Pesan",
 		"send": "Kirim",
 		"noMessages": "Belum ada pesan.",
@@ -752,6 +759,13 @@
 		"copyLink": "Salin tautan",
 		"linkCopied": "Tautan disalin",
 		"regenerateCode": "Dapatkan kode baru",
-		"couldNotRegenerate": "Tidak dapat membuat kode baru"
+		"couldNotRegenerate": "Tidak dapat membuat kode baru",
+		"edit": "Ubah",
+		"titleLabel": "Judul",
+		"admissionLabel": "Siapa yang boleh bergabung",
+		"admissionOpen": "Siapa saja dengan kode atau tautan",
+		"admissionApproval": "Saya perlu mengizinkan orang masuk",
+		"admissionBadge": "Perlu persetujuan",
+		"couldNotSave": "Tidak dapat menyimpan perubahan"
 	}
 }

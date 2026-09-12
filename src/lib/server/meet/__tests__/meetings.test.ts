@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import type { D1Database } from '@cloudflare/workers-types';
-import { createMeeting, findMeetingByCode, listMeetings, rotateMeetingCode } from '../meetings';
+import { createMeeting, findMeetingByCode, getMeetingForUser, listMeetings, rotateMeetingCode, updateMeeting } from '../meetings';
 
 type MeetingRow = {
 	id: string;
 	user_id: string;
 	title: string | null;
 	code: string | null;
+	require_approval: number;
 	created_at: string;
 };
 
@@ -34,37 +35,40 @@ function mockDb(seed: MeetingRow[] = []) {
 				bind(...args: unknown[]) {
 					return {
 						async first() {
-							if (sql.startsWith('SELECT id, code, title, created_at FROM meetings WHERE code')) {
+							if (sql.includes('COUNT(*)')) {
+								const userId = String(args[0]);
+								return { count: rows.filter((row) => row.user_id === userId).length };
+							}
+							if (sql.includes('WHERE code = ?')) {
 								const code = String(args[0]);
-								const row = rows.find((entry) => entry.code === code);
-								return row ? { id: row.id, code: row.code, title: row.title, created_at: row.created_at } : null;
+								return rows.find((row) => row.code === code) ?? null;
+							}
+							if (sql.includes('WHERE id = ? AND user_id = ?')) {
+								const [id, userId] = args as [string, string];
+								return rows.find((row) => row.id === id && row.user_id === userId) ?? null;
 							}
 							return null;
 						},
 						async all() {
-							if (sql.startsWith('SELECT id, code, title, created_at FROM meetings WHERE user_id')) {
+							if (sql.includes('WHERE user_id = ?')) {
 								const userId = String(args[0]);
-								return {
-									results: rows
-										.filter((row) => row.user_id === userId)
-										.sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
-										.map((row) => ({ id: row.id, code: row.code, title: row.title, created_at: row.created_at }))
-								};
+								return { results: rows.filter((row) => row.user_id === userId) };
 							}
 							return { results: [] };
 						},
 						async run() {
 							if (sql.startsWith('INSERT INTO meetings')) {
-								const [id, userId, , title, code, createdAt] = args as [
+								const [id, userId, , title, code, requireApproval, createdAt] = args as [
 									string,
 									string,
 									string | null,
 									string | null,
 									string,
+									number,
 									string
 								];
 								assertCodeFree(code);
-								rows.push({ id, user_id: userId, title, code, created_at: createdAt });
+								rows.push({ id, user_id: userId, title, code, require_approval: requireApproval, created_at: createdAt });
 								return { meta: { changes: 1 } };
 							}
 							if (sql.startsWith('UPDATE meetings SET code')) {
@@ -73,6 +77,17 @@ function mockDb(seed: MeetingRow[] = []) {
 								if (!row) return { meta: { changes: 0 } };
 								assertCodeFree(code, id);
 								row.code = code;
+								return { meta: { changes: 1 } };
+							}
+							if (sql.startsWith('UPDATE meetings SET')) {
+								// updateMeeting: last two bound args are always [id, userId]
+								const id = String(args[args.length - 2]);
+								const userId = String(args[args.length - 1]);
+								const row = rows.find((entry) => entry.id === id && entry.user_id === userId);
+								if (!row) return { meta: { changes: 0 } };
+								let cursor = 0;
+								if (sql.includes('title = ?')) row.title = args[cursor++] as string | null;
+								if (sql.includes('require_approval = ?')) row.require_approval = args[cursor++] as number;
 								return { meta: { changes: 1 } };
 							}
 							return { meta: { changes: 0 } };
@@ -86,6 +101,29 @@ function mockDb(seed: MeetingRow[] = []) {
 	return { db, rows, forceNextCollision: () => (forcedFailures += 1) };
 }
 
+describe('default titles', () => {
+	test('the first meeting is "Meeting #1", the next is "#2"', async () => {
+		const { db } = mockDb();
+		const first = await createMeeting(db, 'user-1');
+		const second = await createMeeting(db, 'user-1');
+		assert.equal(first.meeting.title, 'Meeting #1');
+		assert.equal(second.meeting.title, 'Meeting #2');
+	});
+
+	test('a given title is used as-is instead of a default', async () => {
+		const { db } = mockDb();
+		const created = await createMeeting(db, 'user-1', { title: 'Standup' });
+		assert.equal(created.meeting.title, 'Standup');
+	});
+
+	test("default numbering is per user, not global", async () => {
+		const { db } = mockDb();
+		await createMeeting(db, 'user-1');
+		const other = await createMeeting(db, 'user-2');
+		assert.equal(other.meeting.title, 'Meeting #1');
+	});
+});
+
 describe('creating and joining a meeting', () => {
 	test('the code looks up the meeting, a wrong one does not', async () => {
 		const { db } = mockDb();
@@ -95,9 +133,16 @@ describe('creating and joining a meeting', () => {
 		assert.equal(await findMeetingByCode(db, 'not-the-code'), null);
 	});
 
-	test('an unknown code never resolves', async () => {
+	test('meetings default to open (no approval required)', async () => {
 		const { db } = mockDb();
-		assert.equal(await findMeetingByCode(db, 'abc-defg-hij'), null);
+		const created = await createMeeting(db, 'user-1');
+		assert.equal(created.meeting.require_approval, false);
+	});
+
+	test('requireApproval can be set at creation', async () => {
+		const { db } = mockDb();
+		const created = await createMeeting(db, 'user-1', { requireApproval: true });
+		assert.equal(created.meeting.require_approval, true);
 	});
 
 	test('the same code works again on a second visit — it is looked up, not consumed', async () => {
@@ -127,8 +172,8 @@ describe('creating and joining a meeting', () => {
 describe('listing meetings', () => {
 	test("only returns the requesting user's own rows", async () => {
 		const { db } = mockDb([
-			{ id: 'a', user_id: 'user-1', title: 'Mine', code: 'aaa-aaaa-aaa', created_at: '2026-01-01T00:00:00.000Z' },
-			{ id: 'b', user_id: 'user-2', title: 'Theirs', code: 'bbb-bbbb-bbb', created_at: '2026-01-01T00:00:00.000Z' }
+			{ id: 'a', user_id: 'user-1', title: 'Mine', code: 'aaa-aaaa-aaa', require_approval: 0, created_at: '2026-01-01T00:00:00.000Z' },
+			{ id: 'b', user_id: 'user-2', title: 'Theirs', code: 'bbb-bbbb-bbb', require_approval: 0, created_at: '2026-01-01T00:00:00.000Z' }
 		]);
 
 		const meetings = await listMeetings(db, 'user-1');
@@ -136,6 +181,30 @@ describe('listing meetings', () => {
 			meetings.map((meeting) => meeting.id),
 			['a']
 		);
+	});
+});
+
+describe('updateMeeting', () => {
+	test('updates only the fields given, ownership-checked', async () => {
+		const { db } = mockDb();
+		const created = await createMeeting(db, 'user-1', { title: 'Old title' });
+
+		const updated = await updateMeeting(db, 'user-1', created.meeting.id, { requireApproval: true });
+		assert.equal(updated?.title, 'Old title');
+		assert.equal(updated?.require_approval, true);
+
+		const renamed = await updateMeeting(db, 'user-1', created.meeting.id, { title: 'New title' });
+		assert.equal(renamed?.title, 'New title');
+		assert.equal(renamed?.require_approval, true);
+	});
+
+	test('cannot update a meeting owned by someone else', async () => {
+		const { db } = mockDb();
+		const created = await createMeeting(db, 'user-1');
+
+		const result = await updateMeeting(db, 'user-2', created.meeting.id, { title: 'Hijacked' });
+		assert.equal(result, null);
+		assert.equal((await getMeetingForUser(db, 'user-1', created.meeting.id))?.title, created.meeting.title);
 	});
 });
 
@@ -153,7 +222,7 @@ describe('rotating a meeting code', () => {
 
 	test('cannot rotate a meeting owned by someone else', async () => {
 		const { db, rows } = mockDb([
-			{ id: 'a', user_id: 'user-1', title: null, code: 'aaa-aaaa-aaa', created_at: '2026-01-01T00:00:00.000Z' }
+			{ id: 'a', user_id: 'user-1', title: null, code: 'aaa-aaaa-aaa', require_approval: 0, created_at: '2026-01-01T00:00:00.000Z' }
 		]);
 
 		const rotated = await rotateMeetingCode(db, 'user-2', 'a');

@@ -21,6 +21,8 @@ type AccessTokenOptions = {
 	room: string;
 	/** How long the token is valid to establish the *initial* connection. */
 	ttlSeconds?: number;
+	/** Initial participant attributes (e.g. `{ role: 'host' }`) — a top-level JWT claim, not part of the `video` grant. */
+	attributes?: Record<string, string>;
 };
 
 export type LiveKitClient = {
@@ -36,7 +38,7 @@ export function createLiveKitClient(apiKey: string, apiSecret: string, url: stri
 
 	return {
 		url,
-		async createAccessToken({ identity, name, room, ttlSeconds = 900 }) {
+		async createAccessToken({ identity, name, room, ttlSeconds = 900, attributes }) {
 			const now = Math.floor(Date.now() / 1000);
 			const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
 			const payload = base64url(
@@ -46,6 +48,7 @@ export function createLiveKitClient(apiKey: string, apiSecret: string, url: stri
 					name,
 					nbf: now,
 					exp: now + ttlSeconds,
+					...(attributes ? { attributes } : {}),
 					video: {
 						roomJoin: true,
 						room,

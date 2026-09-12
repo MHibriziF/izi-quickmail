@@ -9,6 +9,7 @@ import { MailRequestError } from './client';
 export type StartedMeeting = {
 	id: string;
 	title: string | null;
+	requireApproval: boolean;
 	code: string;
 	joinUrl: string;
 };

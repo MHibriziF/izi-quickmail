@@ -12,17 +12,20 @@
 
 	/** Meetings started from this page this session — prepended ahead of `meetings`. */
 	let created = $state<Meeting[]>([]);
-	/** A regenerated code, keyed by meeting id — kept separate rather than mutating `meetings` (a plain prop, not reactive state). */
-	let codeOverrides = $state<Record<string, string>>({});
-	const rows = $derived(
-		[...created, ...meetings].map((meeting) => ({ ...meeting, code: codeOverrides[meeting.id] ?? meeting.code }))
-	);
+	/** Edits applied this session, keyed by meeting id — kept separate rather than mutating `meetings` (a plain prop, not reactive state). */
+	let overrides = $state<Record<string, Partial<Pick<Meeting, 'code' | 'title' | 'require_approval'>>>>({});
+	const rows = $derived([...created, ...meetings].map((meeting) => ({ ...meeting, ...overrides[meeting.id] })));
 
 	let starting = $state(false);
 	let busyId = $state('');
 	let copiedId = $state('');
 	let error = $state('');
 	let joinCode = $state('');
+
+	let editingId = $state('');
+	let editTitle = $state('');
+	let editRequireApproval = $state(false);
+	let savingEdit = $state(false);
 
 	function joinUrlFor(code: string): string {
 		return `${$page.url.origin}/meet/${code}`;
@@ -35,7 +38,17 @@
 
 		try {
 			const meeting = await startMeeting();
-			created = [{ id: meeting.id, code: meeting.code, title: meeting.title, created_at: new Date().toISOString() }, ...created];
+			created = [
+				{
+					id: meeting.id,
+					user_id: '',
+					code: meeting.code,
+					title: meeting.title,
+					require_approval: meeting.requireApproval,
+					created_at: new Date().toISOString()
+				},
+				...created
+			];
 		} catch (failure) {
 			error = describeMailError(failure, t('common.networkError'));
 		} finally {
@@ -55,7 +68,7 @@
 				error = body.error ?? t('meetings.couldNotRegenerate');
 				return;
 			}
-			codeOverrides = { ...codeOverrides, [id]: body.code };
+			overrides = { ...overrides, [id]: { ...overrides[id], code: body.code } };
 		} catch {
 			error = t('common.networkError');
 		} finally {
@@ -80,6 +93,47 @@
 		const code = joinCode.trim().toLowerCase();
 		if (!code) return;
 		void goto(`/meet/${encodeURIComponent(code)}`);
+	}
+
+	function openEdit(meeting: Meeting) {
+		editingId = meeting.id;
+		editTitle = meeting.title ?? '';
+		editRequireApproval = meeting.require_approval;
+	}
+
+	function cancelEdit() {
+		editingId = '';
+	}
+
+	async function saveEdit(id: string) {
+		if (savingEdit) return;
+		savingEdit = true;
+		error = '';
+
+		try {
+			const response = await fetch(`/api/meetings/${encodeURIComponent(id)}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ title: editTitle, requireApproval: editRequireApproval })
+			});
+			const body = (await response.json().catch(() => ({}))) as {
+				meeting?: { title: string | null; require_approval: boolean };
+				error?: string;
+			};
+			if (!response.ok || !body.meeting) {
+				error = body.error ?? t('meetings.couldNotSave');
+				return;
+			}
+			overrides = {
+				...overrides,
+				[id]: { ...overrides[id], title: body.meeting.title, require_approval: body.meeting.require_approval }
+			};
+			editingId = '';
+		} catch {
+			error = t('common.networkError');
+		} finally {
+			savingEdit = false;
+		}
 	}
 </script>
 
@@ -113,27 +167,63 @@
 		{:else}
 			<ul class="meetings-list">
 				{#each rows as meeting (meeting.id)}
-					<li class="meetings-row">
-						<div class="meetings-row-info">
-							<span class="meetings-row-title">{meeting.title || t('meetings.untitled')}</span>
-							<span class="meetings-row-date">{new Date(meeting.created_at).toLocaleString()}</span>
-						</div>
-						<div class="meetings-row-actions">
-							{#if meeting.code}
-								<code class="meetings-code">{meeting.code}</code>
-								<button type="button" class="meetings-row-action" onclick={() => copyLink(meeting.id, joinUrlFor(meeting.code!))}>
-									{copiedId === meeting.id ? t('meetings.linkCopied') : t('meetings.copyLink')}
+					<li class="meetings-item">
+						<div class="meetings-row">
+							<div class="meetings-row-info">
+								<span class="meetings-row-title">{meeting.title || t('meetings.untitled')}</span>
+								<span class="meetings-row-date">
+									{new Date(meeting.created_at).toLocaleString()}
+									{#if meeting.require_approval}
+										· {t('meetings.admissionBadge')}
+									{/if}
+								</span>
+							</div>
+							<div class="meetings-row-actions">
+								{#if meeting.code}
+									<code class="meetings-code">{meeting.code}</code>
+									<button type="button" class="meetings-row-action" onclick={() => copyLink(meeting.id, joinUrlFor(meeting.code!))}>
+										{copiedId === meeting.id ? t('meetings.linkCopied') : t('meetings.copyLink')}
+									</button>
+								{/if}
+								<button type="button" class="meetings-row-action" onclick={() => openEdit(meeting)}>
+									{t('meetings.edit')}
 								</button>
-							{/if}
-							<button
-								type="button"
-								class="meetings-row-action"
-								disabled={busyId === meeting.id}
-								onclick={() => regenerate(meeting.id)}
-							>
-								{t('meetings.regenerateCode')}
-							</button>
+								<button
+									type="button"
+									class="meetings-row-action"
+									disabled={busyId === meeting.id}
+									onclick={() => regenerate(meeting.id)}
+								>
+									{t('meetings.regenerateCode')}
+								</button>
+							</div>
 						</div>
+
+						{#if editingId === meeting.id}
+							<div class="meetings-edit">
+								<label class="meetings-edit-field">
+									<span>{t('meetings.titleLabel')}</span>
+									<input class="meetings-join-input" type="text" bind:value={editTitle} maxlength={200} />
+								</label>
+								<fieldset class="meetings-edit-field">
+									<legend>{t('meetings.admissionLabel')}</legend>
+									<label class="meetings-edit-radio">
+										<input type="radio" name="admission-{meeting.id}" checked={!editRequireApproval} onchange={() => (editRequireApproval = false)} />
+										{t('meetings.admissionOpen')}
+									</label>
+									<label class="meetings-edit-radio">
+										<input type="radio" name="admission-{meeting.id}" checked={editRequireApproval} onchange={() => (editRequireApproval = true)} />
+										{t('meetings.admissionApproval')}
+									</label>
+								</fieldset>
+								<div class="meetings-edit-actions">
+									<button type="button" class="meetings-row-action" onclick={cancelEdit}>{t('common.cancel')}</button>
+									<button type="button" class="meetings-new-btn" disabled={savingEdit} onclick={() => saveEdit(meeting.id)}>
+										{savingEdit ? t('common.saving') : t('common.save')}
+									</button>
+								</div>
+							</div>
+						{/if}
 					</li>
 				{/each}
 			</ul>
@@ -225,15 +315,58 @@
 		padding: 0;
 	}
 
+	.meetings-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.625rem;
+		padding: 0.75rem;
+		border: 1px solid var(--color-line);
+		border-radius: 0.5rem;
+	}
+
 	.meetings-row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
 		flex-wrap: wrap;
-		padding: 0.75rem;
-		border: 1px solid var(--color-line);
-		border-radius: 0.5rem;
+	}
+
+	.meetings-edit {
+		display: flex;
+		flex-direction: column;
+		gap: 0.625rem;
+		padding-top: 0.625rem;
+		border-top: 1px solid var(--color-line);
+	}
+
+	.meetings-edit-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin: 0;
+		padding: 0;
+		border: none;
+		font-size: 0.8125rem;
+	}
+
+	.meetings-edit-field legend {
+		padding: 0;
+		font-size: 0.8125rem;
+	}
+
+	.meetings-edit-radio {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		font-weight: 400;
+	}
+
+	.meetings-edit-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
 	}
 
 	.meetings-row-info {

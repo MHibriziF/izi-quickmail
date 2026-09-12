@@ -2,10 +2,18 @@ import type { D1Database } from '@cloudflare/workers-types';
 
 export type Meeting = {
 	id: string;
+	user_id: string;
 	code: string | null;
 	title: string | null;
+	require_approval: boolean;
 	created_at: string;
 };
+
+type MeetingRow = Omit<Meeting, 'require_approval'> & { require_approval: number };
+
+function toMeeting(row: MeetingRow): Meeting {
+	return { ...row, require_approval: !!row.require_approval };
+}
 
 /** A freshly created meeting: the join code plus its summary. */
 export type CreatedMeeting = {
@@ -33,6 +41,16 @@ function randomLetters(length: number): string {
 	return result;
 }
 
+/** `Meeting #N` for the caller's Nth meeting, used whenever no title is given at creation. */
+async function nextDefaultTitle(db: D1Database, userId: string): Promise<string> {
+	const row = await db
+		.prepare('SELECT COUNT(*) AS count FROM meetings WHERE user_id = ?')
+		.bind(userId)
+		.first<{ count: number }>();
+
+	return `Meeting #${(row?.count ?? 0) + 1}`;
+}
+
 /**
  * The code is the whole join credential (like a Google Meet/Zoom meeting
  * code) — no separate hidden token. It's stored and shown in the clear so a
@@ -41,10 +59,11 @@ function randomLetters(length: number): string {
 export async function createMeeting(
 	db: D1Database,
 	userId: string,
-	options: { title?: string; domainId?: string | null } = {}
+	options: { title?: string; domainId?: string | null; requireApproval?: boolean } = {}
 ): Promise<CreatedMeeting> {
 	const id = crypto.randomUUID();
-	const title = options.title?.trim().slice(0, 200) || null;
+	const title = options.title?.trim().slice(0, 200) || (await nextDefaultTitle(db, userId));
+	const requireApproval = options.requireApproval ?? false;
 	const createdAt = new Date().toISOString();
 
 	for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
@@ -52,13 +71,16 @@ export async function createMeeting(
 		try {
 			await db
 				.prepare(
-					`INSERT INTO meetings (id, user_id, domain_id, title, code, created_at)
-					 VALUES (?, ?, ?, ?, ?, ?)`
+					`INSERT INTO meetings (id, user_id, domain_id, title, code, require_approval, created_at)
+					 VALUES (?, ?, ?, ?, ?, ?, ?)`
 				)
-				.bind(id, userId, options.domainId ?? null, title, code, createdAt)
+				.bind(id, userId, options.domainId ?? null, title, code, requireApproval ? 1 : 0, createdAt)
 				.run();
 
-			return { code, meeting: { id, code, title, created_at: createdAt } };
+			return {
+				code,
+				meeting: { id, user_id: userId, code, title, require_approval: requireApproval, created_at: createdAt }
+			};
 		} catch (error) {
 			if (!isUniqueConstraintError(error) || attempt === MAX_CODE_ATTEMPTS - 1) throw error;
 		}
@@ -69,21 +91,61 @@ export async function createMeeting(
 
 export async function listMeetings(db: D1Database, userId: string): Promise<Meeting[]> {
 	const { results } = await db
-		.prepare('SELECT id, code, title, created_at FROM meetings WHERE user_id = ? ORDER BY created_at DESC')
+		.prepare(
+			'SELECT id, user_id, code, title, require_approval, created_at FROM meetings WHERE user_id = ? ORDER BY created_at DESC'
+		)
 		.bind(userId)
-		.all<Meeting>();
+		.all<MeetingRow>();
 
-	return results;
+	return results.map(toMeeting);
 }
 
 /** Looked up, not verified against a guess — the code itself is the whole credential now. */
 export async function findMeetingByCode(db: D1Database, code: string): Promise<Meeting | null> {
 	const row = await db
-		.prepare('SELECT id, code, title, created_at FROM meetings WHERE code = ?')
+		.prepare('SELECT id, user_id, code, title, require_approval, created_at FROM meetings WHERE code = ?')
 		.bind(code)
-		.first<Meeting>();
+		.first<MeetingRow>();
 
-	return row ?? null;
+	return row ? toMeeting(row) : null;
+}
+
+/** Ownership-checked partial update — backs both the /meetings list edit and the in-call host settings panel. */
+export async function updateMeeting(
+	db: D1Database,
+	userId: string,
+	id: string,
+	changes: { title?: string; requireApproval?: boolean }
+): Promise<Meeting | null> {
+	const sets: string[] = [];
+	const values: unknown[] = [];
+
+	if (changes.title !== undefined) {
+		sets.push('title = ?');
+		values.push(changes.title.trim().slice(0, 200) || null);
+	}
+	if (changes.requireApproval !== undefined) {
+		sets.push('require_approval = ?');
+		values.push(changes.requireApproval ? 1 : 0);
+	}
+	if (sets.length === 0) return getMeetingForUser(db, userId, id);
+
+	const result = await db
+		.prepare(`UPDATE meetings SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`)
+		.bind(...values, id, userId)
+		.run();
+
+	if ((result.meta.changes ?? 0) === 0) return null;
+	return getMeetingForUser(db, userId, id);
+}
+
+export async function getMeetingForUser(db: D1Database, userId: string, id: string): Promise<Meeting | null> {
+	const row = await db
+		.prepare('SELECT id, user_id, code, title, require_approval, created_at FROM meetings WHERE id = ? AND user_id = ?')
+		.bind(id, userId)
+		.first<MeetingRow>();
+
+	return row ? toMeeting(row) : null;
 }
 
 /**
