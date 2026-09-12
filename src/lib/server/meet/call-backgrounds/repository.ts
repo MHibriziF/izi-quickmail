@@ -88,21 +88,28 @@ export function createD1CallBackgroundsRepository(
 				customMetadata: { filename: input.filename }
 			});
 
-			await db
-				.prepare(
-					`INSERT INTO call_backgrounds (id, user_id, storage_key, content_type, size_bytes)
-					 VALUES (?, ?, ?, ?, ?)`
-				)
-				.bind(input.id, input.userId, input.storageKey, input.contentType, input.sizeBytes)
-				.run();
+			try {
+				await db
+					.prepare(
+						`INSERT INTO call_backgrounds (id, user_id, storage_key, content_type, size_bytes)
+						 VALUES (?, ?, ?, ?, ?)`
+					)
+					.bind(input.id, input.userId, input.storageKey, input.contentType, input.sizeBytes)
+					.run();
 
-			const row = await db
-				.prepare(`SELECT id, user_id, content_type, size_bytes, created_at FROM call_backgrounds WHERE id = ?`)
-				.bind(input.id)
-				.first<CallBackgroundMeta>();
+				const row = await db
+					.prepare(`SELECT id, user_id, content_type, size_bytes, created_at FROM call_backgrounds WHERE id = ?`)
+					.bind(input.id)
+					.first<CallBackgroundMeta>();
 
-			if (!row) throw new Error('Failed to save background');
-			return row;
+				if (!row) throw new Error('Failed to save background');
+				return row;
+			} catch (error) {
+				// The row never landed (or came back missing), so don't leave the blob
+				// behind as an orphan nothing will ever reference or clean up.
+				await bucket.delete(input.storageKey);
+				throw error;
+			}
 		},
 
 		async remove(id, storageKey) {

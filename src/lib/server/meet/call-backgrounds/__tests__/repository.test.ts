@@ -13,12 +13,13 @@ type Row = {
 	created_at: string;
 };
 
-function setup() {
+function setup(options: { failInsert?: boolean } = {}) {
 	const rows: Row[] = [];
 	let clock = 0;
 
 	const db = createFakeD1(({ sql, args }) => {
 		if (sql.startsWith('INSERT INTO call_backgrounds')) {
+			if (options.failInsert) throw new Error('D1 unavailable');
 			const [id, userId, storageKey, contentType, sizeBytes] = args as [string, string, string, string, number];
 			clock += 1;
 			rows.push({ id, user_id: userId, storage_key: storageKey, content_type: contentType, size_bytes: sizeBytes, created_at: `t${clock}` });
@@ -109,6 +110,15 @@ describe('CallBackgroundsRepository', () => {
 			{ id: 'a', storage_key: 'k/a' },
 			{ id: 'b', storage_key: 'k/b' }
 		]);
+	});
+
+	test('insert cleans up the blob it just uploaded if the database write fails', async () => {
+		const { repo, stored } = setup({ failInsert: true });
+		await assert.rejects(
+			repo.insert({ id: 'a', userId: 'user-1', storageKey: 'k/a', contentType: 'image/png', sizeBytes: 1, bytes: new Uint8Array([1]), filename: 'a.png' }),
+			/D1 unavailable/
+		);
+		assert.equal(stored.size, 0);
 	});
 
 	test('remove deletes both the row and the blob', async () => {
