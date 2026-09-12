@@ -112,10 +112,11 @@ function buildScope(userId: string, query: MailboxQuery): { where: string; bindi
 			String.raw`(e.subject LIKE ? ESCAPE '\' OR e.from_addr LIKE ? ESCAPE '\'
 			  OR e.to_addr LIKE ? ESCAPE '\' OR e.body_text LIKE ? ESCAPE '\')`
 		);
-		const like = `%${term
+		const escaped = term
 			.replaceAll('\\', String.raw`\\`)
 			.replaceAll('%', String.raw`\%`)
-			.replaceAll('_', String.raw`\_`)}%`;
+			.replaceAll('_', String.raw`\_`);
+		const like = `%${escaped}%`;
 		bindings.push(like, like, like, like);
 	}
 
