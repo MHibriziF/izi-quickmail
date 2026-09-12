@@ -99,7 +99,7 @@ jobs:
           EXISTING=$(gh api "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" --jq '[.[] | select(.body | startswith("<!-- sonarqube-summary -->"))][0].id')
 
           if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
-            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$EXISTING" -f body=@/tmp/sonar-comment.md
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$EXISTING" -F body=@/tmp/sonar-comment.md
           else
-            gh api -X POST "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" -f body=@/tmp/sonar-comment.md
+            gh api -X POST "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" -F body=@/tmp/sonar-comment.md
           fi
