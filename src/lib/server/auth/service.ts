@@ -53,7 +53,7 @@ export type LoginResult =
 export function isLikelyEmail(value: string): boolean {
 	const trimmed = value.trim();
 	const at = trimmed.indexOf('@');
-	if (at <= 0 || trimmed.indexOf('@', at + 1) !== -1) return false;
+	if (at <= 0 || trimmed.slice(at + 1).includes('@')) return false;
 
 	const local = trimmed.slice(0, at);
 	const domain = trimmed.slice(at + 1);
@@ -81,12 +81,22 @@ export function readSessionToken(cookies: { get: (name: string) => string | unde
 	return cookies.get(SESSION_COOKIE);
 }
 
+/**
+ * `byte % CODE_ALPHABET.length` would bias low indices, since 256 is not a
+ * multiple of the alphabet's length — rejection sampling keeps every
+ * character equally likely.
+ */
+function randomAlphabetChar(): string {
+	const rejectAt = 256 - (256 % CODE_ALPHABET.length);
+	let byte: number;
+	do {
+		byte = crypto.getRandomValues(new Uint8Array(1))[0];
+	} while (byte >= rejectAt);
+	return CODE_ALPHABET[byte % CODE_ALPHABET.length];
+}
+
 function newBackupCode(): string {
-	const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH));
-	let code = '';
-	for (const byte of bytes) {
-		code += CODE_ALPHABET[byte % CODE_ALPHABET.length];
-	}
+	const code = Array.from({ length: CODE_LENGTH }, randomAlphabetChar).join('');
 	return `${code.slice(0, 4)}-${code.slice(4)}`;
 }
 
