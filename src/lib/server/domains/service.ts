@@ -130,7 +130,7 @@ export function createDomainsService(deps: DomainsServiceDeps): DomainsService {
 				throw new DomainsServiceError(400, 'Domain is not connected');
 			}
 
-			const localPart = input.localPart.trim().toLowerCase().replace(/@.*$/, '');
+			const localPart = input.localPart.trim().toLowerCase().split('@')[0];
 			if (!LOCAL_PART.test(localPart)) {
 				throw new DomainsServiceError(400, 'Use letters, numbers and . _ % + - before the @');
 			}

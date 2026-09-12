@@ -51,7 +51,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		return json({ error: 'Domain is not connected' }, { status: 400 });
 	}
 
-	const localPart = body.localPart.trim().toLowerCase().replace(/@.*$/, '');
+	const localPart = body.localPart.trim().toLowerCase().split('@')[0];
 
 	// Tracked so a login without a mailbox can be rolled back rather than left
 	// behind as an account nobody can receive mail on.

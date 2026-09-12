@@ -67,7 +67,7 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		const domains = getDomainsService(platform);
 		const [domain] = await domains.connect([body.domainId]);
 
-		const localPart = body.localPart.trim().toLowerCase().replace(/@.*$/, '');
+		const localPart = body.localPart.trim().toLowerCase().split('@')[0];
 		const address = `${localPart}@${domain.name}`;
 
 		// The mail address doubles as the login — one identity, not two.
