@@ -109,10 +109,13 @@ function buildScope(userId: string, query: MailboxQuery): { where: string; bindi
 	const term = query.q?.trim();
 	if (term) {
 		filters.push(
-			`(e.subject LIKE ? ESCAPE '\\' OR e.from_addr LIKE ? ESCAPE '\\'
-			  OR e.to_addr LIKE ? ESCAPE '\\' OR e.body_text LIKE ? ESCAPE '\\')`
+			String.raw`(e.subject LIKE ? ESCAPE '\' OR e.from_addr LIKE ? ESCAPE '\'
+			  OR e.to_addr LIKE ? ESCAPE '\' OR e.body_text LIKE ? ESCAPE '\')`
 		);
-		const like = `%${term.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_')}%`;
+		const like = `%${term
+			.replaceAll('\\', String.raw`\\`)
+			.replaceAll('%', String.raw`\%`)
+			.replaceAll('_', String.raw`\_`)}%`;
 		bindings.push(like, like, like, like);
 	}
 

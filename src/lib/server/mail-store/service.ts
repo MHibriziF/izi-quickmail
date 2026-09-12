@@ -69,7 +69,7 @@ function buildPreview(bodyHead: string | null): string {
 /** `messages` is the whole conversation, oldest first. */
 function toThreadSummary(messages: ThreadMessageRow[]): ThreadSummary {
 	const oldest = messages[0];
-	const latest = messages[messages.length - 1];
+	const latest = messages.at(-1) as ThreadMessageRow;
 
 	// Senders in the order they first spoke, with our own identities collapsed
 	// into a single "me" the way a conversation header reads.

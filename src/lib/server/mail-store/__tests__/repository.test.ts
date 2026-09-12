@@ -531,6 +531,23 @@ describe('MailStoreRepository — mailbox listing', () => {
 		setView('sent');
 		assert.deepEqual((await repo.listFlatRows('user-1', { direction: 'outbound' })).map((r) => r.id), ['b']);
 	});
+
+	test('a free-text search escapes LIKE wildcards in the term before binding it', async () => {
+		let likeBinding: unknown;
+		const db = createFakeD1(({ sql, args }) => {
+			if (sql.includes('SELECT COUNT(*) AS count FROM (')) {
+				likeBinding = args[args.length - 1];
+				return [{ count: 0 }];
+			}
+			return [];
+		});
+		const repo = createD1MailStoreRepository(db);
+
+		await repo.listMailboxRows('user-1', { view: 'inbox', q: '50%_off\\now' });
+		// A literal backslash, percent and underscore in the search box must not
+		// be interpreted as SQL LIKE wildcards or escape the escape character.
+		assert.equal(likeBinding, '%50\\%\\_off\\\\now%');
+	});
 });
 
 describe('MailStoreRepository — bulk ops', () => {
