@@ -3,7 +3,7 @@ import { authorizeApiRequest, canAccessDuringFirstLogin } from '$lib/server/api-
 import { getUserByApiToken, readBearerToken } from '$lib/server/api-tokens';
 import { countUsers, getUserFromSession, readSessionToken } from '$lib/server/auth';
 import { DOMAIN_COOKIE, UI_THEME_COOKIE, UI_THEME_COOKIE_MAX_AGE } from '$lib/server/constants';
-import { listAddressesForUser, listDomains } from '$lib/server/domains';
+import { getDomainsService } from '$lib/server/domains';
 import { getUserLocale } from '$lib/server/locale';
 import { ensureSchema } from '$lib/server/migrate';
 import { getUserUiTheme } from '$lib/server/ui-theme';
@@ -127,9 +127,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	if (db && event.locals.user && !event.locals.user.must_change_password) {
+		const domainsService = getDomainsService(event.platform);
 		const [domains, addresses] = await Promise.all([
-			listDomains(db),
-			listAddressesForUser(db, event.locals.user.id)
+			domainsService.listConnected(),
+			domainsService.listAddressesForUser(event.locals.user.id)
 		]);
 
 		event.locals.domains = domains;

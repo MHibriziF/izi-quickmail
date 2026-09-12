@@ -1,26 +1,25 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { createAddress, listAddressesForUser, listAllAddresses } from '$lib/server/domains';
+import { getDomainsService } from '$lib/server/domains';
 
 export const GET: RequestHandler = async ({ locals, platform, url }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
+	const domains = getDomainsService(platform);
 	const all =
 		url.searchParams.get('all') === '1' &&
 		locals.user.is_admin &&
 		(locals.authMethod === 'session' || locals.apiScopes.includes('admin'));
 	const addresses = all
-		? await listAllAddresses(db)
-		: await listAddressesForUser(db, locals.user.id);
+		? await domains.listAllAddresses()
+		: await domains.listAddressesForUser(locals.user.id);
 
 	return json({ addresses });
 };
 
 export const POST: RequestHandler = async ({ request, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
@@ -39,7 +38,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 	const userId = locals.user.is_admin && body.userId ? body.userId : locals.user.id;
 
 	try {
-		const address = await createAddress(db, {
+		const address = await getDomainsService(platform).createAddress({
 			userId,
 			domainId: body.domainId,
 			localPart: body.localPart,

@@ -1,15 +1,15 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getEmailProvider, ProviderError } from '$lib/server/context';
-import { disconnectDomain, getDomain, setCatchallUser, upsertDomain } from '$lib/server/domains';
+import { ProviderError } from '$lib/server/context';
+import { getDomainsService } from '$lib/server/domains';
 
 /** PATCH — set the catch-all owner or re-sync status from the active provider. */
 export const PATCH: RequestHandler = async ({ params, request, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user?.is_admin) {
+	if (!platform?.env.DB || !locals.user?.is_admin) {
 		return json({ error: 'Forbidden' }, { status: 403 });
 	}
 
-	const domain = await getDomain(db, params.id!);
+	const domains = getDomainsService(platform);
+	const domain = await domains.getDomain(params.id!);
 	if (!domain) {
 		return json({ error: 'Domain not connected' }, { status: 404 });
 	}
@@ -21,9 +21,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals, platform 
 
 	if (body.refresh) {
 		try {
-			const provider = getEmailProvider(platform);
-			const remote = await provider.getDomain(domain.id);
-			return json({ domain: await upsertDomain(db, remote) });
+			return json({ domain: await domains.refreshDomain(domain.id) });
 		} catch (error) {
 			return json(
 				{ error: error instanceof ProviderError ? error.message : 'Failed to refresh domain' },
@@ -33,19 +31,18 @@ export const PATCH: RequestHandler = async ({ params, request, locals, platform 
 	}
 
 	if (body.catchallUserId !== undefined) {
-		await setCatchallUser(db, domain.id, body.catchallUserId || null);
+		await domains.setCatchallUser(domain.id, body.catchallUserId || null);
 	}
 
-	return json({ domain: await getDomain(db, domain.id) });
+	return json({ domain: await domains.getDomain(domain.id) });
 };
 
 /** DELETE — stop using the domain here. The domain stays with the provider. */
 export const DELETE: RequestHandler = async ({ params, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user?.is_admin) {
+	if (!platform?.env.DB || !locals.user?.is_admin) {
 		return json({ error: 'Forbidden' }, { status: 403 });
 	}
 
-	await disconnectDomain(db, params.id!);
+	await getDomainsService(platform).disconnectDomain(params.id!);
 	return json({ ok: true });
 };

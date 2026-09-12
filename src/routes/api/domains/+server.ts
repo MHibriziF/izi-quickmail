@@ -1,14 +1,13 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import {
 	ConfigError,
-	getEmailProvider,
 	safeEmailProviderKind,
 	hasProviderConfigured,
 	listAvailableDomains,
 	ProviderError,
 	providerLoadError
 } from '$lib/server/context';
-import { listDomains, syncDomains, upsertDomain } from '$lib/server/domains';
+import { getDomainsService } from '$lib/server/domains';
 
 /**
  * GET  — every domain the configured provider can reach, flagged with
@@ -16,12 +15,12 @@ import { listDomains, syncDomains, upsertDomain } from '$lib/server/domains';
  * POST — connect one (or several) of them.
  */
 export const GET: RequestHandler = async ({ locals, platform, url }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const connected = await listDomains(db);
+	const domains = getDomainsService(platform);
+	const connected = await domains.listConnected();
 	const providerKind = safeEmailProviderKind(platform);
 
 	// Non-admins only need what is already wired up.
@@ -35,11 +34,9 @@ export const GET: RequestHandler = async ({ locals, platform, url }) => {
 	}
 
 	try {
-		const provider = getEmailProvider(platform);
-
 		if (url.searchParams.get('sync') === '1') {
 			return json({
-				connected: await syncDomains(db, provider),
+				connected: await domains.sync(),
 				available: [],
 				providerKind
 			});
@@ -78,8 +75,7 @@ export const GET: RequestHandler = async ({ locals, platform, url }) => {
 };
 
 export const POST: RequestHandler = async ({ request, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user?.is_admin) {
+	if (!platform?.env.DB || !locals.user?.is_admin) {
 		return json({ error: 'Forbidden' }, { status: 403 });
 	}
 
@@ -90,15 +86,11 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		return json({ error: 'Select at least one domain' }, { status: 400 });
 	}
 
+	const domains = getDomainsService(platform);
+
 	try {
-		const provider = getEmailProvider(platform);
-		const connected = [];
-
-		for (const id of ids) {
-			connected.push(await upsertDomain(db, await provider.getDomain(id)));
-		}
-
-		return json({ connected, domains: await listDomains(db) }, { status: 201 });
+		const connected = await domains.connect(ids);
+		return json({ connected, domains: await domains.listConnected() }, { status: 201 });
 	} catch (error) {
 		const message =
 			error instanceof ConfigError || error instanceof ProviderError
