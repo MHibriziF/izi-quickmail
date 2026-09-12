@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { resolveFromAddress } from '$lib/server/outbox';
-import { saveDraft } from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 
 type DraftBody = {
 	id?: string;
@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 	try {
 		const from = await resolveFromAddress(db, locals.user, body.fromAddressId);
 
-		const id = await saveDraft(db, locals.user.id, {
+		const id = await getMailStoreService(platform).saveDraft(locals.user.id, {
 			id: body.id,
 			from: from.address,
 			to: body.to?.trim() ?? '',

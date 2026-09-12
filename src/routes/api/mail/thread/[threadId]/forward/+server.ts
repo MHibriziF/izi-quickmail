@@ -5,7 +5,7 @@ import {
 	statusForProviderError
 } from '$lib/server/context';
 import { sendForwardedMessages, type ForwardRequest } from '$lib/server/forward-mail';
-import { listForwardThreadMessages } from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 import { parseRecipients } from '$lib/server/send-mail';
 
 /** Forward every message in an authenticated user's conversation, oldest first. */
@@ -16,7 +16,10 @@ export const POST: RequestHandler = async ({ params, request, locals, platform }
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const messages = await listForwardThreadMessages(db, locals.user.id, params.threadId!);
+	const messages = await getMailStoreService(platform).listForwardThreadMessages(
+		locals.user.id,
+		params.threadId!
+	);
 	if (messages.length === 0) {
 		return json({ error: 'Not found' }, { status: 404 });
 	}
