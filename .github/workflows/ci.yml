@@ -21,7 +21,12 @@ jobs:
 
       - run: bun run check
 
-      - run: bun test
+      - run: bun test --coverage --coverage-reporter=lcov --coverage-dir=coverage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
 
   sonarqube:
     name: SonarQube scan
@@ -31,6 +36,11 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: coverage
 
       - uses: SonarSource/sonarqube-scan-action@v4
         env:
