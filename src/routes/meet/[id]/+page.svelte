@@ -104,6 +104,7 @@
 	function toggleMic() {
 		micOn = !micOn;
 		micOnBeforeDeafen = null;
+		if (micOn && deafened) deafened = false;
 		previewStream?.getAudioTracks().forEach((track) => (track.enabled = micOn));
 	}
 
@@ -245,17 +246,6 @@
 						{/if}
 					</div>
 					<div class="lobby-controls">
-						<div class="lobby-btn-pill" class:lobby-btn-pill-off={!micOn}>
-							<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
-			<button
-								type="button"
-								class="lobby-btn-pill-main"
-								onclick={toggleMic}
-								aria-label={micOn ? t('meet.micOn') : t('meet.micOff')}
-							>
-								<Icon name={micOn ? 'mic-line' : 'mic-off-line'} size={18} />
-							</button>
-						</div>
 						<button
 							type="button"
 							class="lobby-round-btn"
@@ -265,6 +255,17 @@
 						>
 							<Icon name={deafened ? 'volume-mute-line' : 'headphone-line'} size={18} />
 						</button>
+						<div class="lobby-btn-pill" class:lobby-btn-pill-off={!micOn}>
+							<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
+							<button
+								type="button"
+								class="lobby-btn-pill-main"
+								onclick={toggleMic}
+								aria-label={micOn ? t('meet.micOn') : t('meet.micOff')}
+							>
+								<Icon name={micOn ? 'mic-line' : 'mic-off-line'} size={18} />
+							</button>
+						</div>
 						<div class="lobby-meter" aria-hidden="true">
 							<div class="lobby-meter-fill" style="transform: scaleX({micOn ? micLevel : 0})"></div>
 						</div>

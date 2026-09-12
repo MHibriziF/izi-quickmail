@@ -731,6 +731,7 @@
 		"backgroundApply": "Terapkan",
 		"deafen": "Nonaktifkan audio",
 		"undeafen": "Aktifkan audio",
+		"deafenedStatus": "Audio nonaktif",
 		"participants": "Peserta",
 		"chat": "Obrolan",
 		"chatPlaceholder": "Pesan",

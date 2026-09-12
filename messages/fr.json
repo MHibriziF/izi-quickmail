@@ -731,6 +731,7 @@
 		"backgroundApply": "Appliquer",
 		"deafen": "Couper l'audio",
 		"undeafen": "Rétablir l'audio",
+		"deafenedStatus": "Audio coupé",
 		"participants": "Participants",
 		"chat": "Discussion",
 		"chatPlaceholder": "Message",

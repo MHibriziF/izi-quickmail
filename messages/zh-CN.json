@@ -731,6 +731,7 @@
 		"backgroundApply": "应用",
 		"deafen": "退出音频",
 		"undeafen": "恢复音频",
+		"deafenedStatus": "已静音",
 		"participants": "参与者",
 		"chat": "聊天",
 		"chatPlaceholder": "发送消息",

@@ -613,6 +613,11 @@
 		micEnabled = !micEnabled;
 		// A manual mic change overrides whatever deafen was remembering, so un-deafening later doesn't stomp it.
 		micEnabledBeforeDeafen = null;
+		// Turning the mic back on while deafened implies you want to be heard again, so hear again too.
+		if (micEnabled && deafened) {
+			deafened = false;
+			setRemoteAudioMuted(false);
+		}
 		playToggleTone(micEnabled);
 		await room.localParticipant.setMicrophoneEnabled(micEnabled);
 	}
@@ -737,6 +742,8 @@
 			<span class="call-header-status">{t('meet.connecting')}</span>
 		{:else if connectionError}
 			<span class="call-header-status call-header-status-error">{connectionError}</span>
+		{:else if deafened}
+			<span class="call-header-status call-header-status-error">{t('meet.deafenedStatus')}</span>
 		{/if}
 	</div>
 
@@ -817,6 +824,15 @@
 	</div>
 
 	<div class="call-controls">
+		<button
+			type="button"
+			class="call-btn"
+			class:call-btn-danger-active={deafened}
+			onclick={toggleDeafen}
+			aria-label={deafened ? t('meet.undeafen') : t('meet.deafen')}
+		>
+			<Icon name={deafened ? 'volume-mute-line' : 'headphone-line'} size={20} />
+		</button>
 		<div class="call-btn-pill" class:call-btn-pill-off={!micEnabled}>
 			<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start">
 				{#snippet extra()}
@@ -850,15 +866,6 @@
 				<Icon name={micEnabled ? 'mic-line' : 'mic-off-line'} size={20} />
 			</button>
 		</div>
-		<button
-			type="button"
-			class="call-btn"
-			class:call-btn-danger-active={deafened}
-			onclick={toggleDeafen}
-			aria-label={deafened ? t('meet.undeafen') : t('meet.deafen')}
-		>
-			<Icon name={deafened ? 'volume-mute-line' : 'headphone-line'} size={20} />
-		</button>
 		<div class="call-btn-pill" class:call-btn-pill-off={!cameraEnabled}>
 			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="start">
 				{#snippet extra()}

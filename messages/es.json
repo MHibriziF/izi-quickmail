@@ -731,6 +731,7 @@
 		"backgroundApply": "Aplicar",
 		"deafen": "Dejar de oír",
 		"undeafen": "Volver a oír",
+		"deafenedStatus": "Audio desactivado",
 		"participants": "Participantes",
 		"chat": "Chat",
 		"chatPlaceholder": "Mensaje",

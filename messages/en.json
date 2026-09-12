@@ -731,6 +731,7 @@
 		"backgroundApply": "Apply",
 		"deafen": "Leave audio",
 		"undeafen": "Resume audio",
+		"deafenedStatus": "Deafened",
 		"participants": "Participants",
 		"chat": "Chat",
 		"chatPlaceholder": "Message",
