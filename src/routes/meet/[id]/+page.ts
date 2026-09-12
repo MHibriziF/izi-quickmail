@@ -9,6 +9,7 @@ export const load: PageLoad = ({ params, url, data }) => {
 	return {
 		id: params.id,
 		token: url.searchParams.get('token') ?? '',
-		userName: data.userName
+		userName: data.userName,
+		isLoggedIn: data.isLoggedIn
 	};
 };
