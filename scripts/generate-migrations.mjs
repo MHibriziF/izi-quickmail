@@ -28,7 +28,10 @@ if (files.length === 0) {
 
 const entries = files
 	.map((name) => {
-		const sql = readFileSync(path.join(dir, name), 'utf8');
+		// Normalized regardless of the checkout's line endings (e.g. Windows + core.autocrlf) —
+		// otherwise a CRLF working tree bakes CRLF into this file's string literals, which then
+		// mismatches migrations.generated.test.ts on a Linux CI runner that checks out plain LF.
+		const sql = readFileSync(path.join(dir, name), 'utf8').replace(/\r\n/g, '\n');
 		return `\t{\n\t\tname: ${JSON.stringify(name)},\n\t\tsql: ${JSON.stringify(sql)}\n\t}`;
 	})
 	.join(',\n');
