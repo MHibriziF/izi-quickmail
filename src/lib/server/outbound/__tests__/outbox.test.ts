@@ -6,7 +6,7 @@ import {
 	MAX_ATTACHMENT_BYTES,
 	MAX_ATTACHMENTS_PER_EMAIL,
 	MAX_TOTAL_ATTACHMENT_BYTES
-} from '../constants';
+} from '../../constants';
 import {
 	assertOutboundAttachments,
 	assertTotalAttachmentBytes,

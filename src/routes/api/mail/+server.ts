@@ -1,12 +1,12 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { parseScheduledAt } from '$lib/server/schedule';
+import { parseScheduledAt } from '$lib/server/util/schedule';
 import {
 	describeProviderError,
 	getEmailProvider,
 	statusForProviderError
 } from '$lib/server/context';
 import { getMailStoreService } from '$lib/server/mail-store';
-import { sendAndStore } from '$lib/server/outbox';
+import { sendAndStore } from '$lib/server/outbound/outbox';
 import type { MailboxView, OutboundAttachmentInput } from '$lib/types';
 
 type SendMailBody = {

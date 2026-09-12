@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import { parseEmailAddresses } from './email-address';
+import { parseEmailAddresses } from './util/email-address';
 
 /** How far back to look. A personal mailbox never needs more than this. */
 const SCAN_LIMIT = 400;

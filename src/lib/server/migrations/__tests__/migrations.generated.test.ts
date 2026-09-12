@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { MIGRATIONS } from '../migrations.generated';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '../../../..');
+const root = join(dirname(fileURLToPath(import.meta.url)), '../../../../..');
 
 /**
  * The generated module is committed so `vite dev` and a fresh clone work with
@@ -35,7 +35,7 @@ test('the generated migrations match the files on disk', () => {
 test('nothing reaches for import.meta.glob in the migration path', () => {
 	// wrangler bundles src/worker.ts with esbuild, which leaves the call intact
 	// and throws on upload. That is what this whole generated module avoids.
-	for (const file of ['src/lib/server/migrate.ts', 'src/lib/server/migrate-sql.ts']) {
+	for (const file of ['src/lib/server/migrations/migrate.ts', 'src/lib/server/migrations/migrate-sql.ts']) {
 		assert.doesNotMatch(
 			readFileSync(join(root, file), 'utf8'),
 			// A call, not a mention — the comments explain why it is absent.

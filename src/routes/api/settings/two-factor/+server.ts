@@ -1,9 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getUserByEmail } from '$lib/server/auth';
-import { verifyPassword } from '$lib/server/crypto';
+import { verifyPassword } from '$lib/server/util/crypto';
 import { APP_NAME } from '$lib/constants';
 import { getEmailProvider } from '$lib/server/context';
-import { notifySecurityEvent } from '$lib/server/security-notice';
+import { notifySecurityEvent } from '$lib/server/outbound/security-notice';
 import {
 	confirmEnrollment,
 	disableTwoFactor,

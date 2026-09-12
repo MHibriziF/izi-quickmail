@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getMailStoreService } from '$lib/server/mail-store';
-import { resolveReplyFromAddress } from '$lib/server/outbox';
-import { displaySubject } from '$lib/server/threads';
+import { resolveReplyFromAddress } from '$lib/server/outbound/outbox';
+import { displaySubject } from '$lib/server/mail-store/threads';
 import { getDomainsService } from '$lib/server/domains';
 
 export const load: PageServerLoad = async ({ params, locals, platform }) => {

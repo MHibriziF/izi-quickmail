@@ -5,7 +5,7 @@ import { countUsers, getUserFromSession, readSessionToken } from '$lib/server/au
 import { DOMAIN_COOKIE, UI_THEME_COOKIE, UI_THEME_COOKIE_MAX_AGE } from '$lib/server/constants';
 import { getDomainsService } from '$lib/server/domains';
 import { getUserLocale } from '$lib/server/locale';
-import { ensureSchema } from '$lib/server/migrate';
+import { ensureSchema } from '$lib/server/migrations/migrate';
 import { getUserUiTheme } from '$lib/server/ui-theme';
 import { BUILTIN_THEME_IDS, DEFAULT_UI_THEME, parseThemeId } from '$lib/ui-theme/ids';
 import {

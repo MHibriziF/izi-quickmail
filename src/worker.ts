@@ -3,9 +3,9 @@ import {
 	handleCloudflareInbound,
 	type CloudflareInboundEnv,
 	type CloudflareInboundMessage
-} from './lib/server/cloudflare-inbound';
+} from './lib/server/inbound/cloudflare-inbound';
 import { getEmailProvider } from './lib/server/context';
-import { ensureSchema } from './lib/server/migrate';
+import { ensureSchema } from './lib/server/migrations/migrate';
 import { runDueScheduledSends } from './lib/server/scheduled-send';
 // Renamed from `_worker.js` by `scripts/wrap-cloudflare-worker.mjs` after `vite build`.
 // @ts-expect-error file is created at build time

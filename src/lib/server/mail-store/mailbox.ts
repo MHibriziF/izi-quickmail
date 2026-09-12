@@ -1,4 +1,4 @@
-import { listMailbox } from './mail-store';
+import { listMailbox } from './index';
 import type { MailboxFilters, MailboxPage, MailboxView } from '$lib/types';
 import type { D1Database } from '@cloudflare/workers-types';
 

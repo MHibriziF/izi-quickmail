@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import type { D1Database } from '@cloudflare/workers-types';
-import { hashToken } from '../crypto';
+import { hashToken } from '../util/crypto';
 import { normalizeBackupCode, verifyChallenge } from '../two-factor';
 
 describe('normalising a backup code', () => {

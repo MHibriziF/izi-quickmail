@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { loadMailbox } from '$lib/server/mailbox';
+import { loadMailbox } from '$lib/server/mail-store/mailbox';
 
 export const load: PageServerLoad = async ({ locals, platform, url }) => {
 	// Zero's sidebar reaches Archive through `?view=archive` on the inbox route;

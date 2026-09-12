@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import type { EmailRow } from '$lib/types';
 import { base64ByteLength, base64ToBytes, bytesToBase64 } from '../attachments';
-import { readForwardedAttachments } from '../forward-mail';
+import { readForwardedAttachments } from '../outbound/forward-mail';
 
 describe('attachment encoding', () => {
 	test('bytes survive the trip to base64 and back', () => {

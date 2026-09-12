@@ -1,13 +1,13 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { parseScheduledAt } from '$lib/server/schedule';
+import { parseScheduledAt } from '$lib/server/util/schedule';
 import {
 	describeProviderError,
 	getEmailProvider,
 	statusForProviderError
 } from '$lib/server/context';
 import { getMailStoreService } from '$lib/server/mail-store';
-import { resolveReplyFromAddress, sendAndStore } from '$lib/server/outbox';
-import { buildReferences, displaySubject } from '$lib/server/threads';
+import { resolveReplyFromAddress, sendAndStore } from '$lib/server/outbound/outbox';
+import { buildReferences, displaySubject } from '$lib/server/mail-store/threads';
 import type { OutboundAttachmentInput } from '$lib/types';
 
 type ReplyBody = {

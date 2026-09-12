@@ -5,10 +5,10 @@ import {
 	ResendError,
 	type ResendClient,
 	type ResendDomain
-} from '../resend';
+} from './resend-client';
 import type { EmailProvider, ProviderDomain } from '../email-provider';
 import { ProviderError } from '../email-provider';
-import type { OutboundMailInput, OutboundMailResult } from '../send-mail';
+import type { OutboundMailInput, OutboundMailResult } from '../outbound/send-mail';
 
 export function createResendProvider(apiKey: string): EmailProvider {
 	const client = createResendClient(apiKey);

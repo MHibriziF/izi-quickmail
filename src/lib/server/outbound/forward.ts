@@ -1,4 +1,4 @@
-import { stripHtml } from './html';
+import { stripHtml } from '../util/html';
 import { escapeHtml } from './send-mail';
 
 /**

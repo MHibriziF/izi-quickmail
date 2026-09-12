@@ -8,9 +8,9 @@ import {
 	SESSION_COOKIE
 } from '$lib/server/auth';
 import { SESSION_DAYS } from '$lib/server/constants';
-import { verifyPassword } from '$lib/server/crypto';
+import { verifyPassword } from '$lib/server/util/crypto';
 import { getEmailProvider } from '$lib/server/context';
-import { notifySecurityEvent } from '$lib/server/security-notice';
+import { notifySecurityEvent } from '$lib/server/outbound/security-notice';
 
 /**
  * The signed-in user editing their own account: display name and password.

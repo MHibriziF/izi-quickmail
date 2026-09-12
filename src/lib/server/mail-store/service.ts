@@ -1,8 +1,8 @@
 import type { R2Bucket } from '@cloudflare/workers-types';
-import { buildThreadParticipants } from '../thread-participants';
+import { buildThreadParticipants } from './thread-participants';
 import { MAX_BODY_BYTES } from '../constants';
 import { stripQuotedText } from '$lib/utils/quotes';
-import { displaySubject, normalizeSubject, type ThreadLookup } from '../threads';
+import { displaySubject, normalizeSubject, type ThreadLookup } from './threads';
 import type {
 	DeliveryStatus,
 	EmailRow,

@@ -16,7 +16,7 @@ import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
 const dir = path.join(root, 'migrations');
-const out = path.join(root, 'src/lib/server/migrations.generated.ts');
+const out = path.join(root, 'src/lib/server/migrations/migrations.generated.ts');
 
 const files = readdirSync(dir)
 	.filter((name) => name.endsWith('.sql'))

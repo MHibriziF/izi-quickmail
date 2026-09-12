@@ -5,7 +5,7 @@ import { describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { splitStatements } from '../migrate-sql';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '../../../..');
+const root = join(dirname(fileURLToPath(import.meta.url)), '../../../../..');
 
 describe('splitting a migration into statements', () => {
 	test('drops comments and blank space', () => {

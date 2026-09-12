@@ -7,7 +7,7 @@ import {
 	findResetTarget,
 	hasRecentResetToken
 } from '$lib/server/account-recovery';
-import { notifySecurityEvent, sendPasswordResetLink } from '$lib/server/security-notice';
+import { notifySecurityEvent, sendPasswordResetLink } from '$lib/server/outbound/security-notice';
 
 /** Said no matter what happened, so the response reveals nothing. */
 const ACCEPTED = {

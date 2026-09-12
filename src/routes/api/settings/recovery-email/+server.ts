@@ -1,13 +1,13 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getUserByEmail } from '$lib/server/auth';
-import { verifyPassword } from '$lib/server/crypto';
+import { verifyPassword } from '$lib/server/util/crypto';
 import { getEmailProvider } from '$lib/server/context';
 import {
 	clearRecoveryEmail,
 	getRecoveryStatus,
 	startRecoveryEmailChange
 } from '$lib/server/account-recovery';
-import { notifySecurityEvent, sendRecoveryVerification } from '$lib/server/security-notice';
+import { notifySecurityEvent, sendRecoveryVerification } from '$lib/server/outbound/security-notice';
 
 export const GET: RequestHandler = async ({ locals, platform }) => {
 	const db = platform?.env.DB;

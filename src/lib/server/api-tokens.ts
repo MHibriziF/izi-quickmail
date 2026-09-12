@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import { hashToken } from './crypto';
+import { hashToken } from './util/crypto';
 import type { ApiTokenSummary, User } from '$lib/types';
 
 /** Scopes a token can carry. Enforced in `authorizeApiRequest`. */
