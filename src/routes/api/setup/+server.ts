@@ -9,12 +9,11 @@ import {
 import { SESSION_DAYS } from '$lib/server/constants';
 import {
 	ConfigError,
-	getEmailProvider,
 	safeEmailProviderKind,
 	hasProviderConfigured,
 	ProviderError
 } from '$lib/server/context';
-import { createAddress, setCatchallUser, upsertDomain } from '$lib/server/domains';
+import { getDomainsService } from '$lib/server/domains';
 
 export const GET: RequestHandler = async ({ platform }) => {
 	const db = platform?.env.DB;
@@ -65,8 +64,8 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 	}
 
 	try {
-		const provider = getEmailProvider(platform);
-		const domain = await upsertDomain(db, await provider.getDomain(body.domainId));
+		const domains = getDomainsService(platform);
+		const [domain] = await domains.connect([body.domainId]);
 
 		const localPart = body.localPart.trim().toLowerCase().replace(/@.*$/, '');
 		const address = `${localPart}@${domain.name}`;
@@ -78,11 +77,11 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 			password: body.password
 		});
 
-		await createAddress(db, { userId: user.id, domainId: domain.id, localPart });
+		await domains.createAddress({ userId: user.id, domainId: domain.id, localPart });
 
 		// The provider accepts mail for every mailbox on the domain; without a
 		// catch-all anything sent to an unknown address would just pile up unrouted.
-		await setCatchallUser(db, domain.id, user.id);
+		await domains.setCatchallUser(domain.id, user.id);
 
 		// The account was created a few lines up, so identity is already proven.
 		const session = await startSession(db, user);

@@ -6,7 +6,7 @@ import {
 	listAvailableDomains,
 	providerLoadError
 } from '$lib/server/context';
-import { listAllAddresses, listUnroutedEmails } from '$lib/server/domains';
+import { getDomainsService } from '$lib/server/domains';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	if (!locals.user?.is_admin) {
@@ -27,10 +27,11 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		};
 	}
 
+	const domainsService = getDomainsService(platform);
 	const [users, addresses, unrouted] = await Promise.all([
 		listUsers(db),
-		listAllAddresses(db),
-		listUnroutedEmails(db, 25)
+		domainsService.listAllAddresses(),
+		domainsService.listUnroutedEmails(25)
 	]);
 
 	try {

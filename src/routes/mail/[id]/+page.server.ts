@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import { getEmailForUser, listThreadMessages, markThreadRead } from '$lib/server/mail-store';
 import { resolveReplyFromAddress } from '$lib/server/outbox';
 import { displaySubject } from '$lib/server/threads';
-import { listAddressesForUser } from '$lib/server/domains';
+import { getDomainsService } from '$lib/server/domains';
 
 export const load: PageServerLoad = async ({ params, locals, platform }) => {
 	if (!locals.user || !platform?.env.DB) {
@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ params, locals, platform }) => {
 	const newlyRead = await markThreadRead(platform.env.DB, locals.user.id, email);
 	const [messages, addresses] = await Promise.all([
 		listThreadMessages(platform.env.DB, locals.user.id, email),
-		listAddressesForUser(platform.env.DB, locals.user.id)
+		getDomainsService(platform).listAddressesForUser(locals.user.id)
 	]);
 	const identities = new Map(addresses.map((address) => [address.address.toLowerCase(), address]));
 

@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { createUser, deletePendingUser, listUsers } from '$lib/server/auth';
-import { createAddress, getDomain, listAllAddresses } from '$lib/server/domains';
+import { getDomainsService } from '$lib/server/domains';
 
 export const GET: RequestHandler = async ({ locals, platform }) => {
 	if (!locals.user?.is_admin) {
@@ -10,7 +10,10 @@ export const GET: RequestHandler = async ({ locals, platform }) => {
 	const db = platform?.env.DB;
 	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
 
-	const [users, addresses] = await Promise.all([listUsers(db), listAllAddresses(db)]);
+	const [users, addresses] = await Promise.all([
+		listUsers(db),
+		getDomainsService(platform).listAllAddresses()
+	]);
 	return json({ users, addresses });
 };
 
@@ -42,7 +45,8 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		return json({ error: 'Password must be at least 8 characters' }, { status: 400 });
 	}
 
-	const domain = await getDomain(db, body.domainId);
+	const domains = getDomainsService(platform);
+	const domain = await domains.getDomain(body.domainId);
 	if (!domain) {
 		return json({ error: 'Domain is not connected' }, { status: 400 });
 	}
@@ -65,7 +69,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		});
 		createdUserId = user.id;
 
-		const address = await createAddress(db, {
+		const address = await domains.createAddress({
 			userId: user.id,
 			domainId: domain.id,
 			localPart

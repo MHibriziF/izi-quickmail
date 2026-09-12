@@ -1,17 +1,12 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import {
-	deleteAddress,
-	listAddressesForUser,
-	setDefaultAddress,
-	updateAddress
-} from '$lib/server/domains';
+import { getDomainsService } from '$lib/server/domains';
 
 export const PATCH: RequestHandler = async ({ params, request, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
+	const domains = getDomainsService(platform);
 	const body = (await request.json()) as {
 		isDefault?: boolean;
 		label?: string | null;
@@ -19,7 +14,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals, platform 
 	};
 	if (body.label !== undefined || body.signature !== undefined) {
 		try {
-			await updateAddress(db, locals.user.id, params.id!, {
+			await domains.updateAddress(locals.user.id, params.id!, {
 				label: body.label,
 				signature: body.signature
 			});
@@ -32,30 +27,30 @@ export const PATCH: RequestHandler = async ({ params, request, locals, platform 
 	}
 
 	if (body.isDefault) {
-		await setDefaultAddress(db, locals.user.id, params.id!);
+		await domains.setDefaultAddress(locals.user.id, params.id!);
 	}
 
-	return json({ addresses: await listAddressesForUser(db, locals.user.id) });
+	return json({ addresses: await domains.listAddressesForUser(locals.user.id) });
 };
 
 export const DELETE: RequestHandler = async ({ params, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const addresses = await listAddressesForUser(db, locals.user.id);
+	const domains = getDomainsService(platform);
+	const addresses = await domains.listAddressesForUser(locals.user.id);
 	if (addresses.length <= 1) {
 		return json({ error: 'Keep at least one address' }, { status: 400 });
 	}
 
-	await deleteAddress(db, locals.user.id, params.id!);
-	const remaining = await listAddressesForUser(db, locals.user.id);
+	await domains.deleteAddress(locals.user.id, params.id!);
+	const remaining = await domains.listAddressesForUser(locals.user.id);
 
 	// Never leave the user without a default sending identity.
 	if (remaining.length > 0 && !remaining.some((address) => address.is_default)) {
-		await setDefaultAddress(db, locals.user.id, remaining[0].id);
+		await domains.setDefaultAddress(locals.user.id, remaining[0].id);
 	}
 
-	return json({ addresses: await listAddressesForUser(db, locals.user.id) });
+	return json({ addresses: await domains.listAddressesForUser(locals.user.id) });
 };
