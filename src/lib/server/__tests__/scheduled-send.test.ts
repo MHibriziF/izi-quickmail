@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import type { EmailRow } from '$lib/types';
 import type { EmailProvider, ProviderDomain } from '../email-provider';
-import type { OutboundMailInput } from '../send-mail';
+import type { OutboundMailInput } from '../outbound/send-mail';
 import { cancelScheduledSend, runDueScheduledSends } from '../scheduled-send';
 
 const PAST = '2026-09-01T09:00:00.000Z';

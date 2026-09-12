@@ -1,23 +1,23 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import type { MailAddress, OutboundAttachmentInput, User } from '$lib/types';
 import { appendEmailSignature, pickEmailSignature } from '$lib/email-signature';
-import { base64ByteLength, insertAttachments } from './attachments';
+import { base64ByteLength, insertAttachments } from '../attachments';
 import {
 	MAX_ATTACHMENT_BYTES,
 	MAX_ATTACHMENTS_PER_EMAIL,
 	MAX_TOTAL_ATTACHMENT_BYTES
-} from './constants';
+} from '../constants';
 import {
 	getAddressForUser,
 	getDefaultAddress,
 	getDomainByName,
 	listAddressesForUser
-} from './domains';
-import { parseEmailAddress } from './email-address';
-import { getEmailSignature } from './email-signature';
-import { stripHtml } from './html';
-import { insertEmail } from './mail-store';
-import { initialOutboundStatus, type EmailProvider } from './email-provider';
+} from '../domains';
+import { parseEmailAddress } from '../util/email-address';
+import { getEmailSignature } from '../email-signature';
+import { stripHtml } from '../util/html';
+import { insertEmail } from '../mail-store';
+import { initialOutboundStatus, type EmailProvider } from '../email-provider';
 import {
 	escapeHtml,
 	parseRecipients,

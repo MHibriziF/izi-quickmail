@@ -1,9 +1,9 @@
-import type { ThreadParticipant } from '../types';
+import type { ThreadParticipant } from '../../types';
 import {
 	formatEmailAddress,
 	parseEmailIdentities,
 	parseEmailIdentity
-} from './email-address';
+} from '../util/email-address';
 
 type ParticipantMessage = {
 	direction: 'inbound' | 'outbound';

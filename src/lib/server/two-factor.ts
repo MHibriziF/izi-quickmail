@@ -1,6 +1,6 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import { hashToken } from './crypto';
-import { generateTotpSecret, otpauthUri, verifyTotp } from './totp';
+import { hashToken } from './util/crypto';
+import { generateTotpSecret, otpauthUri, verifyTotp } from './util/totp';
 
 export const BACKUP_CODE_COUNT = 10;
 /** Crockford-ish: no I, L, O, U, so a written-down code cannot be misread. */

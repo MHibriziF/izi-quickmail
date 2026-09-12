@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import { createSessionToken, hashToken } from './crypto';
+import { createSessionToken, hashToken } from './util/crypto';
 
 export type AccountTokenKind = 'password_reset' | 'recovery_email';
 

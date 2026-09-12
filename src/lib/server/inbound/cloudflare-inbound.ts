@@ -1,12 +1,12 @@
 import type { R2Bucket } from '@cloudflare/workers-types';
 import PostalMime, { type Address, type Attachment } from 'postal-mime';
-import { insertAttachmentBytes } from './attachments';
-import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS_PER_EMAIL } from './constants';
-import { recordUnroutedEmail, resolveInboundRoute } from './domains';
-import { collectInboundRecipients, parseEmailAddress } from './email-address';
-import { emailExistsByProviderId, insertEmail } from './mail-store';
-import { scheduleNewMailNotification, type PushNotificationEnv } from './push-notifications';
-import { normalizeMessageId } from './send-mail';
+import { insertAttachmentBytes } from '../attachments';
+import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS_PER_EMAIL } from '../constants';
+import { recordUnroutedEmail, resolveInboundRoute } from '../domains';
+import { collectInboundRecipients, parseEmailAddress } from '../util/email-address';
+import { emailExistsByProviderId, insertEmail } from '../mail-store';
+import { scheduleNewMailNotification, type PushNotificationEnv } from '../push-notifications';
+import { normalizeMessageId } from '../outbound/send-mail';
 
 export type CloudflareInboundMessage = {
 	readonly from: string;

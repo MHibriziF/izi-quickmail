@@ -2,7 +2,7 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { getUserById, setUserPassword } from '$lib/server/auth';
 import { getEmailProvider } from '$lib/server/context';
 import { consumeToken } from '$lib/server/account-recovery';
-import { notifySecurityEvent } from '$lib/server/security-notice';
+import { notifySecurityEvent } from '$lib/server/outbound/security-notice';
 
 /**
  * Finish a password reset. Public, and the token is the only credential.

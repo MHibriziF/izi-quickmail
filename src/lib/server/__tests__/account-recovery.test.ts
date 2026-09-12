@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import type { D1Database } from '@cloudflare/workers-types';
 import { consumeToken, isLikelyEmail } from '../account-recovery';
-import { hashToken } from '../crypto';
+import { hashToken } from '../util/crypto';
 
 describe('recognising an address', () => {
 	test('accepts ordinary addresses', () => {

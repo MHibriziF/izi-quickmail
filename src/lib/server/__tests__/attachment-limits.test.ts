@@ -6,7 +6,7 @@ import {
 	MAX_TOTAL_ATTACHMENT_BYTES
 } from '$lib/constants';
 import type { OutboundAttachmentInput } from '$lib/types';
-import { assertOutboundAttachments, assertTotalAttachmentBytes } from '../outbox';
+import { assertOutboundAttachments, assertTotalAttachmentBytes } from '../outbound/outbox';
 
 /**
  * These limits used to live only in the composer, which meant an API token

@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { resolveFromAddress } from '$lib/server/outbox';
+import { resolveFromAddress } from '$lib/server/outbound/outbox';
 import { getMailStoreService } from '$lib/server/mail-store';
 
 type DraftBody = {

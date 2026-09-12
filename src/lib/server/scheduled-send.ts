@@ -4,7 +4,7 @@ import { readOutboundAttachments } from './attachments';
 import { getUserById } from './auth';
 import { getAddressForUser } from './domains';
 import { initialOutboundStatus, type EmailProvider } from './email-provider';
-import { sendOutboundEmail } from './send-mail';
+import { sendOutboundEmail } from './outbound/send-mail';
 
 export type ScheduledSendEnv = { DB: D1Database; ATTACHMENTS: R2Bucket };
 

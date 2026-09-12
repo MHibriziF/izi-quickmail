@@ -1,6 +1,6 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import type { DeliveryStatus } from '$lib/types';
-import { resolveThreadId } from '../threads';
+import { resolveThreadId } from './threads';
 import { createD1MailStoreRepository } from './repository';
 import { createMailStoreService, type InsertEmailInput, type MailStoreService } from './service';
 

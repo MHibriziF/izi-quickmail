@@ -1,5 +1,5 @@
 import type { MailAddress, OutboundAttachmentInput } from '$lib/types';
-import type { EmailProvider } from './email-provider';
+import type { EmailProvider } from '../email-provider';
 
 export type OutboundMailInput = {
 	from: MailAddress;

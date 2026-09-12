@@ -1,6 +1,6 @@
 import { base64ToBytes } from '../attachments';
 import { parseMailDomains, ProviderError, type EmailProvider, type ProviderDomain } from '../email-provider';
-import type { OutboundMailInput, OutboundMailResult } from '../send-mail';
+import type { OutboundMailInput, OutboundMailResult } from '../outbound/send-mail';
 
 /**
  * Structured Email Service binding. `@cloudflare/workers-types` does not yet

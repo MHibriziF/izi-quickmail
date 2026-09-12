@@ -1,12 +1,12 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import type { DeliveryStatus } from '$lib/types';
-import { insertAttachmentBytes } from './attachments';
-import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS_PER_EMAIL, MAX_BODY_BYTES } from './constants';
-import { collectInboundRecipients, parseEmailIdentity } from './email-address';
-import { recordUnroutedEmail, resolveInboundRoute } from './domains';
-import { emailExistsByProviderId, insertEmail, updateEmailStatusByProviderId } from './mail-store';
-import { scheduleNewMailNotification, type PushNotificationEnv } from './push-notifications';
-import type { ResendClient } from './resend';
+import { insertAttachmentBytes } from '../attachments';
+import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS_PER_EMAIL, MAX_BODY_BYTES } from '../constants';
+import { collectInboundRecipients, parseEmailIdentity } from '../util/email-address';
+import { recordUnroutedEmail, resolveInboundRoute } from '../domains';
+import { emailExistsByProviderId, insertEmail, updateEmailStatusByProviderId } from '../mail-store';
+import { scheduleNewMailNotification, type PushNotificationEnv } from '../push-notifications';
+import type { ResendClient } from '../providers/resend-client';
 
 export type ResendWebhookEvent = {
 	type: string;

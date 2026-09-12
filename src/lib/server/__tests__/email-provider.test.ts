@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import type { MailAddress } from '$lib/types';
 import type { EmailProvider } from '../email-provider';
 import { parseMailDomains } from '../email-provider';
-import { sendOutboundEmail, type OutboundMailInput } from '../send-mail';
+import { sendOutboundEmail, type OutboundMailInput } from '../outbound/send-mail';
 
 describe('parseMailDomains', () => {
 	test('splits comma-separated domains and lowercases them', () => {

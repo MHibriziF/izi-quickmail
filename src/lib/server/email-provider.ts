@@ -1,5 +1,5 @@
 import type { AvailableDomain, EmailProviderKind, MailStatus } from '$lib/types';
-import type { OutboundMailInput, OutboundMailResult } from './send-mail';
+import type { OutboundMailInput, OutboundMailResult } from './outbound/send-mail';
 
 export type { EmailProviderKind };
 

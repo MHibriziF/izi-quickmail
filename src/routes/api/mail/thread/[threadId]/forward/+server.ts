@@ -4,9 +4,9 @@ import {
 	getEmailProvider,
 	statusForProviderError
 } from '$lib/server/context';
-import { sendForwardedMessages, type ForwardRequest } from '$lib/server/forward-mail';
+import { sendForwardedMessages, type ForwardRequest } from '$lib/server/outbound/forward-mail';
 import { getMailStoreService } from '$lib/server/mail-store';
-import { parseRecipients } from '$lib/server/send-mail';
+import { parseRecipients } from '$lib/server/outbound/send-mail';
 
 /** Forward every message in an authenticated user's conversation, oldest first. */
 export const POST: RequestHandler = async ({ params, request, locals, platform }) => {

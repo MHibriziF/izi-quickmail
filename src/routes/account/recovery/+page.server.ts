@@ -2,7 +2,7 @@ import type { PageServerLoad } from './$types';
 import { getUserById } from '$lib/server/auth';
 import { getEmailProvider } from '$lib/server/context';
 import { confirmRecoveryEmail, consumeToken } from '$lib/server/account-recovery';
-import { notifySecurityEvent } from '$lib/server/security-notice';
+import { notifySecurityEvent } from '$lib/server/outbound/security-notice';
 
 /** Clicking the link is the whole confirmation — there is nothing to submit. */
 export const load: PageServerLoad = async ({ url, platform }) => {

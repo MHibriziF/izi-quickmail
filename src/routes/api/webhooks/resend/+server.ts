@@ -1,7 +1,7 @@
 import { json, text, type RequestHandler } from '@sveltejs/kit';
 import { getResendClient, getWebhookSecret } from '$lib/server/context';
-import { claimWebhookEvent, handleResendWebhook, type ResendWebhookEvent } from '$lib/server/inbound';
-import { verifyWebhookSignature } from '$lib/server/webhook';
+import { claimWebhookEvent, handleResendWebhook, type ResendWebhookEvent } from '$lib/server/inbound/inbound';
+import { verifyWebhookSignature } from '$lib/server/providers/resend-webhook';
 
 /**
  * Resend webhook receiver — used when EMAIL_PROVIDER=resend.

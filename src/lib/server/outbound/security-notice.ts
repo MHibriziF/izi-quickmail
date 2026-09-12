@@ -1,10 +1,10 @@
 import type { D1Database } from '@cloudflare/workers-types';
 import type { MailAddress, User } from '$lib/types';
 import { APP_NAME } from '$lib/constants';
-import { listAddressesForUser } from './domains';
+import { listAddressesForUser } from '../domains';
 import { sendOutboundEmail } from './send-mail';
 import { renderEmailHtml, renderEmailText, type EmailContent } from './email-template';
-import type { EmailProvider } from './email-provider';
+import type { EmailProvider } from '../email-provider';
 
 export type SecurityEvent =
 	| 'password-changed'

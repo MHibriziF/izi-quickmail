@@ -1,6 +1,6 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import { SESSION_COOKIE, SESSION_DAYS } from './constants';
-import { createSessionToken, hashPassword, hashToken, verifyPassword } from './crypto';
+import { createSessionToken, hashPassword, hashToken, verifyPassword } from './util/crypto';
 import { MAX_USER_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '$lib/constants';
 import { isTwoFactorEnabled, verifyChallenge } from './two-factor';
 import type { User } from '$lib/types';

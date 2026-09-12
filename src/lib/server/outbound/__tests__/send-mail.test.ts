@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { sendOutboundEmail, type OutboundMailInput } from '../send-mail';
-import type { EmailProvider, ProviderDomain } from '../email-provider';
+import type { EmailProvider, ProviderDomain } from '../../email-provider';
 import type { MailAddress } from '$lib/types';
 
 const from: MailAddress = {
