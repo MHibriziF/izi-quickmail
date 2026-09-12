@@ -1,17 +1,16 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { login, logout, readSessionToken, sessionCookieOptions, SESSION_COOKIE } from '$lib/server/auth';
+import { getAuthService, readSessionToken, sessionCookieOptions, SESSION_COOKIE } from '$lib/server/auth';
 import { SESSION_DAYS } from '$lib/server/constants';
 
 export const POST: RequestHandler = async ({ request, cookies, platform }) => {
-	const db = platform?.env.DB;
-	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
+	if (!platform?.env.DB) return json({ error: 'Database unavailable' }, { status: 503 });
 
 	const body = (await request.json()) as { email?: string; password?: string; code?: string };
 	if (!body.email || !body.password) {
 		return json({ error: 'Email and password are required' }, { status: 400 });
 	}
 
-	const result = await login(db, body.email, body.password, body.code);
+	const result = await getAuthService(platform).login(body.email, body.password, body.code);
 	if (!result.ok) {
 		// The prompt itself is not an error: the password was right, the form just
 		// needs a second field now.
@@ -33,11 +32,10 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 };
 
 export const DELETE: RequestHandler = async ({ cookies, platform }) => {
-	const db = platform?.env.DB;
 	const token = readSessionToken(cookies);
 
-	if (db && token) {
-		await logout(db, token);
+	if (platform?.env.DB && token) {
+		await getAuthService(platform).logout(token);
 	}
 
 	cookies.delete(SESSION_COOKIE, { path: '/' });

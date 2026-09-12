@@ -1,12 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getUserById } from '$lib/server/auth';
+import { getAuthService, PASSWORD_RESET_TTL_MINUTES } from '$lib/server/auth';
 import { getEmailProvider } from '$lib/server/context';
-import {
-	PASSWORD_RESET_TTL_MINUTES,
-	createPasswordResetToken,
-	findResetTarget,
-	hasRecentResetToken
-} from '$lib/server/account-recovery';
 import { notifySecurityEvent, sendPasswordResetLink } from '$lib/server/outbound/security-notice';
 
 /** Said no matter what happened, so the response reveals nothing. */
@@ -25,6 +19,7 @@ const ACCEPTED = {
 export const POST: RequestHandler = async ({ request, url, platform }) => {
 	const db = platform?.env.DB;
 	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
+	const auth = getAuthService(platform);
 
 	let body: { email?: unknown };
 	try {
@@ -37,19 +32,19 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
 		return json(ACCEPTED);
 	}
 
-	const target = await findResetTarget(db, body.email);
+	const target = await auth.findResetTarget(body.email);
 	if (!target) return json(ACCEPTED);
 
 	// Rate limit: one live link at a time, so this cannot be used to mail
 	// someone repeatedly.
-	if (await hasRecentResetToken(db, target.userId)) return json(ACCEPTED);
+	if (await auth.hasRecentResetToken(target.userId)) return json(ACCEPTED);
 
-	const user = await getUserById(db, target.userId);
+	const user = await auth.getUserById(target.userId);
 	if (!user) return json(ACCEPTED);
 
 	try {
 		const provider = getEmailProvider(platform);
-		const token = await createPasswordResetToken(db, user.id);
+		const token = await auth.createPasswordResetToken(user.id);
 		const link = `${url.origin}/reset?token=${encodeURIComponent(token)}`;
 
 		await sendPasswordResetLink(

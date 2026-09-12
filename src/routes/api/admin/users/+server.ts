@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { createUser, deletePendingUser, listUsers } from '$lib/server/auth';
+import { getAuthService } from '$lib/server/auth';
 import { getDomainsService } from '$lib/server/domains';
 
 export const GET: RequestHandler = async ({ locals, platform }) => {
@@ -7,11 +7,10 @@ export const GET: RequestHandler = async ({ locals, platform }) => {
 		return json({ error: 'Forbidden' }, { status: 403 });
 	}
 
-	const db = platform?.env.DB;
-	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
+	if (!platform?.env.DB) return json({ error: 'Database unavailable' }, { status: 503 });
 
 	const [users, addresses] = await Promise.all([
-		listUsers(db),
+		getAuthService(platform).listUsers(),
 		getDomainsService(platform).listAllAddresses()
 	]);
 	return json({ users, addresses });
@@ -26,8 +25,8 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		return json({ error: 'Forbidden' }, { status: 403 });
 	}
 
-	const db = platform?.env.DB;
-	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
+	if (!platform?.env.DB) return json({ error: 'Database unavailable' }, { status: 503 });
+	const auth = getAuthService(platform);
 
 	const body = (await request.json()) as {
 		name?: string;
@@ -58,7 +57,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 	let createdUserId: string | null = null;
 
 	try {
-		const user = await createUser(db, {
+		const user = await auth.createUser({
 			email: `${localPart}@${domain.name}`,
 			name: body.name,
 			password: body.password,
@@ -79,7 +78,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 	} catch (error) {
 		if (createdUserId) {
 			try {
-				await deletePendingUser(db, createdUserId);
+				await auth.deletePendingUser(createdUserId);
 			} catch (cleanupError) {
 				console.error('Failed to roll back user after mailbox creation failed', cleanupError);
 			}

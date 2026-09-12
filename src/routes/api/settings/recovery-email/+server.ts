@@ -1,19 +1,13 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getUserByEmail } from '$lib/server/auth';
+import { getAuthService } from '$lib/server/auth';
 import { verifyPassword } from '$lib/server/util/crypto';
 import { getEmailProvider } from '$lib/server/context';
-import {
-	clearRecoveryEmail,
-	getRecoveryStatus,
-	startRecoveryEmailChange
-} from '$lib/server/account-recovery';
 import { notifySecurityEvent, sendRecoveryVerification } from '$lib/server/outbound/security-notice';
 
 export const GET: RequestHandler = async ({ locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
+	if (!platform?.env.DB || !locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
 
-	return json(await getRecoveryStatus(db, locals.user.id));
+	return json(await getAuthService(platform).getRecoveryStatus(locals.user.id));
 };
 
 /**
@@ -24,8 +18,8 @@ export const GET: RequestHandler = async ({ locals, platform }) => {
  * session being revoked.
  */
 export const POST: RequestHandler = async ({ request, url, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
+	if (!platform?.env.DB || !locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
+	const auth = getAuthService(platform);
 
 	let body: { email?: unknown; password?: unknown; action?: unknown };
 	try {
@@ -38,25 +32,25 @@ export const POST: RequestHandler = async ({ request, url, locals, platform }) =
 		return json({ error: 'Your password is required' }, { status: 400 });
 	}
 
-	const stored = await getUserByEmail(db, locals.user.email);
-	if (!stored || !(await verifyPassword(body.password, stored.password_hash))) {
+	const stored = await auth.getUserByEmail(locals.user.email);
+	if (!stored || !(await verifyPassword(body.password, stored.passwordHash))) {
 		return json({ error: 'That password is incorrect' }, { status: 403 });
 	}
 
 	try {
 		if (body.action === 'clear') {
-			const previous = await getRecoveryStatus(db, locals.user.id);
-			await clearRecoveryEmail(db, locals.user.id);
+			const previous = await auth.getRecoveryStatus(locals.user.id);
+			await auth.clearRecoveryEmail(locals.user.id);
 			if (previous.email) {
 				await notifySecurityEvent(
-					db,
+					platform.env.DB,
 					getEmailProvider(platform),
 					locals.user,
 					'recovery-email-changed',
 					previous.email
 				);
 			}
-			return json({ ok: true, ...(await getRecoveryStatus(db, locals.user.id)) });
+			return json({ ok: true, ...(await auth.getRecoveryStatus(locals.user.id)) });
 		}
 
 		if (typeof body.email !== 'string') {
@@ -64,12 +58,12 @@ export const POST: RequestHandler = async ({ request, url, locals, platform }) =
 		}
 
 		const provider = getEmailProvider(platform);
-		const token = await startRecoveryEmailChange(db, locals.user.id, body.email);
+		const token = await auth.startRecoveryEmailChange(locals.user.id, body.email);
 		const link = `${url.origin}/account/recovery?token=${encodeURIComponent(token)}`;
 
-		await sendRecoveryVerification(db, provider, locals.user, body.email.trim(), link);
+		await sendRecoveryVerification(platform.env.DB, provider, locals.user, body.email.trim(), link);
 
-		return json({ ok: true, ...(await getRecoveryStatus(db, locals.user.id)) });
+		return json({ ok: true, ...(await auth.getRecoveryStatus(locals.user.id)) });
 	} catch (error) {
 		return json(
 			{ error: error instanceof Error ? error.message : 'Could not update the recovery address' },

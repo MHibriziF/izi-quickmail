@@ -1,23 +1,22 @@
 import type { LayoutServerLoad } from './$types';
 import { listApiTokens } from '$lib/server/api-tokens';
-import { getEmailSignature } from '$lib/server/email-signature';
+import { getAuthService } from '$lib/server/auth';
 import { readVapidConfiguration } from '$lib/server/push-notifications';
-import { getTwoFactorStatus } from '$lib/server/two-factor';
-import { getRecoveryStatus } from '$lib/server/account-recovery';
 import { getCleanupSettings } from '$lib/server/cleanup';
 
 export const load: LayoutServerLoad = async ({ locals, platform }) => {
 	const db = platform?.env.DB;
-	const signature = locals.user && db ? await getEmailSignature(db, locals.user.id) : '';
+	const auth = db ? getAuthService(platform) : null;
+	const signature = locals.user && auth ? await auth.getEmailSignature(locals.user.id) : '';
 	const apiTokens = locals.user && db ? await listApiTokens(db, locals.user.id) : [];
 	const vapid = platform?.env ? readVapidConfiguration(platform.env) : null;
 	const twoFactor =
-		locals.user && db
-			? await getTwoFactorStatus(db, locals.user.id)
+		locals.user && auth
+			? await auth.getTwoFactorStatus(locals.user.id)
 			: { enabled: false, enabledAt: null, backupCodesRemaining: 0 };
 	const recovery =
-		locals.user && db
-			? await getRecoveryStatus(db, locals.user.id)
+		locals.user && auth
+			? await auth.getRecoveryStatus(locals.user.id)
 			: { email: null, pending: null, verifiedAt: null };
 	const cleanup =
 		locals.user && db

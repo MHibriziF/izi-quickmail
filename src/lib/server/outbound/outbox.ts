@@ -14,7 +14,7 @@ import {
 	listAddressesForUser
 } from '../domains';
 import { parseEmailAddress } from '../util/email-address';
-import { getEmailSignature } from '../email-signature';
+import { getEmailSignature } from '../auth';
 import { stripHtml } from '../util/html';
 import { insertEmail } from '../mail-store';
 import { initialOutboundStatus, type EmailProvider } from '../email-provider';

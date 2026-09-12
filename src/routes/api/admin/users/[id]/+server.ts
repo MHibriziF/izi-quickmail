@@ -1,13 +1,13 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { deleteUser, setUserAdmin, setUserPassword } from '$lib/server/auth';
+import { getAuthService } from '$lib/server/auth';
 
 export const PATCH: RequestHandler = async ({ params, request, locals, platform }) => {
 	if (!locals.user?.is_admin) {
 		return json({ error: 'Forbidden' }, { status: 403 });
 	}
 
-	const db = platform?.env.DB;
-	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
+	if (!platform?.env.DB) return json({ error: 'Database unavailable' }, { status: 503 });
+	const auth = getAuthService(platform);
 
 	const body = (await request.json()) as { password?: unknown; isAdmin?: unknown };
 	const hasPassword = body.password !== undefined;
@@ -27,11 +27,11 @@ export const PATCH: RequestHandler = async ({ params, request, locals, platform 
 
 	try {
 		if (hasRole) {
-			await setUserAdmin(db, locals.user, params.id!, body.isAdmin as boolean);
+			await auth.setUserAdmin(locals.user, params.id!, body.isAdmin as boolean);
 		}
 
 		if (hasPassword) {
-			await setUserPassword(db, params.id!, body.password as string);
+			await auth.setUserPassword(params.id!, body.password as string);
 		}
 
 		return json({ ok: true });
@@ -48,11 +48,10 @@ export const DELETE: RequestHandler = async ({ params, locals, platform }) => {
 		return json({ error: 'Forbidden' }, { status: 403 });
 	}
 
-	const db = platform?.env.DB;
-	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
+	if (!platform?.env.DB) return json({ error: 'Database unavailable' }, { status: 503 });
 
 	try {
-		await deleteUser(db, platform?.env.ATTACHMENTS, locals.user, params.id!);
+		await getAuthService(platform).deleteUser(platform.env.ATTACHMENTS, locals.user, params.id!);
 		return json({ ok: true });
 	} catch (error) {
 		return json(

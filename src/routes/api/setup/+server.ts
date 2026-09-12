@@ -1,11 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import {
-	bootstrapAdmin,
-	countUsers,
-	startSession,
-	sessionCookieOptions,
-	SESSION_COOKIE
-} from '$lib/server/auth';
+import { getAuthService, sessionCookieOptions, SESSION_COOKIE } from '$lib/server/auth';
 import { SESSION_DAYS } from '$lib/server/constants';
 import {
 	ConfigError,
@@ -21,7 +15,7 @@ export const GET: RequestHandler = async ({ platform }) => {
 		return json({ ready: false, needsSetup: true, providerConfigured: false, providerKind: 'resend' });
 	}
 
-	const users = await countUsers(db);
+	const users = await getAuthService(platform).countUsers();
 	return json({
 		ready: true,
 		needsSetup: users === 0,
@@ -35,11 +29,11 @@ export const GET: RequestHandler = async ({ platform }) => {
  * create the admin, claim their address, make them the catch-all, sign them in.
  */
 export const POST: RequestHandler = async ({ request, cookies, platform }) => {
-	const db = platform?.env.DB;
-	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
+	if (!platform?.env.DB) return json({ error: 'Database unavailable' }, { status: 503 });
+	const auth = getAuthService(platform);
 
 	// The whole endpoint is only open while the app is uninitialised.
-	if ((await countUsers(db)) > 0) {
+	if ((await auth.countUsers()) > 0) {
 		return json({ error: 'Setup already completed' }, { status: 400 });
 	}
 
@@ -71,7 +65,7 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		const address = `${localPart}@${domain.name}`;
 
 		// The mail address doubles as the login — one identity, not two.
-		const user = await bootstrapAdmin(db, {
+		const user = await auth.bootstrapAdmin({
 			email: address,
 			name: body.name,
 			password: body.password
@@ -84,7 +78,7 @@ export const POST: RequestHandler = async ({ request, cookies, platform }) => {
 		await domains.setCatchallUser(domain.id, user.id);
 
 		// The account was created a few lines up, so identity is already proven.
-		const session = await startSession(db, user);
+		const session = await auth.startSession(user);
 		cookies.set(SESSION_COOKIE, session.token, sessionCookieOptions(SESSION_DAYS * 24 * 60 * 60));
 
 		return json({ ok: true, email: address, signedIn: Boolean(session) });
