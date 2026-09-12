@@ -2,3 +2,9 @@
 .github            export-ignore
 .gitattributes     export-ignore
 scripts/check-template-clean.mjs export-ignore
+
+# Force LF regardless of a contributor's core.autocrlf: generate-migrations.mjs embeds these
+# .sql files verbatim into migrations.generated.ts, so a CRLF checkout on Windows bakes CRLF
+# into the generated string literals, which then mismatches on any Linux CI runner.
+migrations/*.sql                       text eol=lf
+src/lib/server/migrations.generated.ts text eol=lf

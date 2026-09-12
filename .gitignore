@@ -9,6 +9,7 @@ worker-wrapper.js
 wrangler.deploy.jsonc
 /.svelte-kit
 /build
+/coverage
 
 # OS
 .DS_Store
