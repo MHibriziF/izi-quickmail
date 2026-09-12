@@ -1,8 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { findMeetingByCode } from '$lib/server/meet/meetings';
-import { createAdmission } from '$lib/server/meet/admissions';
-import { getLiveKitClient } from '$lib/server/context';
+import { getMeetingsService } from '$lib/server/meet/meetings';
 
 type JoinBody = {
 	name?: unknown;
@@ -15,8 +13,7 @@ type JoinBody = {
  * minting a token — see join/[code]/admission/[admissionId] for the other half.
  */
 export const POST: RequestHandler = async ({ params, request, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
+	if (!platform?.env.DB) return json({ error: 'Database unavailable' }, { status: 503 });
 
 	let body: JoinBody;
 	try {
@@ -25,29 +22,21 @@ export const POST: RequestHandler = async ({ params, request, locals, platform }
 		return json({ error: 'Invalid request' }, { status: 400 });
 	}
 
-	const meeting = await findMeetingByCode(db, params.code);
-	if (!meeting) {
-		return json({ error: 'That code is invalid or the meeting no longer exists.' }, { status: 404 });
-	}
-
 	const name = typeof body.name === 'string' ? body.name.trim().slice(0, 100) : undefined;
-	const isOwner = locals.user?.id === meeting.user_id;
-
-	if (meeting.require_approval && !isOwner) {
-		const admission = await createAdmission(db, meeting.id, name ?? 'Guest');
-		return json({ pending: true, admissionId: admission.id });
-	}
 
 	try {
-		const liveKit = getLiveKitClient(platform);
-		const accessToken = await liveKit.createAccessToken({
-			identity: crypto.randomUUID(),
+		const outcome = await getMeetingsService(platform).requestJoin(params.code, {
 			name,
-			room: meeting.id,
-			attributes: isOwner ? { role: 'host' } : undefined
+			requesterId: locals.user?.id
 		});
 
-		return json({ url: liveKit.url, token: accessToken, roomName: meeting.id });
+		if (outcome.type === 'not_found') {
+			return json({ error: 'That code is invalid or the meeting no longer exists.' }, { status: 404 });
+		}
+		if (outcome.type === 'pending') {
+			return json({ pending: true, admissionId: outcome.admissionId });
+		}
+		return json({ url: outcome.url, token: outcome.token, roomName: outcome.roomName });
 	} catch (error) {
 		return json(
 			{ error: error instanceof Error ? error.message : 'Could not join meeting' },

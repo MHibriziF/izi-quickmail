@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { createMeeting, listMeetings } from '$lib/server/meet/meetings';
+import { getMeetingsService } from '$lib/server/meet/meetings';
 
 type CreateMeetingBody = {
 	title?: string;
@@ -8,13 +8,12 @@ type CreateMeetingBody = {
 
 /** Start a meeting. Protected — anyone able to create a room can flood LiveKit usage. */
 export const POST: RequestHandler = async ({ request, locals, platform, url }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
 	const body = (await request.json().catch(() => ({}))) as CreateMeetingBody;
-	const { code, meeting } = await createMeeting(db, locals.user.id, {
+	const { code, meeting } = await getMeetingsService(platform).create(locals.user.id, {
 		title: body.title,
 		requireApproval: body.requireApproval
 	});
@@ -29,10 +28,9 @@ export const POST: RequestHandler = async ({ request, locals, platform, url }) =
 };
 
 export const GET: RequestHandler = async ({ locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	return json({ meetings: await listMeetings(db, locals.user.id) });
+	return json({ meetings: await getMeetingsService(platform).list(locals.user.id) });
 };
