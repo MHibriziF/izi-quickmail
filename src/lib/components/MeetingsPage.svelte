@@ -4,7 +4,7 @@
 	import Icon from './Icon.svelte';
 	import { startMeeting } from '$lib/mail/meetings';
 	import { describeMailError } from '$lib/mail/client';
-	import type { Meeting } from '$lib/server/meetings';
+	import type { Meeting } from '$lib/server/meet/meetings';
 
 	let { meetings }: { meetings: Meeting[] } = $props();
 

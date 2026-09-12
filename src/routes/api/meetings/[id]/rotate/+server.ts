@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { rotateMeetingToken } from '$lib/server/meetings';
+import { rotateMeetingToken } from '$lib/server/meet/meetings';
 
 /**
  * Mints a fresh join link for an existing meeting. The raw token is never

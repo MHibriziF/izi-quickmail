@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { createLiveKitClient } from './livekit';
+import { createLiveKitClient } from '../livekit';
 
 function base64urlDecode(part: string): Uint8Array {
 	const padded = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(part.length + ((4 - (part.length % 4)) % 4), '=');

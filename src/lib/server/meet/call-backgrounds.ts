@@ -1,5 +1,5 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
-import { MAX_CALL_BACKGROUND_BYTES, MAX_CALL_BACKGROUNDS_PER_USER } from './constants';
+import { MAX_CALL_BACKGROUND_BYTES, MAX_CALL_BACKGROUNDS_PER_USER } from '../constants';
 
 export type CallBackgroundMeta = {
 	id: string;

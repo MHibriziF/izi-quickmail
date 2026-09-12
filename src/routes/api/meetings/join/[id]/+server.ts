@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { verifyMeetingToken } from '$lib/server/meetings';
+import { verifyMeetingToken } from '$lib/server/meet/meetings';
 import { getLiveKitClient } from '$lib/server/context';
 
 type JoinBody = {

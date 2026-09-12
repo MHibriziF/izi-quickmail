@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import { createSessionToken, hashToken } from './crypto';
+import { createSessionToken, hashToken } from '../crypto';
 
 export type Meeting = {
 	id: string;

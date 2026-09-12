@@ -10,7 +10,7 @@ import { ConfigError } from './errors';
 import { createCloudflareProvider } from './providers/cloudflare-provider';
 import { createResendProvider, getResendReceivingClient } from './providers/resend-provider';
 import type { ResendClient } from './resend';
-import { createLiveKitClient, type LiveKitClient } from './livekit';
+import { createLiveKitClient, type LiveKitClient } from './meet/livekit';
 
 export { ConfigError } from './errors';
 export { ProviderError } from './email-provider';

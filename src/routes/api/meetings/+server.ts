@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { createMeeting, listMeetings } from '$lib/server/meetings';
+import { createMeeting, listMeetings } from '$lib/server/meet/meetings';
 
 type CreateMeetingBody = {
 	title?: string;

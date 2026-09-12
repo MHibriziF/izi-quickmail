@@ -4,7 +4,7 @@ import {
 	deleteCallBackground,
 	getCallBackgroundForUser,
 	readCallBackgroundBytes
-} from '$lib/server/call-backgrounds';
+} from '$lib/server/meet/call-backgrounds';
 
 export const GET: RequestHandler = async ({ params, locals, platform }) => {
 	if (!locals.user || !platform?.env.DB || !platform?.env.ATTACHMENTS) {

@@ -6,7 +6,7 @@ import {
 	getCallBackgroundForUser,
 	insertCallBackground,
 	listCallBackgrounds
-} from './call-backgrounds';
+} from '../call-backgrounds';
 
 type Row = {
 	id: string;

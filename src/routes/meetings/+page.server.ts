@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { listMeetings } from '$lib/server/meetings';
+import { listMeetings } from '$lib/server/meet/meetings';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	const db = platform?.env.DB;

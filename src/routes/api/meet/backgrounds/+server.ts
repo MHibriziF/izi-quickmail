@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { insertCallBackground, listCallBackgrounds } from '$lib/server/call-backgrounds';
+import { insertCallBackground, listCallBackgrounds } from '$lib/server/meet/call-backgrounds';
 
 export const GET: RequestHandler = async ({ locals, platform }) => {
 	if (!locals.user || !platform?.env.DB) return json({ error: 'Unauthorized' }, { status: 401 });

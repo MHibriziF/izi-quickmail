@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import type { D1Database } from '@cloudflare/workers-types';
-import { hashToken } from './crypto';
-import { createMeeting, listMeetings, rotateMeetingToken, verifyMeetingToken } from './meetings';
+import { hashToken } from '../../crypto';
+import { createMeeting, listMeetings, rotateMeetingToken, verifyMeetingToken } from '../meetings';
 
 type MeetingRow = {
 	id: string;
