@@ -44,8 +44,23 @@ export type LoginResult =
 	| { ok: true; user: User; token: string }
 	| { ok: false; reason: 'invalid' | 'totp_required' | 'totp_invalid' };
 
+/**
+ * Not a full validator — just a shape check. Written without nested
+ * quantifiers over the same character class (the naive regex backtracks
+ * super-linearly on malicious input, since `.` is itself a valid character
+ * in `[^\s@]+`).
+ */
 export function isLikelyEmail(value: string): boolean {
-	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+	const trimmed = value.trim();
+	const at = trimmed.indexOf('@');
+	if (at <= 0 || trimmed.indexOf('@', at + 1) !== -1) return false;
+
+	const local = trimmed.slice(0, at);
+	const domain = trimmed.slice(at + 1);
+	if (!domain || /\s/.test(local) || /\s/.test(domain)) return false;
+
+	const dot = domain.indexOf('.');
+	return dot > 0 && dot < domain.length - 1;
 }
 
 export function normalizeBackupCode(code: string): string {
