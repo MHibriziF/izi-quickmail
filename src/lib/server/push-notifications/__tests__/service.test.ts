@@ -193,7 +193,7 @@ describe('notifyNewMail', () => {
 				throw new Error('must not be called');
 			}
 		});
-		await notifyNewMail(service, null, input);
+		await assert.doesNotReject(() => notifyNewMail(service, null, input));
 	});
 
 	test('does nothing when the recipient has no subscriptions', async () => {

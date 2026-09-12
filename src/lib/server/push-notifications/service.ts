@@ -58,7 +58,7 @@ function decodeBase64Url(value: unknown): Uint8Array | null {
 
 	try {
 		const binary = atob(padded);
-		return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+		return Uint8Array.from(binary, (character) => character.codePointAt(0) ?? 0);
 	} catch {
 		return null;
 	}
