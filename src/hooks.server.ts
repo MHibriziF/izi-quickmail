@@ -1,12 +1,10 @@
 import { redirect, type Handle } from '@sveltejs/kit';
 import { authorizeApiRequest, canAccessDuringFirstLogin } from '$lib/server/api-access';
 import { getUserByApiToken, readBearerToken } from '$lib/server/api-tokens';
-import { countUsers, getUserFromSession, readSessionToken } from '$lib/server/auth';
+import { getAuthService, readSessionToken } from '$lib/server/auth';
 import { DOMAIN_COOKIE, UI_THEME_COOKIE, UI_THEME_COOKIE_MAX_AGE } from '$lib/server/constants';
 import { getDomainsService } from '$lib/server/domains';
-import { getUserLocale } from '$lib/server/locale';
 import { ensureSchema } from '$lib/server/migrations/migrate';
-import { getUserUiTheme } from '$lib/server/ui-theme';
 import { BUILTIN_THEME_IDS, DEFAULT_UI_THEME, parseThemeId } from '$lib/ui-theme/ids';
 import {
 	DEFAULT_LOCALE,
@@ -96,7 +94,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (db) {
 		const session = readSessionToken(event.cookies);
-		event.locals.user = await getUserFromSession(db, session);
+		event.locals.user = await getAuthService(event.platform).getUserFromSession(session);
 		if (event.locals.user) {
 			event.locals.authMethod = 'session';
 		} else if (pathname.startsWith('/api/')) {
@@ -173,9 +171,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	if (db && event.locals.user && !event.locals.user.must_change_password) {
+		const authService = getAuthService(event.platform);
 		const [storedTheme, storedLocale] = await Promise.all([
-			getUserUiTheme(db, event.locals.user.id),
-			getUserLocale(db, event.locals.user.id)
+			authService.getUserUiTheme(event.locals.user.id),
+			authService.getUserLocale(event.locals.user.id)
 		]);
 		event.locals.uiTheme = storedTheme;
 		event.locals.locale = storedLocale;
@@ -199,7 +198,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	const needsSetup = db ? (await countUsers(db)) === 0 : false;
+	const needsSetup = db ? (await getAuthService(event.platform).countUsers()) === 0 : false;
 
 	if (
 		needsSetup &&

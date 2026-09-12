@@ -1,10 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
+import { getAuthService } from '$lib/server/auth';
 import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, isLocale } from '$lib/i18n/locales';
-import { setUserLocale } from '$lib/server/locale';
 
 export const PATCH: RequestHandler = async ({ request, locals, platform, cookies }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
@@ -19,7 +18,7 @@ export const PATCH: RequestHandler = async ({ request, locals, platform, cookies
 		return json({ error: 'Unknown locale' }, { status: 400 });
 	}
 
-	const locale = await setUserLocale(db, locals.user.id, body.locale);
+	const locale = await getAuthService(platform).setUserLocale(locals.user.id, body.locale);
 	cookies.set(LOCALE_COOKIE, locale, {
 		path: '/',
 		maxAge: LOCALE_COOKIE_MAX_AGE,

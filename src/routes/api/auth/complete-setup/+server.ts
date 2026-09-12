@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { completeFirstLogin, SESSION_COOKIE } from '$lib/server/auth';
+import { getAuthService, SESSION_COOKIE } from '$lib/server/auth';
 
 type SetupErrorCode =
 	| 'unauthorized'
@@ -26,8 +26,7 @@ export const POST: RequestHandler = async ({ request, locals, cookies, platform 
 		return setupError('already_complete', 400);
 	}
 
-	const db = platform?.env.DB;
-	if (!db) return setupError('database_unavailable', 503);
+	if (!platform?.env.DB) return setupError('database_unavailable', 503);
 
 	let parsed: unknown;
 	try {
@@ -65,7 +64,7 @@ export const POST: RequestHandler = async ({ request, locals, cookies, platform 
 	}
 
 	try {
-		await completeFirstLogin(db, locals.user.id, {
+		await getAuthService(platform).completeFirstLogin(locals.user.id, {
 			name: body.name,
 			password: body.password
 		});

@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { listUsers } from '$lib/server/auth';
+import { getAuthService } from '$lib/server/auth';
 import {
 	safeEmailProviderKind,
 	listAvailableDomains,
@@ -29,7 +29,7 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 
 	const domainsService = getDomainsService(platform);
 	const [users, addresses, unrouted] = await Promise.all([
-		listUsers(db),
+		getAuthService(platform).listUsers(),
 		domainsService.listAllAddresses(),
 		domainsService.listUnroutedEmails(25)
 	]);

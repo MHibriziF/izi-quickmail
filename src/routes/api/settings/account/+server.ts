@@ -1,12 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import {
-	getUserByEmail,
-	startSession,
-	sessionCookieOptions,
-	setUserName,
-	setUserPassword,
-	SESSION_COOKIE
-} from '$lib/server/auth';
+import { getAuthService, sessionCookieOptions, SESSION_COOKIE } from '$lib/server/auth';
 import { SESSION_DAYS } from '$lib/server/constants';
 import { verifyPassword } from '$lib/server/util/crypto';
 import { getEmailProvider } from '$lib/server/context';
@@ -19,10 +12,10 @@ import { notifySecurityEvent } from '$lib/server/outbound/security-notice';
  * route it does not list, so a leaked `mail:read` key cannot reach this.
  */
 export const PATCH: RequestHandler = async ({ request, cookies, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
+	const auth = getAuthService(platform);
 
 	let body: { name?: unknown; currentPassword?: unknown; newPassword?: unknown };
 	try {
@@ -45,7 +38,7 @@ export const PATCH: RequestHandler = async ({ request, cookies, locals, platform
 			if (typeof body.name !== 'string') {
 				return json({ error: 'Name must be text' }, { status: 400 });
 			}
-			user = await setUserName(db, user.id, body.name);
+			user = await auth.setUserName(user.id, body.name);
 		}
 
 		if (wantsPassword) {
@@ -55,20 +48,20 @@ export const PATCH: RequestHandler = async ({ request, cookies, locals, platform
 
 			// A stolen session must not be enough to take the account over, so the
 			// current password is re-checked even though the caller is signed in.
-			const stored = await getUserByEmail(db, user.email);
-			if (!stored || !(await verifyPassword(body.currentPassword, stored.password_hash))) {
+			const stored = await auth.getUserByEmail(user.email);
+			if (!stored || !(await verifyPassword(body.currentPassword, stored.passwordHash))) {
 				return json({ error: 'Current password is incorrect' }, { status: 403 });
 			}
 
 			// Rotation drops every session and API token, including the cookie that
 			// authorised this request — so mint a fresh one and keep the tab signed in.
-			await setUserPassword(db, user.id, body.newPassword);
+			await auth.setUserPassword(user.id, body.newPassword);
 
-			const renewed = await startSession(db, user);
+			const renewed = await auth.startSession(user);
 			cookies.set(SESSION_COOKIE, renewed.token, sessionCookieOptions(SESSION_DAYS * 24 * 60 * 60));
 			user = renewed.user;
 
-			await notifySecurityEvent(db, getEmailProvider(platform), user, 'password-changed');
+			await notifySecurityEvent(platform.env.DB, getEmailProvider(platform), user, 'password-changed');
 		}
 
 		return json({ ok: true, user, apiTokensRevoked: wantsPassword });

@@ -1,7 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getUserById, setUserPassword } from '$lib/server/auth';
+import { getAuthService } from '$lib/server/auth';
 import { getEmailProvider } from '$lib/server/context';
-import { consumeToken } from '$lib/server/account-recovery';
 import { notifySecurityEvent } from '$lib/server/outbound/security-notice';
 
 /**
@@ -14,6 +13,7 @@ import { notifySecurityEvent } from '$lib/server/outbound/security-notice';
 export const POST: RequestHandler = async ({ request, platform }) => {
 	const db = platform?.env.DB;
 	if (!db) return json({ error: 'Database unavailable' }, { status: 503 });
+	const auth = getAuthService(platform);
 
 	let body: { token?: unknown; password?: unknown };
 	try {
@@ -26,14 +26,14 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		return json({ error: 'Missing token or password' }, { status: 400 });
 	}
 
-	const userId = await consumeToken(db, 'password_reset', body.token);
+	const userId = await auth.consumeToken('password_reset', body.token);
 	if (!userId) {
 		return json({ error: 'That link has expired or already been used.' }, { status: 400 });
 	}
 
 	try {
 		// Also drops every session and API token for the account.
-		await setUserPassword(db, userId, body.password);
+		await auth.setUserPassword(userId, body.password);
 	} catch (error) {
 		return json(
 			{ error: error instanceof Error ? error.message : 'Could not set that password' },
@@ -41,7 +41,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		);
 	}
 
-	const user = await getUserById(db, userId);
+	const user = await auth.getUserById(userId);
 	if (user) {
 		try {
 			await notifySecurityEvent(db, getEmailProvider(platform), user, 'password-reset');
