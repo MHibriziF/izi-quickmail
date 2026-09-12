@@ -162,7 +162,13 @@
 		playTone(on ? 880 : 440, 0, 0.08);
 	}
 
-	type Tile = { el: HTMLDivElement; media: HTMLDivElement; micIcon: HTMLElement; cameraIcon: HTMLElement };
+	type Tile = {
+		el: HTMLDivElement;
+		media: HTMLDivElement;
+		micIcon: HTMLElement;
+		cameraIcon: HTMLElement;
+		deafenedIcon: HTMLElement;
+	};
 	const remoteTiles = new Map<string, Tile>();
 	const screenTiles = new Map<string, Tile>();
 
@@ -186,20 +192,25 @@
 		const cameraIcon = document.createElement('i');
 		cameraIcon.className = 'ri-camera-off-line call-tile-status-icon';
 		cameraIcon.hidden = true;
-		status.append(micIcon, cameraIcon);
+		const deafenedIcon = document.createElement('i');
+		deafenedIcon.className = 'ri-volume-mute-line call-tile-status-icon';
+		deafenedIcon.title = t('meet.deafenedStatus');
+		deafenedIcon.hidden = true;
+		status.append(micIcon, cameraIcon, deafenedIcon);
 
 		const name = document.createElement('span');
 		name.className = 'call-tile-name';
 		name.textContent = label;
 
 		el.append(avatar, media, status, name);
-		return { el, media, micIcon, cameraIcon };
+		return { el, media, micIcon, cameraIcon, deafenedIcon };
 	}
 
-	/** Reflects a participant's current mute state on their tile's status badges. */
+	/** Reflects a participant's current mute state — and, via the `deafened` attribute, whether they've left audio — on their tile's status badges. */
 	function updateTileStatus(tile: Tile, participant: Participant) {
 		tile.micIcon.hidden = participant.isMicrophoneEnabled;
 		tile.cameraIcon.hidden = participant.isCameraEnabled;
+		tile.deafenedIcon.hidden = participant.attributes.deafened !== '1';
 	}
 
 	function ensureRemoteTile(participant: Participant): Tile {
@@ -215,6 +226,12 @@
 	}
 
 	function handleTrackMuteChanged(_publication: TrackPublication, participant: Participant) {
+		const tile = remoteTiles.get(participant.identity);
+		if (tile) updateTileStatus(tile, participant);
+	}
+
+	/** The `deafened` attribute (see toggleDeafen) is the only way another participant's tile can know they've left audio — there's no track for it. */
+	function handleParticipantAttributesChanged(_changed: Record<string, string>, participant: Participant) {
 		const tile = remoteTiles.get(participant.identity);
 		if (tile) updateTileStatus(tile, participant);
 	}
@@ -548,6 +565,7 @@
 		instance.on(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished);
 		instance.on(RoomEvent.TrackMuted, handleTrackMuteChanged);
 		instance.on(RoomEvent.TrackUnmuted, handleTrackMuteChanged);
+		instance.on(RoomEvent.ParticipantAttributesChanged, handleParticipantAttributesChanged);
 
 		instance.registerTextStreamHandler(CHAT_TOPIC, async (reader, participantInfo) => {
 			const text = await reader.readAll();
@@ -557,6 +575,7 @@
 		(async () => {
 			try {
 				await instance.connect(url, token);
+				if (deafened) await instance.localParticipant.setAttributes({ deafened: '1' });
 				await instance.localParticipant.setMicrophoneEnabled(
 					micEnabled,
 					micDeviceId ? { deviceId: micDeviceId } : undefined
@@ -594,6 +613,7 @@
 			instance.off(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished);
 			instance.off(RoomEvent.TrackMuted, handleTrackMuteChanged);
 			instance.off(RoomEvent.TrackUnmuted, handleTrackMuteChanged);
+			instance.off(RoomEvent.ParticipantAttributesChanged, handleParticipantAttributesChanged);
 			instance.unregisterTextStreamHandler(CHAT_TOPIC);
 		};
 	});
@@ -617,6 +637,7 @@
 		if (micEnabled && deafened) {
 			deafened = false;
 			setRemoteAudioMuted(false);
+			await room.localParticipant.setAttributes({ deafened: '0' });
 		}
 		playToggleTone(micEnabled);
 		await room.localParticipant.setMicrophoneEnabled(micEnabled);
@@ -638,6 +659,7 @@
 		deafened = !deafened;
 		playToggleTone(!deafened);
 		setRemoteAudioMuted(deafened);
+		await room.localParticipant.setAttributes({ deafened: deafened ? '1' : '0' });
 		if (deafened) {
 			micEnabledBeforeDeafen = micEnabled;
 			if (micEnabled) {
@@ -742,8 +764,6 @@
 			<span class="call-header-status">{t('meet.connecting')}</span>
 		{:else if connectionError}
 			<span class="call-header-status call-header-status-error">{connectionError}</span>
-		{:else if deafened}
-			<span class="call-header-status call-header-status-error">{t('meet.deafenedStatus')}</span>
 		{/if}
 	</div>
 
@@ -759,6 +779,7 @@
 				<div class="call-tile-status">
 					{#if !micEnabled}<Icon name="mic-off-line" size={14} class="call-tile-status-icon" />{/if}
 					{#if !cameraEnabled}<Icon name="camera-off-line" size={14} class="call-tile-status-icon" />{/if}
+					{#if deafened}<Icon name="volume-mute-line" size={14} class="call-tile-status-icon" />{/if}
 				</div>
 				<span class="call-tile-name">{displayName} · {t('meet.you')}</span>
 			</div>
