@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getEmailForUser } from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 import { cancelScheduledSend } from '$lib/server/scheduled-send';
 
 /**
@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ params, locals, platform }) => {
 	const db = platform?.env.DB;
 	if (!db || !locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
 
-	const email = await getEmailForUser(db, locals.user.id, params.id!);
+	const email = await getMailStoreService(platform).getEmailForUser(locals.user.id, params.id!);
 	if (!email) return json({ error: 'Message not found' }, { status: 404 });
 
 	if (email.status !== 'scheduled' || !email.scheduled_at) {

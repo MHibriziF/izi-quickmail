@@ -5,7 +5,7 @@ import {
 	getEmailProvider,
 	statusForProviderError
 } from '$lib/server/context';
-import { deleteDraft, listMailbox } from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 import { sendAndStore } from '$lib/server/outbox';
 import type { MailboxView, OutboundAttachmentInput } from '$lib/types';
 
@@ -49,12 +49,11 @@ function mailboxView(url: URL): MailboxView {
 }
 
 export const GET: RequestHandler = async ({ locals, platform, url }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const mailbox = await listMailbox(db, locals.user.id, {
+	const mailbox = await getMailStoreService(platform).listMailbox(locals.user.id, {
 		view: mailboxView(url),
 		domainId: locals.activeDomainId,
 		addressId: url.searchParams.get('address'),
@@ -104,7 +103,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		);
 
 		if (body.draftId) {
-			await deleteDraft(db, locals.user.id, body.draftId);
+			await getMailStoreService(platform).deleteDraft(locals.user.id, body.draftId);
 		}
 
 		return json({ ok: true, id: emailId });

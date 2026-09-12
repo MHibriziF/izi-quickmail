@@ -5,14 +5,7 @@ import {
 	getEmailProvider,
 	statusForProviderError
 } from '$lib/server/context';
-import {
-	deleteEmailsPermanently,
-	expandToThreads,
-	getEmailForUser,
-	listThreadMessages,
-	markThreadRead,
-	setEmailFlags
-} from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 import { resolveReplyFromAddress, sendAndStore } from '$lib/server/outbox';
 import { buildReferences, displaySubject } from '$lib/server/threads';
 import type { OutboundAttachmentInput } from '$lib/types';
@@ -26,18 +19,18 @@ type ReplyBody = {
 };
 
 export const GET: RequestHandler = async ({ params, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const email = await getEmailForUser(db, locals.user.id, params.id!);
+	const mailStore = getMailStoreService(platform);
+	const email = await mailStore.getEmailForUser(locals.user.id, params.id!);
 	if (!email) {
 		return json({ error: 'Not found' }, { status: 404 });
 	}
 
-	await markThreadRead(db, locals.user.id, email);
-	const messages = await listThreadMessages(db, locals.user.id, email);
+	await mailStore.markThreadRead(locals.user.id, email);
+	const messages = await mailStore.listThreadMessages(locals.user.id, email);
 
 	return json({
 		threadId: email.thread_id ?? email.id,
@@ -48,11 +41,11 @@ export const GET: RequestHandler = async ({ params, locals, platform }) => {
 
 /** Flag toggles from the list and the reader — applied to the whole thread. */
 export const PATCH: RequestHandler = async ({ params, request, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
+	const mailStore = getMailStoreService(platform);
 	const body = (await request.json()) as {
 		isRead?: boolean;
 		isStarred?: boolean;
@@ -67,9 +60,9 @@ export const PATCH: RequestHandler = async ({ params, request, locals, platform 
 	const ids =
 		body.messageOnly && body.archived === undefined
 			? [params.id!]
-			: await expandToThreads(db, locals.user.id, [params.id!]);
+			: await mailStore.expandToThreads(locals.user.id, [params.id!]);
 
-	const changed = await setEmailFlags(db, locals.user.id, ids, {
+	const changed = await mailStore.setEmailFlags(locals.user.id, ids, {
 		isRead: body.isRead,
 		isStarred: body.isStarred,
 		archived: body.archived,
@@ -84,13 +77,13 @@ export const PATCH: RequestHandler = async ({ params, request, locals, platform 
 };
 
 export const DELETE: RequestHandler = async ({ params, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const ids = await expandToThreads(db, locals.user.id, [params.id!]);
-	const removed = await deleteEmailsPermanently(db, platform?.env.ATTACHMENTS, locals.user.id, ids);
+	const mailStore = getMailStoreService(platform);
+	const ids = await mailStore.expandToThreads(locals.user.id, [params.id!]);
+	const removed = await mailStore.deleteEmailsPermanently(locals.user.id, platform?.env.ATTACHMENTS, ids);
 
 	if (removed === 0) {
 		return json({ error: 'Not found' }, { status: 404 });
@@ -106,7 +99,7 @@ export const POST: RequestHandler = async ({ params, request, locals, platform }
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const original = await getEmailForUser(db, locals.user.id, params.id!);
+	const original = await getMailStoreService(platform).getEmailForUser(locals.user.id, params.id!);
 	if (!original) {
 		return json({ error: 'Not found' }, { status: 404 });
 	}

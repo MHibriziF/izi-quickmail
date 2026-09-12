@@ -1,5 +1,5 @@
 import type { LayoutServerLoad } from './$types';
-import { getMailboxCounts } from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 import { runDueTrashPurge } from '$lib/server/cleanup';
 import { getEmailProvider } from '$lib/server/context';
 import { runDueScheduledSends } from '$lib/server/scheduled-send';
@@ -55,7 +55,7 @@ export const load: LayoutServerLoad = async ({ locals, platform, depends }) => {
 	// The sidebar shows these on every page, so they load with the shell.
 	const counts =
 		db && locals.user
-			? await getMailboxCounts(db, locals.user.id, locals.activeDomainId)
+			? await getMailStoreService(platform).getMailboxCounts(locals.user.id, locals.activeDomainId)
 			: EMPTY_COUNTS;
 
 	const timezoneRow =

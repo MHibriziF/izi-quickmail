@@ -1,13 +1,12 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { deleteDraft, getDraft } from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 
 export const GET: RequestHandler = async ({ params, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const draft = await getDraft(db, locals.user.id, params.id!);
+	const draft = await getMailStoreService(platform).getDraft(locals.user.id, params.id!);
 	if (!draft) {
 		return json({ error: 'Not found' }, { status: 404 });
 	}
@@ -26,12 +25,11 @@ export const GET: RequestHandler = async ({ params, locals, platform }) => {
 };
 
 export const DELETE: RequestHandler = async ({ params, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	await deleteDraft(db, locals.user.id, params.id!);
+	await getMailStoreService(platform).deleteDraft(locals.user.id, params.id!);
 
 	return json({ ok: true });
 };

@@ -5,7 +5,7 @@ import {
 	statusForProviderError
 } from '$lib/server/context';
 import { sendForwardedMessages, type ForwardRequest } from '$lib/server/forward-mail';
-import { getEmailForUser } from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 import { parseRecipients } from '$lib/server/send-mail';
 
 /** Sends a copy of a message on to someone who has not seen it. */
@@ -16,7 +16,7 @@ export const POST: RequestHandler = async ({ params, request, locals, platform }
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const original = await getEmailForUser(db, locals.user.id, params.id!);
+	const original = await getMailStoreService(platform).getEmailForUser(locals.user.id, params.id!);
 	if (!original) {
 		return json({ error: 'Not found' }, { status: 404 });
 	}

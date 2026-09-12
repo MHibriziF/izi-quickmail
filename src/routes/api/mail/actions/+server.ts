@@ -1,13 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { authorizeMailAction, isMailAction, type MailAction } from '$lib/server/api-access';
-import {
-	deleteEmailsPermanently,
-	emptyTrash,
-	expandToThreads,
-	markAllRead,
-	setEmailFlags,
-	getMailboxCounts
-} from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 
 /** Actions that operate on the whole mailbox rather than a selection. */
 const WHOLE_MAILBOX: MailAction[] = ['read-all', 'empty-trash'];
@@ -18,10 +11,10 @@ type ActionBody = {
 };
 
 export const POST: RequestHandler = async ({ request, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
+	const mailStore = getMailStoreService(platform);
 
 	const body = (await request.json()) as ActionBody;
 	const action = body.action;
@@ -48,48 +41,43 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 
 	// The list works in conversations, so an action on a row applies to every
 	// message in it — trashing a thread takes its replies along.
-	const ids = await expandToThreads(db, locals.user.id, selected);
+	const ids = await mailStore.expandToThreads(locals.user.id, selected);
 
 	let affected = 0;
 
 	switch (action) {
 		case 'read':
-			affected = await setEmailFlags(db, locals.user.id, ids, { isRead: true });
+			affected = await mailStore.setEmailFlags(locals.user.id, ids, { isRead: true });
 			break;
 		case 'unread':
-			affected = await setEmailFlags(db, locals.user.id, ids, { isRead: false });
+			affected = await mailStore.setEmailFlags(locals.user.id, ids, { isRead: false });
 			break;
 		case 'star':
-			affected = await setEmailFlags(db, locals.user.id, ids, { isStarred: true });
+			affected = await mailStore.setEmailFlags(locals.user.id, ids, { isStarred: true });
 			break;
 		case 'unstar':
-			affected = await setEmailFlags(db, locals.user.id, ids, { isStarred: false });
+			affected = await mailStore.setEmailFlags(locals.user.id, ids, { isStarred: false });
 			break;
 		case 'archive':
-			affected = await setEmailFlags(db, locals.user.id, ids, { archived: true });
+			affected = await mailStore.setEmailFlags(locals.user.id, ids, { archived: true });
 			break;
 		case 'unarchive':
-			affected = await setEmailFlags(db, locals.user.id, ids, { archived: false });
+			affected = await mailStore.setEmailFlags(locals.user.id, ids, { archived: false });
 			break;
 		case 'trash':
-			affected = await setEmailFlags(db, locals.user.id, ids, { trashed: true });
+			affected = await mailStore.setEmailFlags(locals.user.id, ids, { trashed: true });
 			break;
 		case 'restore':
-			affected = await setEmailFlags(db, locals.user.id, ids, { trashed: false });
+			affected = await mailStore.setEmailFlags(locals.user.id, ids, { trashed: false });
 			break;
 		case 'delete':
-			affected = await deleteEmailsPermanently(
-				db,
-				platform?.env.ATTACHMENTS,
-				locals.user.id,
-				ids
-			);
+			affected = await mailStore.deleteEmailsPermanently(locals.user.id, platform?.env.ATTACHMENTS, ids);
 			break;
 		case 'read-all':
-			affected = await markAllRead(db, locals.user.id, locals.activeDomainId);
+			affected = await mailStore.markAllRead(locals.user.id, locals.activeDomainId);
 			break;
 		case 'empty-trash':
-			affected = await emptyTrash(db, platform?.env.ATTACHMENTS, locals.user.id);
+			affected = await mailStore.emptyTrash(locals.user.id, platform?.env.ATTACHMENTS);
 			break;
 		default: {
 			const _never: never = action;
@@ -97,7 +85,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		}
 	}
 
-	const counts = await getMailboxCounts(db, locals.user.id, locals.activeDomainId);
+	const counts = await mailStore.getMailboxCounts(locals.user.id, locals.activeDomainId);
 
 	return json({ ok: true, affected, counts });
 };

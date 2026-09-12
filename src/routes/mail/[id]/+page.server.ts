@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getEmailForUser, listThreadMessages, markThreadRead } from '$lib/server/mail-store';
+import { getMailStoreService } from '$lib/server/mail-store';
 import { resolveReplyFromAddress } from '$lib/server/outbox';
 import { displaySubject } from '$lib/server/threads';
 import { getDomainsService } from '$lib/server/domains';
@@ -10,15 +10,16 @@ export const load: PageServerLoad = async ({ params, locals, platform }) => {
 		throw error(401, 'Unauthorized');
 	}
 
-	const email = await getEmailForUser(platform.env.DB, locals.user.id, params.id);
+	const mailStore = getMailStoreService(platform);
+	const email = await mailStore.getEmailForUser(locals.user.id, params.id);
 	if (!email) {
 		throw error(404, 'Email not found');
 	}
 
 	// Opening any message opens its whole conversation.
-	const newlyRead = await markThreadRead(platform.env.DB, locals.user.id, email);
+	const newlyRead = await mailStore.markThreadRead(locals.user.id, email);
 	const [messages, addresses] = await Promise.all([
-		listThreadMessages(platform.env.DB, locals.user.id, email),
+		mailStore.listThreadMessages(locals.user.id, email),
 		getDomainsService(platform).listAddressesForUser(locals.user.id)
 	]);
 	const identities = new Map(addresses.map((address) => [address.address.toLowerCase(), address]));
