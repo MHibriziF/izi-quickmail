@@ -108,5 +108,9 @@ export const MIGRATIONS: GeneratedMigration[] = [
 	{
 		name: "0026_meetings.sql",
 		sql: "-- A \"start a meeting\" button in the composer creates a LiveKit room and\n-- inserts a join link into the email. The call itself lives entirely in\n-- LiveKit Cloud; this table only remembers who hosts each room and the\n-- hashed secret that gates the public join page -- anyone with the emailed\n-- link joins without a Quickinbox account, so the token (not a login check)\n-- is the whole safety boundary, checked (not consumed) on every visit since\n-- the same link is shared with and reused by multiple invitees.\nCREATE TABLE meetings (\n\tid TEXT PRIMARY KEY,\n\tuser_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n\tdomain_id TEXT REFERENCES domains(id) ON DELETE SET NULL,\n\ttitle TEXT,\n\ttoken_hash TEXT NOT NULL,\n\tcreated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n);\n\nCREATE INDEX meetings_user_id_idx ON meetings(user_id);\n"
+	},
+	{
+		name: "0027_call_backgrounds.sql",
+		sql: "-- A small saved gallery of virtual-background images per user, so a custom\n-- upload survives a reload or rejoin instead of dying with the blob: URL it\n-- started as. Mirrors email_attachments: bytes in R2, this row just points\n-- at them. Capped client-side (MAX_CALL_BACKGROUNDS_PER_USER) by dropping the\n-- oldest row on insert rather than rejecting the upload.\nCREATE TABLE call_backgrounds (\n\tid TEXT PRIMARY KEY,\n\tuser_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n\tstorage_key TEXT NOT NULL,\n\tcontent_type TEXT NOT NULL,\n\tsize_bytes INTEGER NOT NULL,\n\tcreated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n);\n\nCREATE INDEX call_backgrounds_user_id_idx ON call_backgrounds(user_id);\n"
 	}
 ];

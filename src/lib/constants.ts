@@ -19,3 +19,7 @@ export const MIN_PASSWORD_LENGTH = 8;
  * would otherwise leave a message sitting in the outbox for good.
  */
 export const MAX_SCHEDULE_YEARS = 5;
+/** Same cap as an email attachment — these are just background photos. */
+export const MAX_CALL_BACKGROUND_BYTES = 5 * 1024 * 1024;
+/** Oldest upload is dropped once a user's gallery hits this size. */
+export const MAX_CALL_BACKGROUNDS_PER_USER = 6;

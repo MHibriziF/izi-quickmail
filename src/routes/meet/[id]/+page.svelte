@@ -5,6 +5,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import CallStage from '$lib/components/CallStage.svelte';
 	import DeviceSelect from '$lib/components/DeviceSelect.svelte';
+	import BackgroundPickerModal from '$lib/components/BackgroundPickerModal.svelte';
 	import { APP_NAME } from '$lib/constants';
 	import { initials } from '$lib/mail/folders';
 	import type { PageData } from './$types';
@@ -27,6 +28,10 @@
 	let cameraDeviceId = $state('');
 	let micLevel = $state(0);
 	let deviceError = $state('');
+	let backgroundOption = $state('none');
+	let showBackgroundPicker = $state(false);
+	let deafened = $state(false);
+	let micOnBeforeDeafen: boolean | null = null;
 
 	let audioCtx: AudioContext | null = null;
 	let analyser: AnalyserNode | null = null;
@@ -98,7 +103,24 @@
 
 	function toggleMic() {
 		micOn = !micOn;
+		micOnBeforeDeafen = null;
 		previewStream?.getAudioTracks().forEach((track) => (track.enabled = micOn));
+	}
+
+	/** No remote audio exists yet in the lobby, so this just stages "join already deafened" for CallStage to pick up. */
+	function toggleDeafen() {
+		deafened = !deafened;
+		if (deafened) {
+			micOnBeforeDeafen = micOn;
+			if (micOn) {
+				micOn = false;
+				previewStream?.getAudioTracks().forEach((track) => (track.enabled = false));
+			}
+		} else if (micOnBeforeDeafen !== null) {
+			micOn = micOnBeforeDeafen;
+			previewStream?.getAudioTracks().forEach((track) => (track.enabled = micOn));
+			micOnBeforeDeafen = null;
+		}
 	}
 
 	function toggleCamera() {
@@ -187,6 +209,9 @@
 		initialCameraEnabled={cameraOn}
 		initialMicDeviceId={micDeviceId}
 		initialCameraDeviceId={cameraDeviceId}
+		initialBackgroundOption={backgroundOption}
+		initialDeafened={deafened}
+		isLoggedIn={data.isLoggedIn}
 		{onleave}
 	/>
 {:else}
@@ -222,7 +247,7 @@
 					<div class="lobby-controls">
 						<div class="lobby-btn-pill" class:lobby-btn-pill-off={!micOn}>
 							<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
-							<button
+			<button
 								type="button"
 								class="lobby-btn-pill-main"
 								onclick={toggleMic}
@@ -231,6 +256,15 @@
 								<Icon name={micOn ? 'mic-line' : 'mic-off-line'} size={18} />
 							</button>
 						</div>
+						<button
+							type="button"
+							class="lobby-round-btn"
+							class:lobby-round-btn-danger={deafened}
+							onclick={toggleDeafen}
+							aria-label={deafened ? t('meet.undeafen') : t('meet.deafen')}
+						>
+							<Icon name={deafened ? 'volume-mute-line' : 'headphone-line'} size={18} />
+						</button>
 						<div class="lobby-meter" aria-hidden="true">
 							<div class="lobby-meter-fill" style="transform: scaleX({micOn ? micLevel : 0})"></div>
 						</div>
@@ -245,9 +279,22 @@
 								<Icon name={cameraOn ? 'camera-line' : 'camera-off-line'} size={18} />
 							</button>
 						</div>
+						<button type="button" class="lobby-round-btn" onclick={() => (showBackgroundPicker = true)} aria-label={t('meet.backgroundChange')}>
+							<Icon name="image-2-line" size={18} />
+						</button>
 					</div>
 					{#if deviceError}<p class="note lobby-error">{deviceError}</p>{/if}
 				</div>
+
+				{#if showBackgroundPicker}
+					<BackgroundPickerModal
+						{cameraDeviceId}
+						initialOption={backgroundOption}
+						isLoggedIn={data.isLoggedIn}
+						onapply={(picked) => (backgroundOption = picked)}
+						onclose={() => (showBackgroundPicker = false)}
+					/>
+				{/if}
 
 				<form class="mt-8 space-y-4" onsubmit={join}>
 					<div>
@@ -382,6 +429,32 @@
 
 	.lobby-btn-pill-main:hover {
 		background: var(--seg-main-bg-hover);
+	}
+
+	.lobby-round-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 40px;
+		height: 40px;
+		flex-shrink: 0;
+		border: none;
+		border-radius: 999px;
+		background: #3f3f46;
+		color: var(--color-text-primary, #fff);
+		cursor: pointer;
+	}
+
+	.lobby-round-btn:hover {
+		background: #4b4b54;
+	}
+
+	.lobby-round-btn-danger {
+		background: #7f1d1d;
+	}
+
+	.lobby-round-btn-danger:hover {
+		background: #932222;
 	}
 
 	.lobby-meter {

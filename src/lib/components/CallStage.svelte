@@ -16,6 +16,7 @@
 	import { t } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
 	import DeviceSelect from '$lib/components/DeviceSelect.svelte';
+	import BackgroundPickerModal from '$lib/components/BackgroundPickerModal.svelte';
 
 	let {
 		url,
@@ -25,6 +26,9 @@
 		initialCameraEnabled = true,
 		initialMicDeviceId = '',
 		initialCameraDeviceId = '',
+		initialBackgroundOption = 'none',
+		initialDeafened = false,
+		isLoggedIn = false,
 		onleave
 	}: {
 		url: string;
@@ -34,6 +38,9 @@
 		initialCameraEnabled?: boolean;
 		initialMicDeviceId?: string;
 		initialCameraDeviceId?: string;
+		initialBackgroundOption?: string;
+		initialDeafened?: boolean;
+		isLoggedIn?: boolean;
 		onleave: () => void;
 	} = $props();
 
@@ -58,30 +65,6 @@
 	// Streams; the library itself knows exactly what that requires per browser.
 	const backgroundSupported = typeof navigator !== 'undefined' && supportsBackgroundProcessors();
 
-	function gradientDataUrl(from: string, to: string): string {
-		const canvas = document.createElement('canvas');
-		canvas.width = 320;
-		canvas.height = 180;
-		const ctx = canvas.getContext('2d');
-		if (!ctx) return '';
-		const gradient = ctx.createLinearGradient(0, 0, 320, 180);
-		gradient.addColorStop(0, from);
-		gradient.addColorStop(1, to);
-		ctx.fillStyle = gradient;
-		ctx.fillRect(0, 0, 320, 180);
-		return canvas.toDataURL('image/png');
-	}
-
-	/** Generated so there's no photo asset to source, host, or ship in the bundle. */
-	const backgroundPresets = backgroundSupported
-		? [
-				{ url: gradientDataUrl('#1d4ed8', '#38bdf8'), swatch: 'linear-gradient(135deg, #1d4ed8, #38bdf8)' },
-				{ url: gradientDataUrl('#15803d', '#4ade80'), swatch: 'linear-gradient(135deg, #15803d, #4ade80)' },
-				{ url: gradientDataUrl('#c2410c', '#fbbf24'), swatch: 'linear-gradient(135deg, #c2410c, #fbbf24)' },
-				{ url: gradientDataUrl('#27272a', '#71717a'), swatch: 'linear-gradient(135deg, #27272a, #71717a)' }
-			]
-		: [];
-
 	const CHAT_TOPIC = 'chat';
 
 	let room: Room | null = null;
@@ -94,11 +77,13 @@
 	let micDeviceId = $state(untrack(() => initialMicDeviceId));
 	let cameraDeviceId = $state(untrack(() => initialCameraDeviceId));
 	let speakerDeviceId = $state('');
-	let backgroundOption = $state('none');
-	let previousBackgroundOption = 'none';
-	let backgroundConfirmPending = $state(false);
-	let backgroundFileInput = $state<HTMLInputElement>();
-	let customBackgroundUrl: string | null = null;
+	// Listed at this level (rather than by DeviceSelect itself) because the speaker picker is
+	// now bundled into the mic pill's popup as a plain option list, not its own DeviceSelect.
+	let speakerDevices = $state<MediaDeviceInfo[]>([]);
+	let backgroundOption = $state(untrack(() => initialBackgroundOption));
+	let showBackgroundPicker = $state(false);
+	let deafened = $state(untrack(() => initialDeafened));
+	let micEnabledBeforeDeafen: boolean | null = null;
 	let screenShareEnabled = $state(false);
 	let remoteCount = $state(0);
 	let localScreenMediaEl = $state<HTMLDivElement>();
@@ -270,12 +255,14 @@
 			const tile = ensureScreenTile(participant);
 			const el = track.attach();
 			applySinkId(el);
+			if (track.kind === Track.Kind.Audio && deafened) el.muted = true;
 			tile.media.appendChild(el);
 			return;
 		}
 		const tile = ensureRemoteTile(participant);
 		const el = track.attach();
 		applySinkId(el);
+		if (track.kind === Track.Kind.Audio && deafened) el.muted = true;
 		tile.media.appendChild(el);
 		if (pipActive && track.kind === Track.Kind.Video) refreshPipVideo();
 	}
@@ -521,30 +508,6 @@
 		await reapplyBackground();
 	}
 
-	/** Applies the pick live (the local tile itself is the preview) and asks for confirmation before it's considered final. */
-	async function tryBackground(option: string) {
-		previousBackgroundOption = backgroundOption;
-		await applyBackground(option);
-		backgroundConfirmPending = true;
-	}
-
-	function keepBackground() {
-		backgroundConfirmPending = false;
-	}
-
-	async function cancelBackground() {
-		backgroundConfirmPending = false;
-		await applyBackground(previousBackgroundOption);
-	}
-
-	function handleBackgroundFile(event: Event) {
-		const file = (event.target as HTMLInputElement).files?.[0];
-		if (!file) return;
-		if (customBackgroundUrl) URL.revokeObjectURL(customBackgroundUrl);
-		customBackgroundUrl = URL.createObjectURL(file);
-		void tryBackground(customBackgroundUrl);
-	}
-
 	// The PiP window's controls are hand-built DOM outside Svelte's reach, so
 	// their state has to be pushed in imperatively whenever it changes.
 	$effect(() => {
@@ -554,6 +517,22 @@
 			updatePipButtons();
 			refreshPipVideo();
 		}
+	});
+
+	async function loadSpeakerDevices() {
+		try {
+			const all = await navigator.mediaDevices.enumerateDevices();
+			speakerDevices = all.filter((device) => device.kind === 'audiooutput');
+		} catch {
+			speakerDevices = [];
+		}
+	}
+
+	$effect(() => {
+		if (!speakerSelectionSupported || !navigator.mediaDevices?.enumerateDevices) return;
+		void loadSpeakerDevices();
+		navigator.mediaDevices.addEventListener('devicechange', loadSpeakerDevices);
+		return () => navigator.mediaDevices.removeEventListener('devicechange', loadSpeakerDevices);
 	});
 
 	onMount(() => {
@@ -593,6 +572,8 @@
 					el.style.transform = 'scaleX(-1)';
 					localMediaEl?.appendChild(el);
 				}
+				// A background may have been chosen before this first publish (from the lobby's popup).
+				void reapplyBackground();
 				for (const participant of instance.remoteParticipants.values()) ensureRemoteTile(participant);
 				refreshRoster();
 				playJoinChime();
@@ -620,7 +601,6 @@
 	onDestroy(() => {
 		room?.disconnect();
 		pipWindow?.close();
-		if (customBackgroundUrl) URL.revokeObjectURL(customBackgroundUrl);
 		// Give the leave chime time to finish before the context that plays it dies.
 		if (soundCtx) {
 			const ctx = soundCtx;
@@ -631,8 +611,39 @@
 	async function toggleMic() {
 		if (!room) return;
 		micEnabled = !micEnabled;
+		// A manual mic change overrides whatever deafen was remembering, so un-deafening later doesn't stomp it.
+		micEnabledBeforeDeafen = null;
 		playToggleTone(micEnabled);
 		await room.localParticipant.setMicrophoneEnabled(micEnabled);
+	}
+
+	/** Mutes every currently-attached remote audio element — screen-share audio included. */
+	function setRemoteAudioMuted(muted: boolean) {
+		if (!room) return;
+		for (const participant of room.remoteParticipants.values()) {
+			for (const publication of participant.audioTrackPublications.values()) {
+				for (const el of publication.track?.attachedElements ?? []) el.muted = muted;
+			}
+		}
+	}
+
+	/** "Leave audio" — both self-mute and stop hearing everyone else, like Discord's deafen or Zoom's leave audio. */
+	async function toggleDeafen() {
+		if (!room) return;
+		deafened = !deafened;
+		playToggleTone(!deafened);
+		setRemoteAudioMuted(deafened);
+		if (deafened) {
+			micEnabledBeforeDeafen = micEnabled;
+			if (micEnabled) {
+				micEnabled = false;
+				await room.localParticipant.setMicrophoneEnabled(false);
+			}
+		} else if (micEnabledBeforeDeafen !== null) {
+			micEnabled = micEnabledBeforeDeafen;
+			micEnabledBeforeDeafen = null;
+			await room.localParticipant.setMicrophoneEnabled(micEnabled);
+		}
 	}
 
 	async function toggleCamera() {
@@ -743,13 +754,6 @@
 					{#if !cameraEnabled}<Icon name="camera-off-line" size={14} class="call-tile-status-icon" />{/if}
 				</div>
 				<span class="call-tile-name">{displayName} · {t('meet.you')}</span>
-				{#if backgroundConfirmPending}
-					<div class="background-confirm">
-						<span>{t('meet.backgroundPreviewing')}</span>
-						<button type="button" class="background-confirm-btn" onclick={cancelBackground}>{t('meet.backgroundCancel')}</button>
-						<button type="button" class="background-confirm-btn primary" onclick={keepBackground}>{t('meet.backgroundKeep')}</button>
-					</div>
-				{/if}
 			</div>
 			<div class="call-tile-group" bind:this={remoteContainerEl}></div>
 			{#if !connecting && !connectionError && remoteCount === 0}
@@ -814,7 +818,29 @@
 
 	<div class="call-controls">
 		<div class="call-btn-pill" class:call-btn-pill-off={!micEnabled}>
-			<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start" />
+			<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start">
+				{#snippet extra()}
+					{#if speakerSelectionSupported}
+						<div class="pill-extra-section">
+							<span class="pill-extra-label">{t('meet.chooseSpeaker')}</span>
+							{#if speakerDevices.length === 0}
+								<span class="pill-extra-empty">{t('meet.chooseSpeaker')}</span>
+							{:else}
+								{#each speakerDevices as device (device.deviceId)}
+									<button
+										type="button"
+										class="pill-extra-option"
+										class:selected={device.deviceId === speakerDeviceId}
+										onclick={() => selectSpeaker(device.deviceId)}
+									>
+										{device.label || t('meet.chooseSpeaker')}
+									</button>
+								{/each}
+							{/if}
+						</div>
+					{/if}
+				{/snippet}
+			</DeviceSelect>
 			<button
 				type="button"
 				class="call-btn-pill-main"
@@ -824,55 +850,32 @@
 				<Icon name={micEnabled ? 'mic-line' : 'mic-off-line'} size={20} />
 			</button>
 		</div>
+		<button
+			type="button"
+			class="call-btn"
+			class:call-btn-danger-active={deafened}
+			onclick={toggleDeafen}
+			aria-label={deafened ? t('meet.undeafen') : t('meet.deafen')}
+		>
+			<Icon name={deafened ? 'volume-mute-line' : 'headphone-line'} size={20} />
+		</button>
 		<div class="call-btn-pill" class:call-btn-pill-off={!cameraEnabled}>
 			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="start">
 				{#snippet extra()}
 					{#if backgroundSupported}
-						<div class="background-section">
-							<span class="background-section-label">{t('meet.background')}</span>
-							<button
-								type="button"
-								class="background-option"
-								class:selected={backgroundOption === 'none'}
-								onclick={() => tryBackground('none')}
-							>
-								{t('meet.backgroundNone')}
+						<div class="pill-extra-section">
+							<span class="pill-extra-label">{t('meet.background')}</span>
+							<button type="button" class="pill-extra-option" onclick={() => (showBackgroundPicker = true)}>
+								<span
+									class="background-current-swatch"
+									style={backgroundOption === 'none'
+										? ''
+										: backgroundOption === 'blur'
+											? 'background: rgba(255, 255, 255, 0.3)'
+											: `background-image: url(${backgroundOption})`}
+								></span>
+								{t('meet.backgroundChange')}
 							</button>
-							<button
-								type="button"
-								class="background-option"
-								class:selected={backgroundOption === 'blur'}
-								onclick={() => tryBackground('blur')}
-							>
-								{t('meet.backgroundBlur')}
-							</button>
-							<div class="background-swatches">
-								{#each backgroundPresets as preset (preset.url)}
-									<button
-										type="button"
-										class="background-swatch"
-										class:selected={backgroundOption === preset.url}
-										style="background: {preset.swatch}"
-										onclick={() => tryBackground(preset.url)}
-										aria-label={t('meet.backgroundPreset')}
-									></button>
-								{/each}
-								<button
-									type="button"
-									class="background-swatch background-swatch-upload"
-									onclick={() => backgroundFileInput?.click()}
-									aria-label={t('meet.backgroundUpload')}
-								>
-									<Icon name="upload-2-line" size={16} />
-								</button>
-							</div>
-							<input
-								type="file"
-								accept="image/*"
-								hidden
-								bind:this={backgroundFileInput}
-								onchange={handleBackgroundFile}
-							/>
 						</div>
 					{/if}
 				{/snippet}
@@ -886,17 +889,6 @@
 				<Icon name={cameraEnabled ? 'camera-line' : 'camera-off-line'} size={20} />
 			</button>
 		</div>
-		{#if speakerSelectionSupported}
-			<DeviceSelect
-				kind="audiooutput"
-				deviceId={speakerDeviceId}
-				label={t('meet.chooseSpeaker')}
-				onselect={selectSpeaker}
-				menuAlign="start"
-				standalone
-				icon="volume-up-line"
-			/>
-		{/if}
 		{#if screenShareSupported}
 			<button
 				type="button"
@@ -944,6 +936,16 @@
 		</button>
 	</div>
 </div>
+
+{#if showBackgroundPicker}
+	<BackgroundPickerModal
+		{cameraDeviceId}
+		initialOption={backgroundOption}
+		{isLoggedIn}
+		onapply={(option) => void applyBackground(option)}
+		onclose={() => (showBackgroundPicker = false)}
+	/>
+{/if}
 
 <style>
 	.call-stage {
@@ -1299,6 +1301,15 @@
 		box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
 	}
 
+	/* Same warning color as a muted mic/camera — deafened means you can't speak or hear either. */
+	.call-btn-danger-active {
+		background: #7f1d1d;
+	}
+
+	.call-btn-danger-active:hover {
+		background: #932222;
+	}
+
 	.call-btn-badge {
 		position: absolute;
 		top: -2px;
@@ -1327,15 +1338,15 @@
 		background: #ef4444;
 	}
 
-	/* Lives inside the camera picker's own popup (see DeviceSelect's `extra` slot) rather than a separate button, so it doesn't add to the control bar. */
-	.background-section {
+	/* Lives inside the mic/camera pill's own popup (see DeviceSelect's `extra` slot) rather than a separate button, so it doesn't add to the control bar. */
+	.pill-extra-section {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
 		width: 180px;
 	}
 
-	.background-section-label {
+	.pill-extra-label {
 		padding: 0.25rem 0.5rem 0;
 		font-size: 0.6875rem;
 		font-weight: 600;
@@ -1344,7 +1355,16 @@
 		color: rgba(255, 255, 255, 0.5);
 	}
 
-	.background-option {
+	.pill-extra-empty {
+		padding: 0.375rem 0.5rem;
+		font-size: 0.75rem;
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	.pill-extra-option {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 		width: 100%;
 		padding: 0.375rem 0.5rem;
 		border: none;
@@ -1353,92 +1373,29 @@
 		color: #fff;
 		font-size: 0.8125rem;
 		text-align: left;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		cursor: pointer;
 	}
 
-	.background-option:hover {
+	.pill-extra-option:hover {
 		background: rgba(255, 255, 255, 0.1);
 	}
 
-	.background-option.selected {
+	.pill-extra-option.selected {
 		background: rgba(255, 255, 255, 0.16);
 		font-weight: 600;
 	}
 
-	.background-swatches {
-		display: grid;
-		grid-template-columns: repeat(5, 1fr);
-		gap: 0.375rem;
-		padding: 0.125rem 0.5rem 0.25rem;
-	}
-
-	.background-swatch {
-		aspect-ratio: 1;
-		border: 2px solid transparent;
-		border-radius: 0.5rem;
-		cursor: pointer;
-	}
-
-	.background-swatch.selected {
-		border-color: #fff;
-	}
-
-	.background-swatch-upload {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: rgba(255, 255, 255, 0.1);
-		color: #fff;
-	}
-
-	.background-swatch-upload:hover {
-		background: rgba(255, 255, 255, 0.18);
-	}
-
-	.background-confirm {
-		position: absolute;
-		left: 0.5rem;
-		right: 0.5rem;
-		bottom: 2rem;
-		z-index: 5;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 0.625rem;
-		border-radius: 0.625rem;
-		background: rgba(0, 0, 0, 0.75);
-		backdrop-filter: blur(4px);
-		font-size: 0.75rem;
-		color: #fff;
-	}
-
-	.background-confirm span {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.background-confirm-btn {
+	.background-current-swatch {
+		width: 1rem;
+		height: 1rem;
 		flex-shrink: 0;
-		padding: 0.3125rem 0.625rem;
-		border: none;
-		border-radius: 0.375rem;
-		background: rgba(255, 255, 255, 0.14);
-		color: #fff;
-		font-size: 0.75rem;
-		font-weight: 500;
-		cursor: pointer;
-	}
-
-	.background-confirm-btn:hover {
-		background: rgba(255, 255, 255, 0.22);
-	}
-
-	.background-confirm-btn.primary {
-		background: var(--color-accent, #3b82f6);
-	}
-
-	.background-confirm-btn.primary:hover {
-		opacity: 0.9;
+		border-radius: 0.25rem;
+		background-size: cover;
+		background-position: center;
+		background-color: rgba(255, 255, 255, 0.15);
 	}
 
 	@media (max-width: 640px) {
