@@ -1,11 +1,10 @@
-import type { D1Database } from '@cloudflare/workers-types';
 import { createECDH } from 'node:crypto';
 import webpush from 'web-push';
+import type { PushSubscriptionRepository } from './repository';
 
 const MAX_ENDPOINT_LENGTH = 2048;
 const MAX_KEY_LENGTH = 512;
 const MAX_USER_AGENT_LENGTH = 512;
-export const MAX_SUBSCRIPTIONS_PER_USER = 10;
 const PUSH_REQUEST_TIMEOUT_MS = 10_000;
 const BASE64URL = /^[A-Za-z0-9_-]+={0,2}$/;
 
@@ -16,21 +15,6 @@ export type PushSubscriptionInput = {
 		p256dh: string;
 		auth: string;
 	};
-};
-
-export type PushNotificationEnv = {
-	DB: D1Database;
-	VAPID_PUBLIC_KEY?: string;
-	VAPID_PRIVATE_KEY?: string;
-	VAPID_SUBJECT?: string;
-	waitUntil?: (promise: Promise<void>) => void;
-};
-
-type StoredPushSubscription = {
-	endpoint: string;
-	p256dh: string;
-	auth: string;
-	expiration_time: number | null;
 };
 
 export type NewMailNotificationInput = {
@@ -47,7 +31,7 @@ export type NewMailPushPayload = {
 	url: string;
 };
 
-type VapidConfiguration = {
+export type VapidConfiguration = {
 	publicKey: string;
 	privateKey: string;
 	subject: string;
@@ -67,14 +51,14 @@ function decodeBase64Url(value: unknown): Uint8Array | null {
 		return null;
 	}
 
-	const unpadded = value.replace(/=+$/, '');
+	const unpadded = value.replaceAll('=', '');
 	if (unpadded.length % 4 === 1) return null;
 	const base64 = unpadded.replaceAll('-', '+').replaceAll('_', '/');
 	const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
 
 	try {
 		const binary = atob(padded);
-		return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+		return Uint8Array.from(binary, (character) => character.codePointAt(0) ?? 0);
 	} catch {
 		return null;
 	}
@@ -148,9 +132,11 @@ export function parsePushSubscription(value: unknown): PushSubscriptionInput | n
 	};
 }
 
-export function readVapidConfiguration(
-	env: Pick<PushNotificationEnv, 'VAPID_PUBLIC_KEY' | 'VAPID_PRIVATE_KEY' | 'VAPID_SUBJECT'>
-): VapidConfiguration | null {
+export function readVapidConfiguration(env: {
+	VAPID_PUBLIC_KEY?: string;
+	VAPID_PRIVATE_KEY?: string;
+	VAPID_SUBJECT?: string;
+}): VapidConfiguration | null {
 	const publicKey = env.VAPID_PUBLIC_KEY?.trim();
 	const privateKey = env.VAPID_PRIVATE_KEY?.trim();
 	const subject = env.VAPID_SUBJECT?.trim();
@@ -163,111 +149,6 @@ export function readVapidConfiguration(
 		return null;
 	}
 	return { publicKey, privateKey, subject };
-}
-
-export async function savePushSubscription(
-	db: D1Database,
-	userId: string,
-	subscription: PushSubscriptionInput,
-	userAgent?: string | null
-): Promise<void> {
-	await db
-		.prepare(
-			`INSERT INTO push_subscriptions (
-				id, user_id, endpoint, p256dh, auth, expiration_time, user_agent
-			) VALUES (?, ?, ?, ?, ?, ?, ?)
-			ON CONFLICT(endpoint) DO UPDATE SET
-				user_id = excluded.user_id,
-				p256dh = excluded.p256dh,
-				auth = excluded.auth,
-				expiration_time = excluded.expiration_time,
-				user_agent = excluded.user_agent,
-				updated_at = datetime('now')`
-		)
-		.bind(
-			crypto.randomUUID(),
-			userId,
-			subscription.endpoint,
-			subscription.keys.p256dh,
-			subscription.keys.auth,
-			subscription.expirationTime,
-			userAgent?.slice(0, MAX_USER_AGENT_LENGTH) ?? null
-		)
-		.run();
-
-	await capUserSubscriptions(db, userId, subscription.endpoint);
-}
-
-async function capUserSubscriptions(
-	db: D1Database,
-	userId: string,
-	keepEndpoint: string
-): Promise<void> {
-	const { results } = await db
-		.prepare(
-			`SELECT id FROM push_subscriptions
-			 WHERE user_id = ?
-			 ORDER BY (endpoint = ?) DESC, updated_at DESC, rowid DESC`
-		)
-		.bind(userId, keepEndpoint)
-		.all<{ id: string }>();
-
-	const extraIds = results.slice(MAX_SUBSCRIPTIONS_PER_USER).map((row) => row.id);
-	if (extraIds.length === 0) return;
-
-	await db.batch(
-		extraIds.map((id) => db.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(id))
-	);
-}
-
-export async function hasPushSubscription(
-	db: D1Database,
-	userId: string,
-	endpoint: string
-): Promise<boolean> {
-	if (!validEndpoint(endpoint)) return false;
-	const row = await db
-		.prepare('SELECT 1 AS registered FROM push_subscriptions WHERE user_id = ? AND endpoint = ?')
-		.bind(userId, endpoint.trim())
-		.first<{ registered: number }>();
-	return row?.registered === 1;
-}
-
-export async function removePushSubscription(
-	db: D1Database,
-	userId: string,
-	endpoint: string
-): Promise<boolean> {
-	const result = await db
-		.prepare('DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?')
-		.bind(userId, endpoint)
-		.run();
-	return (result.meta?.changes ?? 0) > 0;
-}
-
-async function listPushSubscriptions(
-	db: D1Database,
-	userId: string
-): Promise<StoredPushSubscription[]> {
-	const { results } = await db
-		.prepare(
-			`SELECT endpoint, p256dh, auth, expiration_time
-			 FROM push_subscriptions WHERE user_id = ?
-			 ORDER BY updated_at DESC, rowid DESC
-			 LIMIT ?`
-		)
-		.bind(userId, MAX_SUBSCRIPTIONS_PER_USER)
-		.all<StoredPushSubscription>();
-	return results;
-}
-
-async function removeDeadSubscriptions(db: D1Database, endpoints: string[]): Promise<void> {
-	if (endpoints.length === 0) return;
-	await db.batch(
-		endpoints.map((endpoint) =>
-			db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(endpoint)
-		)
-	);
 }
 
 function truncate(value: string, max: number): string {
@@ -289,45 +170,47 @@ export function pushErrorStatus(error: unknown): number | null {
 	return error.statusCode;
 }
 
-/**
- * Notify every browser registered to the recipient. Push failures never undo a
- * successfully stored email; expired endpoints are removed automatically.
- */
-export async function notifyNewMail(
-	env: PushNotificationEnv,
-	input: NewMailNotificationInput
-): Promise<void> {
-	try {
-		await deliverNewMailNotification(env, input);
-	} catch (error) {
-		console.error(
-			'Failed to deliver new-mail push notifications',
-			error instanceof Error ? error.message : 'Unknown error'
-		);
-	}
-}
+export type PushNotificationService = {
+	saveSubscription(
+		userId: string,
+		subscription: PushSubscriptionInput,
+		userAgent?: string | null
+	): Promise<void>;
+	hasSubscription(userId: string, endpoint: string): Promise<boolean>;
+	removeSubscription(userId: string, endpoint: string): Promise<boolean>;
+};
 
-/** Schedule best-effort delivery without holding up inbound-provider acknowledgement. */
-export async function scheduleNewMailNotification(
-	env: PushNotificationEnv,
-	input: NewMailNotificationInput
-): Promise<void> {
-	const task = notifyNewMail(env, input);
-	if (env.waitUntil) {
-		env.waitUntil(task);
-		return;
-	}
-	await task;
+export function createPushNotificationService(repo: PushSubscriptionRepository): PushNotificationService {
+	return {
+		async saveSubscription(userId, subscription, userAgent) {
+			await repo.upsert({
+				userId,
+				endpoint: subscription.endpoint,
+				p256dh: subscription.keys.p256dh,
+				auth: subscription.keys.auth,
+				expirationTime: subscription.expirationTime,
+				userAgent: userAgent?.slice(0, MAX_USER_AGENT_LENGTH) ?? null
+			});
+			await repo.capSubscriptions(userId, subscription.endpoint);
+		},
+
+		async hasSubscription(userId, endpoint) {
+			if (!validEndpoint(endpoint)) return false;
+			return repo.hasSubscription(userId, endpoint.trim());
+		},
+
+		removeSubscription: (userId, endpoint) => repo.remove(userId, endpoint)
+	};
 }
 
 async function deliverNewMailNotification(
-	env: PushNotificationEnv,
+	repo: PushSubscriptionRepository,
+	vapid: VapidConfiguration | null,
 	input: NewMailNotificationInput
 ): Promise<void> {
-	const vapid = readVapidConfiguration(env);
 	if (!vapid) return;
 
-	const subscriptions = await listPushSubscriptions(env.DB, input.userId);
+	const subscriptions = await repo.listByUser(input.userId);
 	if (subscriptions.length === 0) return;
 
 	webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey);
@@ -344,7 +227,7 @@ async function deliverNewMailNotification(
 						keys: { p256dh: subscription.p256dh, auth: subscription.auth }
 					},
 					payload,
-						{ TTL: 300, urgency: 'high', timeout: PUSH_REQUEST_TIMEOUT_MS }
+					{ TTL: 300, urgency: 'high', timeout: PUSH_REQUEST_TIMEOUT_MS }
 				);
 			} catch (error) {
 				const status = pushErrorStatus(error);
@@ -360,5 +243,24 @@ async function deliverNewMailNotification(
 		})
 	);
 
-	await removeDeadSubscriptions(env.DB, deadEndpoints);
+	await repo.removeDead(deadEndpoints);
+}
+
+/**
+ * Notify every browser registered to the recipient. Push failures never undo a
+ * successfully stored email; expired endpoints are removed automatically.
+ */
+export async function notifyNewMail(
+	repo: PushSubscriptionRepository,
+	vapid: VapidConfiguration | null,
+	input: NewMailNotificationInput
+): Promise<void> {
+	try {
+		await deliverNewMailNotification(repo, vapid, input);
+	} catch (error) {
+		console.error(
+			'Failed to deliver new-mail push notifications',
+			error instanceof Error ? error.message : 'Unknown error'
+		);
+	}
 }

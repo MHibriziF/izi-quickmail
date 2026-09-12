@@ -1,10 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import {
-	hasPushSubscription,
-	parsePushSubscription,
-	removePushSubscription,
-	savePushSubscription
-} from '$lib/server/push-notifications';
+import { getPushNotificationService, parsePushSubscription } from '$lib/server/push-notifications';
 
 function rejectCrossOrigin(request: Request, url: URL): Response | null {
 	const origin = request.headers.get('origin');
@@ -15,19 +10,18 @@ function rejectCrossOrigin(request: Request, url: URL): Response | null {
 }
 
 export const GET: RequestHandler = async ({ url, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user || locals.authMethod !== 'session') {
+	if (!platform?.env.DB || !locals.user || locals.authMethod !== 'session') {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
 	const endpoint = url.searchParams.get('endpoint');
 	if (!endpoint) return json({ error: 'Push endpoint is required' }, { status: 400 });
-	return json({ registered: await hasPushSubscription(db, locals.user.id, endpoint) });
+	const registered = await getPushNotificationService(platform).hasSubscription(locals.user.id, endpoint);
+	return json({ registered });
 };
 
 export const POST: RequestHandler = async ({ request, url, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user || locals.authMethod !== 'session') {
+	if (!platform?.env.DB || !locals.user || locals.authMethod !== 'session') {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 	const crossOrigin = rejectCrossOrigin(request, url);
@@ -39,8 +33,7 @@ export const POST: RequestHandler = async ({ request, url, locals, platform }) =
 		return json({ error: 'Invalid push subscription' }, { status: 400 });
 	}
 
-	await savePushSubscription(
-		db,
+	await getPushNotificationService(platform).saveSubscription(
 		locals.user.id,
 		subscription,
 		request.headers.get('user-agent')
@@ -49,8 +42,7 @@ export const POST: RequestHandler = async ({ request, url, locals, platform }) =
 };
 
 export const DELETE: RequestHandler = async ({ request, url, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user || locals.authMethod !== 'session') {
+	if (!platform?.env.DB || !locals.user || locals.authMethod !== 'session') {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 	const crossOrigin = rejectCrossOrigin(request, url);
@@ -61,6 +53,6 @@ export const DELETE: RequestHandler = async ({ request, url, locals, platform })
 		return json({ error: 'Push endpoint is required' }, { status: 400 });
 	}
 
-	await removePushSubscription(db, locals.user.id, body.endpoint.trim());
+	await getPushNotificationService(platform).removeSubscription(locals.user.id, body.endpoint.trim());
 	return json({ ok: true });
 };
