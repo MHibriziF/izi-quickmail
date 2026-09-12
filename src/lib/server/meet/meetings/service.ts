@@ -34,10 +34,18 @@ export function createMeetingCode(): string {
 	return CODE_GROUP_LENGTHS.map(randomLetters).join('-');
 }
 
+// 256 isn't a multiple of 26, so naive `byte % 26` is slightly biased toward
+// the first 22 letters. Reject bytes above the highest multiple of 26 that
+// still fits in a byte, so every letter stays equally likely.
+const REJECTION_LIMIT = 256 - (256 % CODE_ALPHABET.length);
+
 function randomLetters(length: number): string {
-	const bytes = crypto.getRandomValues(new Uint8Array(length));
 	let result = '';
-	for (const byte of bytes) result += CODE_ALPHABET[byte % CODE_ALPHABET.length];
+	while (result.length < length) {
+		const [byte] = crypto.getRandomValues(new Uint8Array(1));
+		if (byte >= REJECTION_LIMIT) continue;
+		result += CODE_ALPHABET[byte % CODE_ALPHABET.length];
+	}
 	return result;
 }
 
