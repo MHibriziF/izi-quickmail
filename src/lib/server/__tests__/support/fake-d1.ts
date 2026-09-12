@@ -17,8 +17,12 @@ export function createFakeD1(execute: (query: Query) => unknown[]): D1Database {
 			all: async <T>() => ({ results: execute({ sql, args }) as T[] }),
 			raw: async <T>() => execute({ sql, args }) as T[],
 			run: async () => {
-				execute({ sql, args });
-				return { success: true, meta: {} } as unknown;
+				const affected = execute({ sql, args });
+				// A mutating query's `execute` returns the rows it touched (or [] for
+				// none), so callers that check `result.meta.changes` — e.g. an
+				// ownership-scoped UPDATE that didn't match any row — see the same
+				// signal a real D1 result would give them.
+				return { success: true, meta: { changes: affected.length } } as unknown;
 			}
 		};
 	}

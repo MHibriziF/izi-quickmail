@@ -1,20 +1,17 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import {
-	deleteCallBackground,
-	getCallBackgroundForUser,
-	readCallBackgroundBytes
-} from '$lib/server/meet/call-backgrounds';
+import { getCallBackgroundsService } from '$lib/server/meet/call-backgrounds';
 
 export const GET: RequestHandler = async ({ params, locals, platform }) => {
 	if (!locals.user || !platform?.env.DB || !platform?.env.ATTACHMENTS) {
 		throw error(401, 'Unauthorized');
 	}
 
-	const background = await getCallBackgroundForUser(platform.env.DB, locals.user.id, params.id);
+	const backgrounds = getCallBackgroundsService(platform);
+	const background = await backgrounds.getForUser(locals.user.id, params.id);
 	if (!background) throw error(404, 'Background not found');
 
-	const bytes = await readCallBackgroundBytes(platform.env.ATTACHMENTS, background);
+	const bytes = await backgrounds.readBytes(background);
 	if (!bytes) throw error(404, 'Background not found');
 
 	const body = new Uint8Array(bytes);
@@ -34,7 +31,7 @@ export const DELETE: RequestHandler = async ({ params, locals, platform }) => {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const deleted = await deleteCallBackground(platform.env.DB, platform.env.ATTACHMENTS, locals.user.id, params.id);
+	const deleted = await getCallBackgroundsService(platform).remove(locals.user.id, params.id);
 	if (!deleted) return json({ error: 'Background not found' }, { status: 404 });
 
 	return json({ ok: true });

@@ -1,10 +1,10 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { insertCallBackground, listCallBackgrounds } from '$lib/server/meet/call-backgrounds';
+import { getCallBackgroundsService } from '$lib/server/meet/call-backgrounds';
 
 export const GET: RequestHandler = async ({ locals, platform }) => {
 	if (!locals.user || !platform?.env.DB) return json({ error: 'Unauthorized' }, { status: 401 });
 
-	const backgrounds = await listCallBackgrounds(platform.env.DB, locals.user.id);
+	const backgrounds = await getCallBackgroundsService(platform).list(locals.user.id);
 	return json({
 		backgrounds: backgrounds.map((background) => ({
 			id: background.id,
@@ -36,7 +36,7 @@ export const POST: RequestHandler = async ({ locals, request, platform }) => {
 
 	try {
 		const bytes = new Uint8Array(await file.arrayBuffer());
-		const background = await insertCallBackground(platform.env.DB, platform.env.ATTACHMENTS, locals.user.id, {
+		const background = await getCallBackgroundsService(platform).create(locals.user.id, {
 			filename: file.name,
 			type: file.type || 'image/jpeg',
 			bytes
