@@ -58,7 +58,7 @@ function setup(seed: { domains?: DomainRow[]; addresses?: AddressRow[]; unrouted
 	const unrouted = seed.unrouted ? seed.unrouted.map((row) => ({ ...row })) : [];
 
 	const db = createFakeD1(({ sql, args }) => {
-		if (sql.includes('FROM domains') && sql.includes('WHERE id = ?')) {
+		if (sql.startsWith('SELECT') && sql.includes('FROM domains') && sql.includes('WHERE id = ?')) {
 			return domains.filter((row) => row.id === args[0]);
 		}
 		if (sql.includes('SELECT id, catchall_user_id FROM domains')) {
@@ -229,13 +229,33 @@ describe('DomainsRepository — domains', () => {
 		assert.equal(domains[0].sending_enabled, 0);
 	});
 
-	test('findDomainCatchallByName reports the catch-all owner', async () => {
+	test('findDomainCatchallByName reports the catch-all owner, case-insensitively', async () => {
 		const { repo } = setup({ domains: [domainRow({ catchall_user_id: 'user-1' })] });
-		assert.deepEqual(await repo.findDomainCatchallByName('example.com'), {
+		assert.deepEqual(await repo.findDomainCatchallByName('Example.COM'), {
 			id: 'domain-1',
 			catchallUserId: 'user-1'
 		});
 		assert.equal(await repo.findDomainCatchallByName('missing.com'), null);
+	});
+
+	test('getDomain and getDomainByName look up a single connected domain', async () => {
+		const { repo } = setup({ domains: [domainRow()] });
+		assert.equal((await repo.getDomain('domain-1'))?.name, 'example.com');
+		assert.equal(await repo.getDomain('missing'), null);
+		assert.equal((await repo.getDomainByName('example.com'))?.id, 'domain-1');
+		assert.equal(await repo.getDomainByName('missing.com'), null);
+	});
+
+	test('disconnectDomain removes the row', async () => {
+		const { repo, domains } = setup({ domains: [domainRow()] });
+		await repo.disconnectDomain('domain-1');
+		assert.equal(domains.length, 0);
+	});
+
+	test('setCatchallUser updates the owner', async () => {
+		const { repo, domains } = setup({ domains: [domainRow()] });
+		await repo.setCatchallUser('domain-1', 'user-1');
+		assert.equal(domains[0].catchall_user_id, 'user-1');
 	});
 });
 
@@ -260,6 +280,24 @@ describe('DomainsRepository — addresses', () => {
 		assert.equal(address.domain_name, 'example.com');
 	});
 
+	test('listAllAddresses returns every address regardless of owner', async () => {
+		const { repo } = setup({
+			domains: [domainRow()],
+			addresses: [addressRow({ id: 'a', user_id: 'user-1' }), addressRow({ id: 'b', user_id: 'user-2' })]
+		});
+		const all = await repo.listAllAddresses();
+		assert.deepEqual(
+			all.map((a) => a.id),
+			['a', 'b']
+		);
+	});
+
+	test('findAddressByValue looks up an address by its value', async () => {
+		const { repo } = setup({ addresses: [addressRow()] });
+		assert.deepEqual(await repo.findAddressByValue('me@example.com'), { id: 'address-1' });
+		assert.equal(await repo.findAddressByValue('nobody@example.com'), null);
+	});
+
 	test('findAddressesByValues matches on the address column', async () => {
 		const { repo } = setup({ addresses: [addressRow(), addressRow({ id: 'address-2', address: 'other@example.com' })] });
 		const matches = await repo.findAddressesByValues(['other@example.com', 'nobody@example.com']);
@@ -279,6 +317,17 @@ describe('DomainsRepository — addresses', () => {
 		const saved = await repo.getAddressForUser('user-1', 'address-9');
 		assert.equal(saved?.address, 'new@example.com');
 		assert.equal(saved?.is_default, true);
+	});
+
+	test('updateAddressRow only updates the owning user\'s row', async () => {
+		const { repo } = setup({ domains: [domainRow()], addresses: [addressRow()] });
+		await repo.updateAddressRow('someone-else', 'address-1', { label: 'Nope', signature: null });
+		assert.equal((await repo.getAddressForUser('user-1', 'address-1'))?.label, null);
+
+		await repo.updateAddressRow('user-1', 'address-1', { label: 'Home', signature: 'Cheers' });
+		const saved = await repo.getAddressForUser('user-1', 'address-1');
+		assert.equal(saved?.label, 'Home');
+		assert.equal(saved?.signature, 'Cheers');
 	});
 
 	test('setDefaultAddress clears every other default for that user', async () => {

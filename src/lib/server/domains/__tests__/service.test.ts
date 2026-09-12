@@ -185,6 +185,20 @@ describe('createAddress', () => {
 	});
 });
 
+describe('getAddressForUser / getDefaultAddress', () => {
+	test('getAddressForUser only returns the owning user\'s address', async () => {
+		const service = createDomainsService({ repo: fakeRepo({ addresses: [address({ user_id: 'someone-else' })] }) });
+		assert.equal(await service.getAddressForUser('user-1', 'address-1'), null);
+		assert.equal((await service.getAddressForUser('someone-else', 'address-1'))?.id, 'address-1');
+	});
+
+	test('getDefaultAddress returns the first of the user\'s addresses, or null', async () => {
+		const service = createDomainsService({ repo: fakeRepo({ addresses: [address()] }) });
+		assert.equal((await service.getDefaultAddress('user-1'))?.id, 'address-1');
+		assert.equal(await service.getDefaultAddress('nobody'), null);
+	});
+});
+
 describe('updateAddress', () => {
 	test('rejects an address the user does not own', async () => {
 		const repo = fakeRepo({ addresses: [address({ user_id: 'someone-else' })] });

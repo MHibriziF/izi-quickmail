@@ -245,7 +245,7 @@ export function createD1DomainsRepository(db: D1Database): DomainsRepository {
 		async findDomainCatchallByName(name) {
 			const row = await db
 				.prepare('SELECT id, catchall_user_id FROM domains WHERE name = ?')
-				.bind(name)
+				.bind(name.toLowerCase())
 				.first<{ id: string; catchall_user_id: string | null }>();
 			return row ? { id: row.id, catchallUserId: row.catchall_user_id } : null;
 		},
