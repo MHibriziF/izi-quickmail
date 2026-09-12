@@ -53,8 +53,8 @@ export function parseScopes(input: unknown, allowAdmin: boolean): ApiScope[] | n
 
 function toBase64Url(bytes: Uint8Array): string {
 	let binary = '';
-	for (const byte of bytes) binary += String.fromCharCode(byte);
-	return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+	for (const byte of bytes) binary += String.fromCodePoint(byte);
+	return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
 }
 
 /** `qi_live_<32 random bytes, base64url>` — recognizable and collision-resistant. */

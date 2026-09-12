@@ -1,8 +1,8 @@
-import { createD1ApiTokenRepository, API_SCOPES, isApiScope } from './repository';
+import { createD1ApiTokenRepository } from './repository';
 import { createApiTokenService, type ApiTokenService } from './service';
 
 export type { ApiTokenRepository, ApiScope } from './repository';
-export { API_SCOPES, isApiScope };
+export { API_SCOPES, isApiScope } from './repository';
 export {
 	createApiTokenService,
 	isValidScope,
