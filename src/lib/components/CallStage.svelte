@@ -13,6 +13,7 @@
 		type TrackPublication
 	} from 'livekit-client';
 	import { BackgroundProcessor, supportsBackgroundProcessors } from '@livekit/track-processors';
+	import { applyDeafenToggle, applyMicToggle } from '$lib/meet/av-state';
 	import { t } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
 	import DeviceSelect from '$lib/components/DeviceSelect.svelte';
@@ -225,7 +226,25 @@
 		return tile;
 	}
 
+	/**
+	 * toggleMic/toggleCamera set micEnabled/cameraEnabled optimistically before the LiveKit call
+	 * confirms it — if that call fails or races (a revoked permission, a device disappearing),
+	 * the local tile's own icon can be left showing the wrong thing while every remote tile (which
+	 * reads the real confirmed track state) shows the truth. Re-deriving from
+	 * localParticipant.isMicrophoneEnabled/isCameraEnabled on every event that could change them
+	 * keeps the local tile converged on the same ground truth remote tiles already use.
+	 */
+	function syncLocalAvState() {
+		if (!room) return;
+		micEnabled = room.localParticipant.isMicrophoneEnabled;
+		cameraEnabled = room.localParticipant.isCameraEnabled;
+	}
+
 	function handleTrackMuteChanged(_publication: TrackPublication, participant: Participant) {
+		if (room && participant === room.localParticipant) {
+			syncLocalAvState();
+			return;
+		}
 		const tile = remoteTiles.get(participant.identity);
 		if (tile) updateTileStatus(tile, participant);
 	}
@@ -473,6 +492,11 @@
 	}
 
 	function handleLocalTrackPublished(publication: LocalTrackPublication) {
+		// The camera track is unpublished (not just muted) when turned off, so this — not
+		// TrackMuted — is what fires when it's turned back on; keep cameraEnabled converged either way.
+		if (publication.source === Track.Source.Camera || publication.source === Track.Source.Microphone) {
+			syncLocalAvState();
+		}
 		if (publication.source !== Track.Source.ScreenShare || !publication.track) return;
 		screenShareEnabled = true;
 		const el = publication.track.attach();
@@ -480,6 +504,9 @@
 	}
 
 	function handleLocalTrackUnpublished(publication: LocalTrackPublication) {
+		if (publication.source === Track.Source.Camera || publication.source === Track.Source.Microphone) {
+			syncLocalAvState();
+		}
 		if (publication.source !== Track.Source.ScreenShare) return;
 		screenShareEnabled = false;
 		if (localScreenMediaEl) localScreenMediaEl.innerHTML = '';
@@ -575,7 +602,7 @@
 		(async () => {
 			try {
 				await instance.connect(url, token);
-				if (deafened) await instance.localParticipant.setAttributes({ deafened: '1' });
+				if (deafened) syncDeafenedAttribute('1');
 				await instance.localParticipant.setMicrophoneEnabled(
 					micEnabled,
 					micDeviceId ? { deviceId: micDeviceId } : undefined
@@ -630,17 +657,28 @@
 
 	async function toggleMic() {
 		if (!room) return;
-		micEnabled = !micEnabled;
-		// A manual mic change overrides whatever deafen was remembering, so un-deafening later doesn't stomp it.
-		micEnabledBeforeDeafen = null;
-		// Turning the mic back on while deafened implies you want to be heard again, so hear again too.
-		if (micEnabled && deafened) {
-			deafened = false;
+		const wasDeafened = deafened;
+		({ micEnabled, deafened, micEnabledBeforeDeafen } = applyMicToggle({
+			micEnabled,
+			deafened,
+			micEnabledBeforeDeafen
+		}));
+		if (wasDeafened && !deafened) {
 			setRemoteAudioMuted(false);
-			await room.localParticipant.setAttributes({ deafened: '0' });
+			syncDeafenedAttribute('0');
 		}
 		playToggleTone(micEnabled);
 		await room.localParticipant.setMicrophoneEnabled(micEnabled);
+	}
+
+	/**
+	 * Broadcasts the deafened badge to other tiles — best-effort. This must never block the
+	 * caller: a rejected setAttributes() (e.g. a dropped connection) would otherwise abort the
+	 * rest of toggleDeafen/toggleMic and skip the actual mic/audio change.
+	 */
+	function syncDeafenedAttribute(value: '0' | '1') {
+		if (!room) return;
+		room.localParticipant.setAttributes({ deafened: value }).catch(() => {});
 	}
 
 	/** Mutes every currently-attached remote audio element — screen-share audio included. */
@@ -656,21 +694,16 @@
 	/** "Leave audio" — both self-mute and stop hearing everyone else, like Discord's deafen or Zoom's leave audio. */
 	async function toggleDeafen() {
 		if (!room) return;
-		deafened = !deafened;
+		const micWas = micEnabled;
+		({ micEnabled, deafened, micEnabledBeforeDeafen } = applyDeafenToggle({
+			micEnabled,
+			deafened,
+			micEnabledBeforeDeafen
+		}));
 		playToggleTone(!deafened);
 		setRemoteAudioMuted(deafened);
-		await room.localParticipant.setAttributes({ deafened: deafened ? '1' : '0' });
-		if (deafened) {
-			micEnabledBeforeDeafen = micEnabled;
-			if (micEnabled) {
-				micEnabled = false;
-				await room.localParticipant.setMicrophoneEnabled(false);
-			}
-		} else if (micEnabledBeforeDeafen !== null) {
-			micEnabled = micEnabledBeforeDeafen;
-			micEnabledBeforeDeafen = null;
-			await room.localParticipant.setMicrophoneEnabled(micEnabled);
-		}
+		syncDeafenedAttribute(deafened ? '1' : '0');
+		if (micEnabled !== micWas) await room.localParticipant.setMicrophoneEnabled(micEnabled);
 	}
 
 	async function toggleCamera() {

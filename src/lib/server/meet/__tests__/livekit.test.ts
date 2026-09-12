@@ -43,7 +43,8 @@ describe('minting a LiveKit access token', () => {
 			room: 'room-1',
 			canPublish: true,
 			canSubscribe: true,
-			canPublishData: true
+			canPublishData: true,
+			canUpdateOwnMetadata: true
 		});
 	});
 

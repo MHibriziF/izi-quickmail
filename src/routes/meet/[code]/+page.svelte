@@ -6,6 +6,7 @@
 	import CallStage from '$lib/components/CallStage.svelte';
 	import DeviceSelect from '$lib/components/DeviceSelect.svelte';
 	import BackgroundPickerModal from '$lib/components/BackgroundPickerModal.svelte';
+	import { applyDeafenToggle, applyMicToggle } from '$lib/meet/av-state';
 	import { APP_NAME } from '$lib/constants';
 	import { initials } from '$lib/mail/folders';
 	import type { PageData } from './$types';
@@ -102,26 +103,22 @@
 	}
 
 	function toggleMic() {
-		micOn = !micOn;
-		micOnBeforeDeafen = null;
-		if (micOn && deafened) deafened = false;
+		({ micEnabled: micOn, deafened, micEnabledBeforeDeafen: micOnBeforeDeafen } = applyMicToggle({
+			micEnabled: micOn,
+			deafened,
+			micEnabledBeforeDeafen: micOnBeforeDeafen
+		}));
 		previewStream?.getAudioTracks().forEach((track) => (track.enabled = micOn));
 	}
 
 	/** No remote audio exists yet in the lobby, so this just stages "join already deafened" for CallStage to pick up. */
 	function toggleDeafen() {
-		deafened = !deafened;
-		if (deafened) {
-			micOnBeforeDeafen = micOn;
-			if (micOn) {
-				micOn = false;
-				previewStream?.getAudioTracks().forEach((track) => (track.enabled = false));
-			}
-		} else if (micOnBeforeDeafen !== null) {
-			micOn = micOnBeforeDeafen;
-			previewStream?.getAudioTracks().forEach((track) => (track.enabled = micOn));
-			micOnBeforeDeafen = null;
-		}
+		({ micEnabled: micOn, deafened, micEnabledBeforeDeafen: micOnBeforeDeafen } = applyDeafenToggle({
+			micEnabled: micOn,
+			deafened,
+			micEnabledBeforeDeafen: micOnBeforeDeafen
+		}));
+		previewStream?.getAudioTracks().forEach((track) => (track.enabled = micOn));
 	}
 
 	function toggleCamera() {

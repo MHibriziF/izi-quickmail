@@ -51,7 +51,10 @@ export function createLiveKitClient(apiKey: string, apiSecret: string, url: stri
 						room,
 						canPublish: true,
 						canSubscribe: true,
-						canPublishData: true
+						canPublishData: true,
+						// Without this, a participant's own setAttributes() calls (deafened badge,
+						// future host-role reads) are silently rejected by the server.
+						canUpdateOwnMetadata: true
 					}
 				})
 			);
