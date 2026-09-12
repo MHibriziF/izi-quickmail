@@ -1,6 +1,6 @@
 import { redirect, type Handle } from '@sveltejs/kit';
 import { authorizeApiRequest, canAccessDuringFirstLogin } from '$lib/server/api-access';
-import { getUserByApiToken, readBearerToken } from '$lib/server/api-tokens';
+import { getApiTokenService, readBearerToken } from '$lib/server/api-tokens';
 import { getAuthService, readSessionToken } from '$lib/server/auth';
 import { DOMAIN_COOKIE, UI_THEME_COOKIE, UI_THEME_COOKIE_MAX_AGE } from '$lib/server/constants';
 import { getDomainsService } from '$lib/server/domains';
@@ -100,7 +100,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		} else if (pathname.startsWith('/api/')) {
 			const bearer = readBearerToken(event.request);
 			if (bearer) {
-				const auth = await getUserByApiToken(db, bearer);
+				const auth = await getApiTokenService(event.platform).getUserByApiToken(bearer);
 				if (auth) {
 					event.locals.user = auth.user;
 					event.locals.authMethod = 'api_token';

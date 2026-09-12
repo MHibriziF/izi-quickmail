@@ -1,12 +1,11 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { createApiToken, listApiTokens, parseScopes, type ApiScope } from '$lib/server/api-tokens';
+import { getApiTokenService, parseScopes, type ApiScope } from '$lib/server/api-tokens';
 
 export const GET: RequestHandler = async ({ locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
-	return json({ tokens: await listApiTokens(db, locals.user.id) });
+	return json({ tokens: await getApiTokenService(platform).listApiTokens(locals.user.id) });
 };
 
 type CreateTokenBody = {
@@ -15,8 +14,7 @@ type CreateTokenBody = {
 };
 
 export const POST: RequestHandler = async ({ request, locals, platform }) => {
-	const db = platform?.env.DB;
-	if (!db || !locals.user) {
+	if (!platform?.env.DB || !locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
@@ -34,7 +32,7 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
 		);
 	}
 
-	const created = await createApiToken(db, locals.user.id, {
+	const created = await getApiTokenService(platform).createApiToken(locals.user.id, {
 		name: body?.name,
 		scopes: parsed ?? undefined
 	});
