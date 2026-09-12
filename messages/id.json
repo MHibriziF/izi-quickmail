@@ -703,7 +703,7 @@
 		"leftTitle": "Anda telah keluar dari rapat",
 		"rejoin": "Gabung lagi",
 		"returnHome": "Kembali ke layar utama",
-		"invalidLink": "Tautan tersebut tidak valid atau telah kedaluwarsa.",
+		"invalidLink": "Kode atau tautan itu tidak cocok dengan rapat mana pun.",
 		"connecting": "Menghubungkan…",
 		"connectionError": "Tidak dapat terhubung ke rapat.",
 		"deviceError": "Tidak dapat mengakses kamera atau mikrofon Anda. Anda tetap bisa bergabung.",
@@ -742,15 +742,16 @@
 	"meetings": {
 		"title": "Rapat — {app}",
 		"heading": "Rapat",
-		"hint": "Mulai panggilan video dan bagikan tautannya ke siapa saja — mereka tidak perlu akun untuk bergabung.",
+		"hint": "Mulai panggilan video dan bagikan kode atau tautannya ke siapa saja — mereka tidak perlu akun untuk bergabung.",
 		"newMeeting": "Rapat baru",
 		"creating": "Membuat…",
-		"readyTitle": "Rapat siap",
-		"readyHint": "Salin tautan ini dan kirim ke orang yang akan rapat denganmu.",
+		"untitled": "Rapat tanpa judul",
 		"empty": "Belum ada rapat.",
+		"joinPlaceholder": "Masukkan kode",
+		"joinButton": "Gabung",
 		"copyLink": "Salin tautan",
 		"linkCopied": "Tautan disalin",
-		"regenerateLink": "Dapatkan tautan baru",
-		"couldNotRegenerate": "Tidak dapat membuat tautan baru"
+		"regenerateCode": "Dapatkan kode baru",
+		"couldNotRegenerate": "Tidak dapat membuat kode baru"
 	}
 }

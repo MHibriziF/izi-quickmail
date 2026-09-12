@@ -13,12 +13,13 @@ export const POST: RequestHandler = async ({ request, locals, platform, url }) =
 	}
 
 	const body = (await request.json().catch(() => ({}))) as CreateMeetingBody;
-	const { token, meeting } = await createMeeting(db, locals.user.id, { title: body.title });
+	const { code, meeting } = await createMeeting(db, locals.user.id, { title: body.title });
 
 	return json({
 		id: meeting.id,
 		title: meeting.title,
-		joinUrl: `${url.origin}/meet/${meeting.id}?token=${encodeURIComponent(token)}`
+		code,
+		joinUrl: `${url.origin}/meet/${code}`
 	});
 };
 

@@ -112,5 +112,9 @@ export const MIGRATIONS: GeneratedMigration[] = [
 	{
 		name: "0027_call_backgrounds.sql",
 		sql: "-- A small saved gallery of virtual-background images per user, so a custom\n-- upload survives a reload or rejoin instead of dying with the blob: URL it\n-- started as. Mirrors email_attachments: bytes in R2, this row just points\n-- at them. Capped client-side (MAX_CALL_BACKGROUNDS_PER_USER) by dropping the\n-- oldest row on insert rather than rejecting the upload.\nCREATE TABLE call_backgrounds (\n\tid TEXT PRIMARY KEY,\n\tuser_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,\n\tstorage_key TEXT NOT NULL,\n\tcontent_type TEXT NOT NULL,\n\tsize_bytes INTEGER NOT NULL,\n\tcreated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n);\n\nCREATE INDEX call_backgrounds_user_id_idx ON call_backgrounds(user_id);\n"
+	},
+	{
+		name: "0028_meeting_codes.sql",
+		sql: "-- The join code is what gets shared and typed now, not a separate hidden token --\n-- see meetings.ts. A partial unique index (rather than NOT NULL) lets existing\n-- rows keep code = NULL until their owner regenerates one; nothing reads\n-- token_hash anymore so it's dropped outright.\nALTER TABLE meetings ADD COLUMN code TEXT;\nCREATE UNIQUE INDEX meetings_code_idx ON meetings(code) WHERE code IS NOT NULL;\nALTER TABLE meetings DROP COLUMN token_hash;\n"
 	}
 ];

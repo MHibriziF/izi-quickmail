@@ -9,6 +9,7 @@ import { MailRequestError } from './client';
 export type StartedMeeting = {
 	id: string;
 	title: string | null;
+	code: string;
 	joinUrl: string;
 };
 
@@ -27,7 +28,7 @@ export async function startMeeting(title?: string): Promise<StartedMeeting> {
 	return payload;
 }
 
-/** The HTML appended to a compose body when a meeting is started. */
-export function meetingLinkHtml(joinUrl: string): string {
-	return `<p><a href="${joinUrl}">Join the video meeting</a></p>`;
+/** The HTML appended to a compose body when a meeting is started. The code is printed in the clear too, so a recipient can type it in instead of clicking. */
+export function meetingLinkHtml(joinUrl: string, code: string): string {
+	return `<p><a href="${joinUrl}">Join the video meeting</a></p><p>Or enter this code: <strong>${code}</strong></p>`;
 }

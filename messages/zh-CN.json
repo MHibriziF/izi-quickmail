@@ -703,7 +703,7 @@
 		"leftTitle": "您已离开会议",
 		"rejoin": "重新加入",
 		"returnHome": "返回主屏幕",
-		"invalidLink": "该链接无效或已过期。",
+		"invalidLink": "该代码或链接与任何会议都不匹配。",
 		"connecting": "连接中…",
 		"connectionError": "无法连接到会议。",
 		"deviceError": "无法访问摄像头或麦克风。您仍然可以加入会议。",
@@ -742,15 +742,16 @@
 	"meetings": {
 		"title": "会议 — {app}",
 		"heading": "会议",
-		"hint": "发起视频通话并把链接分享给任何人——对方无需账号即可加入。",
+		"hint": "发起视频通话并把代码或链接分享给任何人——对方无需账号即可加入。",
 		"newMeeting": "新建会议",
 		"creating": "创建中…",
-		"readyTitle": "会议已就绪",
-		"readyHint": "复制此链接并发送给要与你会面的人。",
+		"untitled": "未命名会议",
 		"empty": "还没有会议。",
+		"joinPlaceholder": "输入代码",
+		"joinButton": "加入",
 		"copyLink": "复制链接",
 		"linkCopied": "链接已复制",
-		"regenerateLink": "获取新链接",
-		"couldNotRegenerate": "无法创建新链接"
+		"regenerateCode": "获取新代码",
+		"couldNotRegenerate": "无法创建新代码"
 	}
 }

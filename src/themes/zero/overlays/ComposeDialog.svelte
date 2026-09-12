@@ -90,7 +90,7 @@
 
 		try {
 			const meeting = await startMeeting(subject.trim() || undefined);
-			html += meetingLinkHtml(meeting.joinUrl);
+			html += meetingLinkHtml(meeting.joinUrl, meeting.code);
 		} catch (failure) {
 			error = describeMailError(failure, t('common.networkError'));
 		} finally {

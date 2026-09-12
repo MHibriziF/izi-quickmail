@@ -164,10 +164,10 @@
 		const displayName = name.trim() || t('meet.guest');
 
 		try {
-			const response = await fetch(`/api/meetings/join/${encodeURIComponent(data.id)}`, {
+			const response = await fetch(`/api/meetings/join/${encodeURIComponent(data.code)}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ token: data.token, name: displayName })
+				body: JSON.stringify({ name: displayName })
 			});
 			const body = (await response.json().catch(() => ({}))) as {
 				url?: string;
@@ -223,7 +223,7 @@
 				<h1>{left ? t('meet.leftTitle') : t('meet.title', { app: APP_NAME })}</h1>
 			</div>
 
-			{#if !data.token}
+			{#if !data.code}
 				<p class="note">{t('meet.invalidLink')}</p>
 			{:else if left}
 				<div class="left-actions">

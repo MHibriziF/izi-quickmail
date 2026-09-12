@@ -703,7 +703,7 @@
 		"leftTitle": "Vous avez quitté la réunion",
 		"rejoin": "Rejoindre",
 		"returnHome": "Retour à l'écran d'accueil",
-		"invalidLink": "Ce lien est invalide ou a expiré.",
+		"invalidLink": "Ce code ou ce lien ne correspond à aucune réunion.",
 		"connecting": "Connexion…",
 		"connectionError": "Impossible de se connecter à la réunion.",
 		"deviceError": "Impossible d’accéder à votre caméra ou micro. Vous pouvez quand même rejoindre.",
@@ -742,15 +742,16 @@
 	"meetings": {
 		"title": "Réunions — {app}",
 		"heading": "Réunions",
-		"hint": "Démarrez un appel vidéo et partagez le lien avec qui vous voulez — aucun compte n’est nécessaire pour rejoindre.",
+		"hint": "Démarrez un appel vidéo et partagez le code ou le lien avec qui vous voulez — aucun compte n’est nécessaire pour rejoindre.",
 		"newMeeting": "Nouvelle réunion",
 		"creating": "Création…",
-		"readyTitle": "Réunion prête",
-		"readyHint": "Copiez ce lien et envoyez-le à la personne avec qui vous vous réunissez.",
+		"untitled": "Réunion sans titre",
 		"empty": "Aucune réunion pour l’instant.",
+		"joinPlaceholder": "Entrez un code",
+		"joinButton": "Rejoindre",
 		"copyLink": "Copier le lien",
 		"linkCopied": "Lien copié",
-		"regenerateLink": "Obtenir un nouveau lien",
-		"couldNotRegenerate": "Impossible de créer un nouveau lien"
+		"regenerateCode": "Obtenir un nouveau code",
+		"couldNotRegenerate": "Impossible de créer un nouveau code"
 	}
 }

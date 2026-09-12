@@ -703,7 +703,7 @@
 		"leftTitle": "You left the meeting",
 		"rejoin": "Rejoin",
 		"returnHome": "Return to home screen",
-		"invalidLink": "That link is invalid or has expired.",
+		"invalidLink": "That code or link doesn't match any meeting.",
 		"connecting": "Connecting…",
 		"connectionError": "Could not connect to the meeting.",
 		"deviceError": "Could not access your camera or microphone. You can still join.",
@@ -742,15 +742,16 @@
 	"meetings": {
 		"title": "Meetings — {app}",
 		"heading": "Meetings",
-		"hint": "Start a video call and share the link with anyone — they don't need an account to join.",
+		"hint": "Start a video call and share the code or link with anyone — they don't need an account to join.",
 		"newMeeting": "New meeting",
 		"creating": "Creating…",
-		"readyTitle": "Meeting ready",
-		"readyHint": "Copy this link and send it to whoever you're meeting with.",
+		"untitled": "Untitled meeting",
 		"empty": "No meetings yet.",
+		"joinPlaceholder": "Enter a code",
+		"joinButton": "Join",
 		"copyLink": "Copy link",
 		"linkCopied": "Link copied",
-		"regenerateLink": "Get new link",
-		"couldNotRegenerate": "Could not create a new link"
+		"regenerateCode": "Get new code",
+		"couldNotRegenerate": "Could not create a new code"
 	}
 }

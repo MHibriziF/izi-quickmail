@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { t } from '$lib/i18n';
 	import StackHeader from './StackHeader.svelte';
 	import Icon from './Icon.svelte';
@@ -10,14 +12,21 @@
 
 	/** Meetings started from this page this session — prepended ahead of `meetings`. */
 	let created = $state<Meeting[]>([]);
-	const rows = $derived([...created, ...meetings]);
+	/** A regenerated code, keyed by meeting id — kept separate rather than mutating `meetings` (a plain prop, not reactive state). */
+	let codeOverrides = $state<Record<string, string>>({});
+	const rows = $derived(
+		[...created, ...meetings].map((meeting) => ({ ...meeting, code: codeOverrides[meeting.id] ?? meeting.code }))
+	);
 
 	let starting = $state(false);
 	let busyId = $state('');
 	let copiedId = $state('');
 	let error = $state('');
-	/** The one link a person can actually copy — shown right after creation, since the raw token is never stored. */
-	let readyLink = $state<{ id: string; joinUrl: string } | null>(null);
+	let joinCode = $state('');
+
+	function joinUrlFor(code: string): string {
+		return `${$page.url.origin}/meet/${code}`;
+	}
 
 	async function startNewMeeting() {
 		if (starting) return;
@@ -26,8 +35,7 @@
 
 		try {
 			const meeting = await startMeeting();
-			created = [{ id: meeting.id, title: meeting.title, created_at: new Date().toISOString() }, ...created];
-			readyLink = { id: meeting.id, joinUrl: meeting.joinUrl };
+			created = [{ id: meeting.id, code: meeting.code, title: meeting.title, created_at: new Date().toISOString() }, ...created];
 		} catch (failure) {
 			error = describeMailError(failure, t('common.networkError'));
 		} finally {
@@ -42,12 +50,12 @@
 
 		try {
 			const response = await fetch(`/api/meetings/${encodeURIComponent(id)}/rotate`, { method: 'POST' });
-			const body = (await response.json().catch(() => ({}))) as { joinUrl?: string; error?: string };
-			if (!response.ok || !body.joinUrl) {
+			const body = (await response.json().catch(() => ({}))) as { code?: string; error?: string };
+			if (!response.ok || !body.code) {
 				error = body.error ?? t('meetings.couldNotRegenerate');
 				return;
 			}
-			readyLink = { id, joinUrl: body.joinUrl };
+			codeOverrides = { ...codeOverrides, [id]: body.code };
 		} catch {
 			error = t('common.networkError');
 		} finally {
@@ -66,6 +74,13 @@
 			// Clipboard access denied — the link is still visible to copy by hand.
 		}
 	}
+
+	function submitJoin(event: SubmitEvent) {
+		event.preventDefault();
+		const code = joinCode.trim().toLowerCase();
+		if (!code) return;
+		void goto(`/meet/${encodeURIComponent(code)}`);
+	}
 </script>
 
 <StackHeader title={t('meetings.heading')}>
@@ -78,20 +93,16 @@
 			</button>
 		</div>
 
-		{#if readyLink}
-			<div class="meetings-ready">
-				<div class="meetings-ready-text">
-					<strong>{t('meetings.readyTitle')}</strong>
-					<span>{t('meetings.readyHint')}</span>
-				</div>
-				<div class="meetings-ready-row">
-					<input class="meetings-ready-input" type="text" readonly value={readyLink.joinUrl} onclick={(e) => e.currentTarget.select()} />
-					<button type="button" class="meetings-row-action" onclick={() => copyLink(readyLink!.id, readyLink!.joinUrl)}>
-						{copiedId === readyLink.id ? t('meetings.linkCopied') : t('meetings.copyLink')}
-					</button>
-				</div>
-			</div>
-		{/if}
+		<form class="meetings-join" onsubmit={submitJoin}>
+			<input
+				class="meetings-join-input"
+				type="text"
+				bind:value={joinCode}
+				placeholder={t('meetings.joinPlaceholder')}
+				aria-label={t('meetings.joinPlaceholder')}
+			/>
+			<button type="submit" class="meetings-row-action" disabled={!joinCode.trim()}>{t('meetings.joinButton')}</button>
+		</form>
 
 		{#if error}
 			<p class="meetings-error">{error}</p>
@@ -104,17 +115,25 @@
 				{#each rows as meeting (meeting.id)}
 					<li class="meetings-row">
 						<div class="meetings-row-info">
-							<span class="meetings-row-title">{meeting.title || meeting.id}</span>
+							<span class="meetings-row-title">{meeting.title || t('meetings.untitled')}</span>
 							<span class="meetings-row-date">{new Date(meeting.created_at).toLocaleString()}</span>
 						</div>
-						<button
-							type="button"
-							class="meetings-row-action"
-							disabled={busyId === meeting.id}
-							onclick={() => regenerate(meeting.id)}
-						>
-							{t('meetings.regenerateLink')}
-						</button>
+						<div class="meetings-row-actions">
+							{#if meeting.code}
+								<code class="meetings-code">{meeting.code}</code>
+								<button type="button" class="meetings-row-action" onclick={() => copyLink(meeting.id, joinUrlFor(meeting.code!))}>
+									{copiedId === meeting.id ? t('meetings.linkCopied') : t('meetings.copyLink')}
+								</button>
+							{/if}
+							<button
+								type="button"
+								class="meetings-row-action"
+								disabled={busyId === meeting.id}
+								onclick={() => regenerate(meeting.id)}
+							>
+								{t('meetings.regenerateCode')}
+							</button>
+						</div>
 					</li>
 				{/each}
 			</ul>
@@ -168,35 +187,15 @@
 		cursor: default;
 	}
 
-	.meetings-ready {
+	.meetings-join {
 		display: flex;
-		flex-direction: column;
 		gap: 0.5rem;
 		padding: 0.875rem;
-		border: 1px solid var(--color-accent);
+		border: 1px solid var(--color-line);
 		border-radius: 0.5rem;
-		background: var(--color-accent-soft);
 	}
 
-	.meetings-ready-text {
-		display: flex;
-		flex-direction: column;
-		gap: 0.125rem;
-		font-size: 0.8125rem;
-		color: var(--color-text-secondary);
-	}
-
-	.meetings-ready-text strong {
-		font-size: 0.9rem;
-		color: var(--color-text);
-	}
-
-	.meetings-ready-row {
-		display: flex;
-		gap: 0.5rem;
-	}
-
-	.meetings-ready-input {
+	.meetings-join-input {
 		flex: 1;
 		min-width: 0;
 		padding: 0.5rem 0.625rem;
@@ -231,6 +230,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
+		flex-wrap: wrap;
 		padding: 0.75rem;
 		border: 1px solid var(--color-line);
 		border-radius: 0.5rem;
@@ -254,6 +254,21 @@
 	.meetings-row-date {
 		font-size: 0.75rem;
 		color: var(--color-text-secondary);
+	}
+
+	.meetings-row-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 0;
+	}
+
+	.meetings-code {
+		padding: 0.25rem 0.5rem;
+		font-size: 0.8125rem;
+		font-family: var(--font-mono, monospace);
+		border-radius: 0.375rem;
+		background: var(--color-surface-2, var(--color-surface));
 	}
 
 	.meetings-row-action {
