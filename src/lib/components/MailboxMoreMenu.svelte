@@ -108,14 +108,28 @@
 					<Icon name="close-circle-line" size={15} /> Clear filters
 				</button>
 			{/if}
-			<button type="button" class="menu-item" onclick={() => onRun('read-all', [])}>
+			<button
+				type="button"
+				class="menu-item"
+				onclick={() => {
+					onRun('read-all', []);
+					open = false;
+				}}
+			>
 				<Icon name="mail-open-line" size={15} /> {t('mailbox.markAllRead')}
 			</button>
 			<button type="button" class="menu-item" onclick={() => invalidateAll()}>
 				<Icon name="refresh-line" size={15} /> Refresh
 			</button>
 			{#if view === 'trash'}
-				<button type="button" class="menu-item danger" onclick={() => onRun('empty-trash', [])}>
+				<button
+					type="button"
+					class="menu-item danger"
+					onclick={() => {
+						onRun('empty-trash', []);
+						open = false;
+					}}
+				>
 					<Icon name="delete-bin-2-line" size={15} /> {t('mailbox.emptyTrash')}
 				</button>
 			{/if}
