@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount, tick, untrack } from 'svelte';
+	import { onDestroy, onMount, untrack } from 'svelte';
 	import {
 		Room,
 		RoomEvent,
@@ -16,8 +16,11 @@
 	import { applyDeafenToggle, applyMicToggle } from '$lib/meet/av-state';
 	import { t } from '$lib/i18n';
 	import Icon from '$lib/components/Icon.svelte';
-	import DeviceSelect from '$lib/components/DeviceSelect.svelte';
 	import BackgroundPickerModal from '$lib/components/BackgroundPickerModal.svelte';
+	import CallParticipantsPanel from '$lib/components/CallParticipantsPanel.svelte';
+	import CallChatPanel from '$lib/components/CallChatPanel.svelte';
+	import CallSettingsPanel from '$lib/components/CallSettingsPanel.svelte';
+	import CallControls from '$lib/components/CallControls.svelte';
 
 	let {
 		url,
@@ -110,8 +113,6 @@
 	let roster = $state<{ identity: string; name: string; isLocal: boolean }[]>([]);
 	let messages = $state<{ id: string; from: string; text: string; isLocal: boolean }[]>([]);
 	let unread = $state(0);
-	let chatInput = $state('');
-	let chatBodyEl = $state<HTMLDivElement>();
 
 	function initialsFor(name: string): string {
 		return (
@@ -490,16 +491,10 @@
 		}
 	}
 
-	async function scrollChatToEnd() {
-		await tick();
-		chatBodyEl?.scrollTo({ top: chatBodyEl.scrollHeight });
-	}
-
 	function receiveChatMessage(text: string, identity: string) {
 		const from = roster.find((p) => p.identity === identity)?.name || t('meet.guest');
 		messages = [...messages, { id: crypto.randomUUID(), from, text, isLocal: false }];
 		if (panel !== 'chat') unread += 1;
-		void scrollChatToEnd();
 	}
 
 	function handleLocalTrackPublished(publication: LocalTrackPublication) {
@@ -777,19 +772,12 @@
 
 	function togglePanel(next: 'participants' | 'chat' | 'settings') {
 		panel = panel === next ? 'none' : next;
-		if (panel === 'chat') {
-			unread = 0;
-			void scrollChatToEnd();
-		}
+		if (panel === 'chat') unread = 0;
 	}
 
-	async function sendChatMessage(event: SubmitEvent) {
-		event.preventDefault();
-		const text = chatInput.trim();
-		if (!text || !room) return;
-		chatInput = '';
+	async function sendChatMessage(text: string) {
+		if (!room) return;
 		messages = [...messages, { id: crypto.randomUUID(), from: displayName, text, isLocal: true }];
-		void scrollChatToEnd();
 		try {
 			await room.localParticipant.sendText(text, { topic: CHAT_TOPIC });
 		} catch {
@@ -920,262 +908,55 @@
 		</div>
 
 		{#if panel === 'participants'}
-			<div class="call-panel">
-				<div class="call-panel-head">
-					<strong>{t('meet.participants')} ({roster.length})</strong>
-					<button type="button" class="call-panel-close" onclick={() => (panel = 'none')} aria-label={t('meet.close')}>
-						<Icon name="close-line" size={18} />
-					</button>
-				</div>
-				<ul class="call-panel-list">
-					{#each roster as person (person.identity)}
-						<li class="call-participant-row">
-							<span class="call-participant-avatar" style="background: {colorFor(person.identity)}">
-								{initialsFor(person.name)}
-							</span>
-							<span>{person.name}{person.isLocal ? ` · ${t('meet.you')}` : ''}</span>
-						</li>
-					{/each}
-				</ul>
-			</div>
+			<CallParticipantsPanel {roster} onClose={() => (panel = 'none')} />
 		{:else if panel === 'chat'}
-			<div class="call-panel">
-				<div class="call-panel-head">
-					<strong>{t('meet.chat')}</strong>
-					<button type="button" class="call-panel-close" onclick={() => (panel = 'none')} aria-label={t('meet.close')}>
-						<Icon name="close-line" size={18} />
-					</button>
-				</div>
-				<div class="call-chat-body" bind:this={chatBodyEl}>
-					{#if messages.length === 0}
-						<p class="call-chat-empty">{t('meet.noMessages')}</p>
-					{:else}
-						{#each messages as message (message.id)}
-							<div class="call-chat-message" class:own={message.isLocal}>
-								{#if !message.isLocal}<span class="call-chat-from">{message.from}</span>{/if}
-								<span class="call-chat-text">{message.text}</span>
-							</div>
-						{/each}
-					{/if}
-				</div>
-				<form class="call-chat-form" onsubmit={sendChatMessage}>
-					<input
-						class="call-chat-input"
-						type="text"
-						bind:value={chatInput}
-						maxlength={500}
-						placeholder={t('meet.chatPlaceholder')}
-					/>
-					<button type="submit" class="call-chat-send" disabled={!chatInput.trim()}>{t('meet.send')}</button>
-				</form>
-			</div>
+			<CallChatPanel {messages} onSend={sendChatMessage} onClose={() => (panel = 'none')} />
 		{:else if panel === 'settings'}
-			<div class="call-panel">
-				<div class="call-panel-head">
-					<strong>{t('meet.settings')}</strong>
-					<button type="button" class="call-panel-close" onclick={() => (panel = 'none')} aria-label={t('meet.close')}>
-						<Icon name="close-line" size={18} />
-					</button>
-				</div>
-				<div class="call-settings-body">
-					<fieldset class="call-settings-field">
-						<legend>{t('meetings.admissionLabel')}</legend>
-						<label class="call-settings-radio">
-							<input
-								type="radio"
-								name="call-admission"
-								checked={!requireApproval}
-								disabled={settingsBusy}
-								onchange={() => setAdmissionMode(false)}
-							/>
-							{t('meetings.admissionOpen')}
-						</label>
-						<label class="call-settings-radio">
-							<input
-								type="radio"
-								name="call-admission"
-								checked={requireApproval}
-								disabled={settingsBusy}
-								onchange={() => setAdmissionMode(true)}
-							/>
-							{t('meetings.admissionApproval')}
-						</label>
-					</fieldset>
-
-					{#if settingsError}<p class="call-settings-error">{settingsError}</p>{/if}
-
-					{#if requireApproval}
-						<div class="call-settings-field">
-							<span class="call-settings-label">{t('meet.waitingToJoin')}</span>
-							{#if pendingAdmissions.length === 0}
-								<p class="call-settings-empty">{t('meet.noOneWaiting')}</p>
-							{:else}
-								<ul class="call-panel-list">
-									{#each pendingAdmissions as admission (admission.id)}
-										<li class="call-admission-row">
-											<span>{admission.name}</span>
-											<div class="call-admission-actions">
-												<button
-													type="button"
-													class="call-admission-btn"
-													disabled={admissionsBusyId === admission.id}
-													onclick={() => respondToAdmission(admission.id, 'deny')}
-													aria-label={t('meet.deny')}
-												>
-													<Icon name="close-line" size={16} />
-												</button>
-												<button
-													type="button"
-													class="call-admission-btn call-admission-admit"
-													disabled={admissionsBusyId === admission.id}
-													onclick={() => respondToAdmission(admission.id, 'admit')}
-													aria-label={t('meet.admit')}
-												>
-													<Icon name="check-line" size={16} />
-												</button>
-											</div>
-										</li>
-									{/each}
-								</ul>
-							{/if}
-						</div>
-					{/if}
-				</div>
-			</div>
+			<CallSettingsPanel
+				{requireApproval}
+				{settingsBusy}
+				{settingsError}
+				{pendingAdmissions}
+				{admissionsBusyId}
+				onSetAdmissionMode={setAdmissionMode}
+				onRespondToAdmission={respondToAdmission}
+				onClose={() => (panel = 'none')}
+			/>
 		{/if}
 	</div>
 
-	<div class="call-controls">
-		<button
-			type="button"
-			class="call-btn"
-			class:call-btn-danger-active={deafened}
-			onclick={toggleDeafen}
-			aria-label={deafened ? t('meet.undeafen') : t('meet.deafen')}
-		>
-			<Icon name={deafened ? 'volume-mute-line' : 'headphone-line'} size={20} />
-		</button>
-		<div class="call-btn-pill" class:call-btn-pill-off={!micEnabled}>
-			<DeviceSelect kind="audioinput" deviceId={micDeviceId} label={t('meet.chooseMic')} onselect={selectMic} menuAlign="start">
-				{#snippet extra()}
-					{#if speakerSelectionSupported}
-						<div class="pill-extra-section">
-							<span class="pill-extra-label">{t('meet.chooseSpeaker')}</span>
-							{#if speakerDevices.length === 0}
-								<span class="pill-extra-empty">{t('meet.chooseSpeaker')}</span>
-							{:else}
-								{#each speakerDevices as device (device.deviceId)}
-									<button
-										type="button"
-										class="pill-extra-option"
-										class:selected={device.deviceId === speakerDeviceId}
-										onclick={() => selectSpeaker(device.deviceId)}
-									>
-										{device.label || t('meet.chooseSpeaker')}
-									</button>
-								{/each}
-							{/if}
-						</div>
-					{/if}
-				{/snippet}
-			</DeviceSelect>
-			<button
-				type="button"
-				class="call-btn-pill-main"
-				onclick={toggleMic}
-				aria-label={micEnabled ? t('meet.micOn') : t('meet.micOff')}
-			>
-				<Icon name={micEnabled ? 'mic-line' : 'mic-off-line'} size={20} />
-			</button>
-		</div>
-		<div class="call-btn-pill" class:call-btn-pill-off={!cameraEnabled}>
-			<DeviceSelect kind="videoinput" deviceId={cameraDeviceId} label={t('meet.chooseCamera')} onselect={selectCamera} menuAlign="start">
-				{#snippet extra()}
-					{#if backgroundSupported}
-						<div class="pill-extra-section">
-							<span class="pill-extra-label">{t('meet.background')}</span>
-							<button type="button" class="pill-extra-option" onclick={() => (showBackgroundPicker = true)}>
-								<span
-									class="background-current-swatch"
-									style={backgroundOption === 'none'
-										? ''
-										: backgroundOption === 'blur'
-											? 'background: rgba(255, 255, 255, 0.3)'
-											: `background-image: url(${backgroundOption})`}
-								></span>
-								{t('meet.backgroundChange')}
-							</button>
-						</div>
-					{/if}
-				{/snippet}
-			</DeviceSelect>
-			<button
-				type="button"
-				class="call-btn-pill-main"
-				onclick={toggleCamera}
-				aria-label={cameraEnabled ? t('meet.cameraOn') : t('meet.cameraOff')}
-			>
-				<Icon name={cameraEnabled ? 'camera-line' : 'camera-off-line'} size={20} />
-			</button>
-		</div>
-		{#if screenShareSupported}
-			<button
-				type="button"
-				class="call-btn"
-				class:call-btn-active={screenShareEnabled}
-				onclick={toggleScreenShare}
-				aria-label={screenShareEnabled ? t('meet.screenShareOff') : t('meet.screenShareOn')}
-			>
-				<Icon name="computer-line" size={20} />
-			</button>
-		{/if}
-		{#if pipSupported}
-			<button
-				type="button"
-				class="call-btn"
-				class:call-btn-active={pipActive}
-				onclick={togglePip}
-				aria-label={pipActive ? t('meet.pipOff') : t('meet.pipOn')}
-			>
-				<Icon name={pipActive ? 'picture-in-picture-exit-line' : 'picture-in-picture-2-line'} size={20} />
-			</button>
-		{/if}
-		<button
-			type="button"
-			class="call-btn"
-			class:call-btn-active={panel === 'participants'}
-			onclick={() => togglePanel('participants')}
-			aria-label={t('meet.participants')}
-		>
-			<Icon name="group-line" size={20} />
-			{#if roster.length > 0}<span class="call-btn-badge">{roster.length}</span>{/if}
-		</button>
-		<button
-			type="button"
-			class="call-btn"
-			class:call-btn-active={panel === 'chat'}
-			onclick={() => togglePanel('chat')}
-			aria-label={t('meet.chat')}
-		>
-			<Icon name="chat-3-line" size={20} />
-			{#if unread > 0}<span class="call-btn-badge call-btn-badge-alert">{unread}</span>{/if}
-		</button>
-		{#if isHost}
-			<button
-				type="button"
-				class="call-btn"
-				class:call-btn-active={panel === 'settings'}
-				onclick={() => togglePanel('settings')}
-				aria-label={t('meet.settings')}
-			>
-				<Icon name="settings-3-line" size={20} />
-				{#if pendingAdmissions.length > 0}<span class="call-btn-badge">{pendingAdmissions.length}</span>{/if}
-			</button>
-		{/if}
-		<button type="button" class="call-btn call-btn-leave" onclick={leave} aria-label={t('meet.leave')}>
-			<Icon name="phone-line" size={20} />
-		</button>
-	</div>
+	<CallControls
+		{deafened}
+		{micEnabled}
+		{micDeviceId}
+		{cameraEnabled}
+		{cameraDeviceId}
+		{speakerDeviceId}
+		{speakerDevices}
+		{speakerSelectionSupported}
+		{backgroundSupported}
+		{backgroundOption}
+		{screenShareSupported}
+		{screenShareEnabled}
+		{pipSupported}
+		{pipActive}
+		{panel}
+		rosterCount={roster.length}
+		{unread}
+		{isHost}
+		pendingAdmissionsCount={pendingAdmissions.length}
+		onToggleDeafen={toggleDeafen}
+		onSelectMic={selectMic}
+		onToggleMic={toggleMic}
+		onSelectSpeaker={selectSpeaker}
+		onSelectCamera={selectCamera}
+		onToggleCamera={toggleCamera}
+		onShowBackgroundPicker={() => (showBackgroundPicker = true)}
+		onToggleScreenShare={toggleScreenShare}
+		onTogglePip={togglePip}
+		onTogglePanel={togglePanel}
+		onLeave={leave}
+	/>
 </div>
 
 {#if showBackgroundPicker}
@@ -1340,404 +1121,9 @@
 		display: contents;
 	}
 
-	.call-panel {
-		display: flex;
-		flex-direction: column;
-		width: 300px;
-		flex-shrink: 0;
-		border-radius: 0.75rem;
-		background: #17171a;
-		overflow: hidden;
-	}
-
-	.call-panel-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.75rem 1rem;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-		font-size: 0.875rem;
-	}
-
-	.call-panel-close {
-		display: flex;
-		border: none;
-		background: transparent;
-		color: rgba(255, 255, 255, 0.7);
-		cursor: pointer;
-	}
-
-	.call-panel-list {
-		flex: 1;
-		list-style: none;
-		margin: 0;
-		padding: 0.5rem;
-		overflow-y: auto;
-	}
-
-	.call-participant-row {
-		display: flex;
-		align-items: center;
-		gap: 0.625rem;
-		padding: 0.5rem 0.5rem;
-		font-size: 0.8125rem;
-		border-radius: 0.5rem;
-	}
-
-	.call-participant-avatar {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.75rem;
-		height: 1.75rem;
-		border-radius: 999px;
-		font-size: 0.6875rem;
-		font-weight: 600;
-		flex-shrink: 0;
-	}
-
-	.call-settings-body {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		padding: 0.75rem;
-		overflow-y: auto;
-	}
-
-	.call-settings-field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		margin: 0;
-		padding: 0;
-		border: none;
-	}
-
-	.call-settings-field legend,
-	.call-settings-label {
-		padding: 0;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-		color: rgba(255, 255, 255, 0.5);
-	}
-
-	.call-settings-radio {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.8125rem;
-	}
-
-	.call-settings-error {
-		margin: 0;
-		font-size: 0.75rem;
-		color: #f87171;
-	}
-
-	.call-settings-empty {
-		margin: 0;
-		font-size: 0.8125rem;
-		color: rgba(255, 255, 255, 0.5);
-	}
-
-	.call-admission-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-		padding: 0.5rem 0.5rem;
-		font-size: 0.8125rem;
-		border-radius: 0.5rem;
-	}
-
-	.call-admission-row:hover {
-		background: rgba(255, 255, 255, 0.06);
-	}
-
-	.call-admission-actions {
-		display: flex;
-		gap: 0.375rem;
-		flex-shrink: 0;
-	}
-
-	.call-admission-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.75rem;
-		height: 1.75rem;
-		border: none;
-		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.12);
-		color: #fff;
-		cursor: pointer;
-	}
-
-	.call-admission-btn:hover {
-		background: rgba(255, 255, 255, 0.2);
-	}
-
-	.call-admission-admit {
-		background: #15803d;
-	}
-
-	.call-admission-admit:hover {
-		background: #16a34a;
-	}
-
-	.call-chat-body {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		padding: 0.75rem;
-		overflow-y: auto;
-	}
-
-	.call-chat-empty {
-		margin: auto;
-		font-size: 0.8125rem;
-		color: rgba(255, 255, 255, 0.5);
-	}
-
-	.call-chat-message {
-		display: flex;
-		flex-direction: column;
-		gap: 0.125rem;
-		max-width: 85%;
-		padding: 0.375rem 0.625rem;
-		border-radius: 0.75rem;
-		background: rgba(255, 255, 255, 0.08);
-		font-size: 0.8125rem;
-		align-self: flex-start;
-		word-break: break-word;
-	}
-
-	.call-chat-message.own {
-		align-self: flex-end;
-		background: var(--color-accent, #3b82f6);
-	}
-
-	.call-chat-from {
-		font-size: 0.6875rem;
-		font-weight: 600;
-		color: rgba(255, 255, 255, 0.6);
-	}
-
-	.call-chat-form {
-		display: flex;
-		gap: 0.5rem;
-		padding: 0.75rem;
-		border-top: 1px solid rgba(255, 255, 255, 0.08);
-	}
-
-	.call-chat-input {
-		flex: 1;
-		min-width: 0;
-		padding: 0.5rem 0.625rem;
-		font-size: 0.8125rem;
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		border-radius: 0.5rem;
-		background: rgba(255, 255, 255, 0.06);
-		color: #fff;
-	}
-
-	.call-chat-send {
-		flex-shrink: 0;
-		padding: 0.5rem 0.875rem;
-		font-size: 0.8125rem;
-		font-weight: 500;
-		border: none;
-		border-radius: 0.5rem;
-		background: #26262b;
-		color: #fff;
-		cursor: pointer;
-	}
-
-	.call-chat-send:disabled {
-		opacity: 0.5;
-		cursor: default;
-	}
-
-	.call-controls {
-		display: flex;
-		justify-content: center;
-		gap: 0.75rem;
-		padding-bottom: 0.5rem;
-	}
-
-	/*
-	 * One pill made of two adjacent segments — the device-picker chevron and
-	 * the main toggle each paint their own background and their own outer
-	 * corner, rather than the pill clipping them with overflow:hidden, which
-	 * would also clip the chevron's dropdown menu (it opens outside this box).
-	 */
-	.call-btn-pill {
-		display: flex;
-		align-items: stretch;
-		height: 48px;
-		/* Main segment matches the other round buttons in this bar (screen
-		   share, participants, chat); the chevron is secondary, so it sits
-		   darker rather than blending into the main segment. */
-		--seg-main-bg: #26262b;
-		--seg-main-bg-hover: #2c2c31;
-		--device-select-bg: #18181b;
-		--device-select-bg-hover: #202024;
-	}
-
-	.call-btn-pill-off {
-		--seg-main-bg: #dc2626;
-		--seg-main-bg-hover: #ef4444;
-		--device-select-bg: #7f1d1d;
-		--device-select-bg-hover: #932222;
-	}
-
-	.call-btn-pill-main {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 48px;
-		border: none;
-		border-radius: 0 999px 999px 0;
-		background: var(--seg-main-bg);
-		color: #fff;
-		cursor: pointer;
-	}
-
-	.call-btn-pill-main:hover {
-		background: var(--seg-main-bg-hover);
-	}
-
-	.call-btn {
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 48px;
-		height: 48px;
-		border: none;
-		border-radius: 999px;
-		background: #26262b;
-		color: #fff;
-		cursor: pointer;
-	}
-
-	.call-btn:hover {
-		background: #34343a;
-	}
-
-	.call-btn-active {
-		background: #3f3f46;
-		box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
-	}
-
-	/* Same warning color as a muted mic/camera — deafened means you can't speak or hear either. */
-	.call-btn-danger-active {
-		background: #7f1d1d;
-	}
-
-	.call-btn-danger-active:hover {
-		background: #932222;
-	}
-
-	.call-btn-badge {
-		position: absolute;
-		top: -2px;
-		right: -2px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-width: 1.1rem;
-		height: 1.1rem;
-		padding: 0 0.25rem;
-		border-radius: 999px;
-		background: #52525b;
-		font-size: 0.625rem;
-		font-weight: 600;
-	}
-
-	.call-btn-badge-alert {
-		background: #dc2626;
-	}
-
-	.call-btn-leave {
-		background: #dc2626;
-	}
-
-	.call-btn-leave:hover {
-		background: #ef4444;
-	}
-
-	/* Lives inside the mic/camera pill's own popup (see DeviceSelect's `extra` slot) rather than a separate button, so it doesn't add to the control bar. */
-	.pill-extra-section {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		width: 180px;
-	}
-
-	.pill-extra-label {
-		padding: 0.25rem 0.5rem 0;
-		font-size: 0.6875rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-		color: rgba(255, 255, 255, 0.5);
-	}
-
-	.pill-extra-empty {
-		padding: 0.375rem 0.5rem;
-		font-size: 0.75rem;
-		color: rgba(255, 255, 255, 0.5);
-	}
-
-	.pill-extra-option {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		width: 100%;
-		padding: 0.375rem 0.5rem;
-		border: none;
-		border-radius: 0.375rem;
-		background: transparent;
-		color: #fff;
-		font-size: 0.8125rem;
-		text-align: left;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		cursor: pointer;
-	}
-
-	.pill-extra-option:hover {
-		background: rgba(255, 255, 255, 0.1);
-	}
-
-	.pill-extra-option.selected {
-		background: rgba(255, 255, 255, 0.16);
-		font-weight: 600;
-	}
-
-	.background-current-swatch {
-		width: 1rem;
-		height: 1rem;
-		flex-shrink: 0;
-		border-radius: 0.25rem;
-		background-size: cover;
-		background-position: center;
-		background-color: rgba(255, 255, 255, 0.15);
-	}
-
 	@media (max-width: 640px) {
 		.call-body {
 			flex-direction: column;
-		}
-
-		.call-panel {
-			width: 100%;
-			max-height: 45vh;
 		}
 	}
 </style>
